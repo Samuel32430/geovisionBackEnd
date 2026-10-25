@@ -15,13 +15,50 @@ import java.time.LocalDateTime;
 public class PagoResponseDTO {
 
     private Long idPago;
+    private Long idComprobante;
+    private String serieNumeroComprobante;
+    private Long idMetodoPago;
+    private String nombreMetodoPago;
+    private Long idEmpleado;
+    private String nombreEmpleado;
     private LocalDateTime fechaRegistro;
-    private String numeroOperacion;
     private BigDecimal monto;
+    private String numeroOperacion;
     private Integer anulado;
     private String motivoAnulacion;
-    private Long metodoPagoId;
-    private String metodoPagoNombre;
-    private Long empleadoId;
-    private String empleadoNombre;
+    private BigDecimal saldoRestante;
+    private String nuevoEstadoCobro;
+
+    // Métodos alias para compatibilidad bidireccional con nomenclatura previa
+    public Long getMetodoPagoId() {
+        return idMetodoPago;
+    }
+
+    public void setMetodoPagoId(Long metodoPagoId) {
+        this.idMetodoPago = metodoPagoId;
+    }
+
+    public String getMetodoPagoNombre() {
+        return nombreMetodoPago;
+    }
+
+    public void setMetodoPagoNombre(String metodoPagoNombre) {
+        this.nombreMetodoPago = metodoPagoNombre;
+    }
+
+    public Long getEmpleadoId() {
+        return idEmpleado;
+    }
+
+    public void setEmpleadoId(Long empleadoId) {
+        this.idEmpleado = empleadoId;
+    }
+
+    public String getEmpleadoNombre() {
+        return nombreEmpleado;
+    }
+
+    public void setEmpleadoNombre(String empleadoNombre) {
+        this.nombreEmpleado = empleadoNombre;
+    }
 }

@@ -11,13 +11,13 @@ import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Empleado;
 import pe.edu.upeu.geovisionBackEnd.entity.gestionMantenimiento.MetodoPago;
 import pe.edu.upeu.geovisionBackEnd.entity.ventaProductosServicios.Comprobante;
 import pe.edu.upeu.geovisionBackEnd.entity.ventaProductosServicios.Pago;
-import pe.edu.upeu.geovisionBackEnd.entity.ventaProductosServicios.Venta;
 import pe.edu.upeu.geovisionBackEnd.enums.gestionMantenimiento.EstadoComprobanteEnum;
 import pe.edu.upeu.geovisionBackEnd.enums.gestionMantenimiento.MetodoPagoEnum;
 import pe.edu.upeu.geovisionBackEnd.enums.ventaProductosServicios.EstadoCobroEnum;
 import pe.edu.upeu.geovisionBackEnd.enums.ventaProductosServicios.EstadoDocumentoEnum;
 import pe.edu.upeu.geovisionBackEnd.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovisionBackEnd.exception.ReglaNegocioException;
+import pe.edu.upeu.geovisionBackEnd.mapper.ventaProductosServicios.PagoMapper;
 import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.EmpleadoRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.gestionMantenimiento.EstadoComprobanteRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.gestionMantenimiento.MetodoPagoRepository;
@@ -41,6 +41,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
     private final EmpleadoRepository empleadoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
     private final EstadoComprobanteRepository estadoComprobanteRepository;
+    private final PagoMapper pagoMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -155,7 +156,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
                 pagoGuardado.getIdPago(), comprobante.getIdComprobante(), saldoRestante);
 
         // k) Retornar PagoResponseDTO
-        return mapearAPagoResponseDTO(pagoGuardado);
+        return pagoMapper.toPagoResponseDTO(pagoGuardado, saldoRestante, comprobante.getEstadoCobro());
     }
 
     private SaldoPendienteDTO mapearASaldoPendienteDTO(Comprobante comprobante) {
@@ -165,72 +166,6 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         }
         BigDecimal totalEmitido = comprobante.getTotalEmitido() != null ? comprobante.getTotalEmitido() : BigDecimal.ZERO;
         BigDecimal saldoPendiente = totalEmitido.subtract(totalPagado);
-
-        String serie = comprobante.getSerie() != null ? comprobante.getSerie() : "";
-        String numero = comprobante.getNumero() != null ? comprobante.getNumero() : "";
-        String serieNumero = serie.isEmpty() && numero.isEmpty() ? "" : (serie + "-" + numero);
-
-        Long idVenta = comprobante.getVenta() != null ? comprobante.getVenta().getIdVenta() : null;
-        String clienteNombre = obtenerNombreCliente(comprobante);
-
-        SaldoPendienteDTO dto = new SaldoPendienteDTO();
-        dto.setIdVenta(idVenta);
-        dto.setIdComprobante(comprobante.getIdComprobante());
-        dto.setSerieNumero(serieNumero);
-        dto.setClienteNombre(clienteNombre);
-        dto.setFechaEmision(comprobante.getFechaEmision());
-        dto.setTotalVenta(totalEmitido);
-        dto.setTotalPagado(totalPagado);
-        dto.setSaldoPendiente(saldoPendiente);
-        dto.setEstadoCobro(comprobante.getEstadoCobro());
-
-        return dto;
-    }
-
-    private String obtenerNombreCliente(Comprobante comprobante) {
-        if (comprobante == null || comprobante.getVenta() == null) {
-            return "";
-        }
-        Venta venta = comprobante.getVenta();
-        if (venta.getComprador() != null) {
-            String nombres = venta.getComprador().getNombres() != null ? venta.getComprador().getNombres().trim() : "";
-            String apellidos = venta.getComprador().getApellidos() != null ? venta.getComprador().getApellidos().trim() : "";
-            return (nombres + " " + apellidos).trim();
-        }
-        if (venta.getPaciente() != null && venta.getPaciente().getPersona() != null) {
-            String nombres = venta.getPaciente().getPersona().getNombres() != null ? venta.getPaciente().getPersona().getNombres().trim() : "";
-            String apellidos = venta.getPaciente().getPersona().getApellidos() != null ? venta.getPaciente().getPersona().getApellidos().trim() : "";
-            return (nombres + " " + apellidos).trim();
-        }
-        return "";
-    }
-
-    private String obtenerNombreEmpleado(Empleado empleado) {
-        if (empleado == null || empleado.getPersona() == null) {
-            return null;
-        }
-        String nombres = empleado.getPersona().getNombres() != null ? empleado.getPersona().getNombres().trim() : "";
-        String apellidos = empleado.getPersona().getApellidos() != null ? empleado.getPersona().getApellidos().trim() : "";
-        String completo = (nombres + " " + apellidos).trim();
-        return completo.isEmpty() ? null : completo;
-    }
-
-    private PagoResponseDTO mapearAPagoResponseDTO(Pago pago) {
-        PagoResponseDTO dto = new PagoResponseDTO();
-        dto.setIdPago(pago.getIdPago());
-        dto.setFechaRegistro(pago.getFechaRegistro());
-        dto.setNumeroOperacion(pago.getNumeroOperacion());
-        dto.setMonto(pago.getMonto());
-        dto.setAnulado(pago.getAnulado());
-        dto.setMotivoAnulacion(pago.getMotivoAnulacion());
-        if (pago.getMetodoPago() != null) {
-            dto.setMetodoPagoId(pago.getMetodoPago().getIdMetodoPago());
-            dto.setMetodoPagoNombre(pago.getMetodoPago().getNombre());
-        }
-        if (pago.getEmpleado() != null) {
-            dto.setEmpleadoId(pago.getEmpleado().getIdPersona());
-            dto.setEmpleadoNombre(obtenerNombreEmpleado(pago.getEmpleado()));
-        }
-        return dto;
+        return pagoMapper.toSaldoPendienteDTO(comprobante, totalPagado, saldoPendiente);
     }
 }
