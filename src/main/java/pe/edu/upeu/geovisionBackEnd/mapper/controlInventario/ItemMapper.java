@@ -22,7 +22,7 @@ public class ItemMapper {
                 .precio(dto.getPrecio())
                 .tipo(dto.getTipo())
                 .unidadVenta(dto.getUnidadVenta())
-                .controlaStock(dto.getTipo() == TipoItem.CRISTAL ? false : dto.getControlaStock())
+                .controlaStock(dto.getTipo() != TipoItem.CRISTAL && Boolean.TRUE.equals(dto.getControlaStock()))
                 .estado(dto.getEstado() != null ? dto.getEstado() : true)
                 .stock(0) // El stock inicial siempre parte en 0 y solo varía por movimientos
                 .idCategoria(dto.getIdCategoria())
