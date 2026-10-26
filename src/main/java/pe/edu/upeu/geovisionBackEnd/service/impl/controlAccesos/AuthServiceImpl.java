@@ -5,11 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LoginRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LoginResponseDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LogoutResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.UsuarioResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Auditoria;
 import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Empleado;
@@ -34,7 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Implementación de la lógica de autenticación y generación de sesiones seguras (CU-SEG15).
+ * Implementación de la lógica de autenticación y sesiones (CU-SEG15 Login y CU-SEG16 Logout).
  */
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -145,6 +147,25 @@ public class AuthServiceImpl implements AuthService {
         return usuarioMapper.toResponseDTO(usuario, roles, idPersona, nombreCompleto);
     }
 
+    @Override
+    @Transactional
+    public LogoutResponseDTO logout(Authentication authentication) {
+        if (authentication != null && authentication.getName() != null) {
+            String username = authentication.getName();
+            log.info("Cerrando sesión para el usuario: {}", username);
+
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByNombreOrCorreo(username, username);
+            usuarioOpt.ifPresent(this::registrarAuditoriaLogout);
+        }
+
+        SecurityContextHolder.clearContext();
+
+        return LogoutResponseDTO.builder()
+                .mensaje("Sesión cerrada exitosamente")
+                .fecha(LocalDateTime.now())
+                .build();
+    }
+
     private void registrarAuditoriaLogin(Usuario usuario) {
         try {
             Auditoria auditoria = Auditoria.builder()
@@ -158,6 +179,23 @@ public class AuthServiceImpl implements AuthService {
             auditoriaRepository.save(auditoria);
         } catch (Exception ex) {
             log.error("Error al registrar auditoría de login para usuario {}: {}",
+                    usuario.getNombre(), ex.getMessage());
+        }
+    }
+
+    private void registrarAuditoriaLogout(Usuario usuario) {
+        try {
+            Auditoria auditoria = Auditoria.builder()
+                    .fechaLog(LocalDateTime.now())
+                    .entidad("USUARIO")
+                    .idEntidad(usuario.getIdUsuario())
+                    .accion(AccionAuditoriaEnum.CERRAR_SESION.name())
+                    .datosNuevos("Cierre de sesión seguro. Usuario: " + usuario.getNombre())
+                    .usuario(usuario)
+                    .build();
+            auditoriaRepository.save(auditoria);
+        } catch (Exception ex) {
+            log.error("Error al registrar auditoría de logout para usuario {}: {}",
                     usuario.getNombre(), ex.getMessage());
         }
     }
