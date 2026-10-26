@@ -2,10 +2,13 @@ package pe.edu.upeu.geovisionBackEnd.entity.elaboracionOrdenTrabajo;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import pe.edu.upeu.geovisionBackEnd.entity.gestionMantenimiento.Laboratorio;
+import pe.edu.upeu.geovisionBackEnd.enums.elaboracionOrdenTrabajo.MotivoEnvioLaboratorio;
 
 @Getter
 @Setter
@@ -19,14 +22,15 @@ public class EnvioLaboratorio {
     @Column(name = "id_envio_laboratorio")
     private Long idEnvioLaboratorio;
 
-    @Column(name = "fecha_envio", nullable = false)
-    private LocalDateTime fechaEnvio;
+    @Column(name = "fecha_envio", nullable = false, columnDefinition = "DATE")
+    private LocalDateTime fechaEnvio = LocalDateTime.now();
 
-    @Column(name = "fecha_recepcion")
+    @Column(name = "fecha_recepcion", columnDefinition = "DATE")
     private LocalDateTime fechaRecepcion;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "motivo", nullable = false, length = 20)
-    private String motivo = "FABRICACION";
+    private MotivoEnvioLaboratorio motivo = MotivoEnvioLaboratorio.FABRICACION;
 
     @Column(name = "descripcion", length = 1000)
     private String descripcion;
@@ -34,16 +38,31 @@ public class EnvioLaboratorio {
     @Column(name = "costo_optica", nullable = false, precision = 14, scale = 2)
     private BigDecimal costoOptica = BigDecimal.ZERO;
 
-    @Column(name = "id_orden_trabajo", nullable = false)
-    private Long idOrdenTrabajo;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_orden_trabajo", nullable = false)
+    private OrdenTrabajo ordenTrabajo;
 
-    @Column(name = "id_laboratorio", nullable = false)
-    private Long idLaboratorio;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_laboratorio", nullable = false)
+    private Laboratorio laboratorio;
+
+    @JsonIgnore
+    public boolean isFechasValidas() {
+        return fechaRecepcion == null || fechaEnvio == null || !fechaRecepcion.isBefore(fechaEnvio);
+    }
 
     @PrePersist
     void prePersist() {
         if (fechaEnvio == null) {
             fechaEnvio = LocalDateTime.now();
+        }
+        validarFechas();
+    }
+
+    @PreUpdate
+    void validarFechas() {
+        if (!isFechasValidas()) {
+            throw new IllegalArgumentException("La recepcion no puede ser anterior al envio");
         }
     }
 }
