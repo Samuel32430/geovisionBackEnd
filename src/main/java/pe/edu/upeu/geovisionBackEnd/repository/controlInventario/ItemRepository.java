@@ -43,7 +43,10 @@ public interface ItemRepository extends JpaRepository<Item, Long>, JpaSpecificat
      * Consulta productos habilitados para la venta que cuenten con stock disponible (RF-80).
      * Si no controla stock (ej. CRISTAL), se considera disponible siempre que esté activo.
      */
-    @Query("SELECT i FROM Item i WHERE i.estado = true AND (i.controlaStock = false OR i.stock > 0)")
+    @Query("SELECT i FROM Item i WHERE i.estado = true AND (i.controlaStock = false OR " +
+            "i.stock > (SELECT COALESCE(SUM(r.cantidad), 0) FROM ReservaInventario r " +
+            "WHERE r.idItem = i.idItem AND r.estado = " +
+            "pe.edu.upeu.geovisionBackEnd.enums.controlInventario.EstadoReserva.ACTIVA))")
     List<Item> findActivosDisponiblesParaVenta();
 
     /**

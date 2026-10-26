@@ -4,9 +4,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import java.time.LocalDateTime;
 import jakarta.validation.constraints.*;
+import java.time.LocalDateTime;
 
+/** Creacion: el backend fija el registro, el empleado autenticado y el estado inicial. */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,32 +15,19 @@ import jakarta.validation.constraints.*;
 public class OrdenTrabajoRequestDTO {
 
     @NotBlank(message = "numeroOrden es obligatorio")
-    @Size(max = 50, message = "numeroOrden no puede superar 50 caracteres")
+    @Size(max = 50)
     private String numeroOrden;
 
+    @FutureOrPresent(message = "La fecha estimada no puede ser anterior al momento de creacion")
     private LocalDateTime fechaEntregaEstimada;
-
-    private LocalDateTime fechaEntregaPaciente;
-
-    private LocalDateTime fechaNotificacion;
 
     @NotNull(message = "esUrgente es obligatorio")
     private Boolean esUrgente = false;
 
-    @Size(max = 2000, message = "descripcion no puede superar 2000 caracteres")
+    @Size(max = 2000)
     private String descripcion;
-
-    private LocalDateTime fechaEntregaReal;
 
     @NotNull(message = "idLente es obligatorio")
     @Positive(message = "idLente debe ser positivo")
     private Long idLente;
-
-    @NotNull(message = "idEmpleado es obligatorio")
-    @Positive(message = "idEmpleado debe ser positivo")
-    private Long idEmpleado;
-
-    @NotNull(message = "idEstadoOrdenTrabajo es obligatorio")
-    @Positive(message = "idEstadoOrdenTrabajo debe ser positivo")
-    private Long idEstadoOrdenTrabajo;
 }

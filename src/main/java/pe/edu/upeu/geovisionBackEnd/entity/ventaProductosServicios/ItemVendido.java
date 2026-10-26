@@ -35,7 +35,7 @@ public class ItemVendido {
     private BigDecimal descuento = BigDecimal.ZERO;
 
     @Column(name = "sub_total", nullable = false, precision = 14, scale = 2)
-    private BigDecimal subTotal = BigDecimal.ZERO;
+    private BigDecimal subTotal;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_venta", nullable = false)
@@ -54,8 +54,10 @@ public class ItemVendido {
         if (descuento == null) {
             descuento = BigDecimal.ZERO;
         }
-        if (subTotal == null && precioUnit != null && cantidad != null) {
-            subTotal = precioUnit.multiply(BigDecimal.valueOf(cantidad)).subtract(descuento);
+        if (subTotal == null) {
+            subTotal = precioUnit != null && cantidad != null
+                    ? precioUnit.multiply(BigDecimal.valueOf(cantidad)).subtract(descuento)
+                    : BigDecimal.ZERO;
         }
     }
 }

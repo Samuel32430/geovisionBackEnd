@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovisionBackEnd.dto.elaboracionOrdenTrabajo;
 
+import pe.edu.upeu.geovisionBackEnd.enums.elaboracionOrdenTrabajo.MotivoEnvioLaboratorio;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -19,7 +21,7 @@ public class EnvioLaboratorioResponseDTO {
 
     private LocalDateTime fechaRecepcion;
 
-    private String motivo;
+    private MotivoEnvioLaboratorio motivo;
 
     private String descripcion;
 
