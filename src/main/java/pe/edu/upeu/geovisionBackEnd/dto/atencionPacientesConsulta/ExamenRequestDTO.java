@@ -1,6 +1,7 @@
 package pe.edu.upeu.geovisionBackEnd.dto.atencionPacientesConsulta;
 
 import lombok.Data;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -12,9 +13,11 @@ import jakarta.validation.constraints.Size;
 @NoArgsConstructor
 public class ExamenRequestDTO {
     @NotNull @Positive
+    @JsonDeserialize(using = IdentificadorPacienteDeserializer.class)
     private Long idPaciente;
 
     @NotNull @Min(0) @Max(1)
+    @JsonDeserialize(using = IndicadorPacienteDeserializer.class)
     private Integer esExterno = 0;
 
     @Size(max = 200)
