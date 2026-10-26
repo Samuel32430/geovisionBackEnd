@@ -50,8 +50,9 @@ public class Empleado {
     @JoinColumn(name = "id_cargo", nullable = false)
     private Cargo cargo;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", referencedColumnName = "id_usuario", unique = true)
+    @jakarta.validation.constraints.NotNull
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_usuario", referencedColumnName = "id_usuario", nullable = false, unique = true)
     private Usuario usuario;
 
     @PrePersist

@@ -79,7 +79,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
                 request.getComprobanteId(), request.getMonto());
 
         // a) Buscar comprobante por request.getComprobanteId()
-        Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
+        Comprobante comprobante = comprobanteRepository.findByIdForUpdate(request.getComprobanteId())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Comprobante no encontrado con ID: " + request.getComprobanteId()));
 
         // b) Si el comprobante está anulado, no admite pagos
