@@ -24,6 +24,7 @@ springdoc:
 
 logging:
   level:
+    pe.edu.upeu.geovisionBackEnd: INFO
     pe.edu.upeu.PharmaBackend: INFO
     org.hibernate.SQL: WARN
     org.hibernate.orm.jdbc.bind: OFF
