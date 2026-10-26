@@ -13,5 +13,6 @@ public class PersonaResponseDTO {
     private String telefono;
     private LocalDate fechaNacimiento;
     private Integer sexo;
+    private String direccion;
 }
 

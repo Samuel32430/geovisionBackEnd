@@ -2,10 +2,12 @@ package pe.edu.upeu.geovisionBackEnd.entity.atencionPacientesConsulta;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "DOCUMENTO", uniqueConstraints = @UniqueConstraint(

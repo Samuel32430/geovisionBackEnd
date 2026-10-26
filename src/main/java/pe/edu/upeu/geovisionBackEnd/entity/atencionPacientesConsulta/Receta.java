@@ -2,14 +2,14 @@ package pe.edu.upeu.geovisionBackEnd.entity.atencionPacientesConsulta;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Check;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "RECETA", uniqueConstraints =
@@ -22,7 +22,7 @@ public class Receta {
     private Long idReceta;
 
     @NotNull @Column(name = "fecha_registro", nullable = false, columnDefinition = "DATE")
-    private LocalDateTime fechaRegistro = LocalDateTime.now();
+    private LocalDateTime fechaRegistro = LocalDateTime.now().withNano(0);
 
     @Size(max = 2000) @Column(name = "observaciones", length = 2000)
     private String observaciones;

@@ -1,6 +1,7 @@
 package pe.edu.upeu.geovisionBackEnd.dto.atencionPacientesConsulta;
 
 import lombok.Data;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -14,9 +15,11 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class MedidaOjoRequestDTO {
     @NotNull @Positive
+    @JsonDeserialize(using = IdentificadorPacienteDeserializer.class)
     private Long idMedida;
 
     @NotNull @Positive
+    @JsonDeserialize(using = IdentificadorPacienteDeserializer.class)
     private Long idTipoOjo;
 
     private BigDecimal agudezaVisual;

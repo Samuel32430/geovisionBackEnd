@@ -2,13 +2,13 @@ package pe.edu.upeu.geovisionBackEnd.entity.atencionPacientesConsulta;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "PACIENTE_LOG")
@@ -18,7 +18,7 @@ public class PacienteLog {
     private Long idPacienteLog;
 
     @NotNull @Column(name = "fecha_log", nullable = false, columnDefinition = "DATE")
-    private LocalDateTime fechaLog = LocalDateTime.now();
+    private LocalDateTime fechaLog = LocalDateTime.now().withNano(0);
 
     /** User ID owned by controlAccesos. */
     @NotNull @Positive @Column(name = "id_usuario", nullable = false)
