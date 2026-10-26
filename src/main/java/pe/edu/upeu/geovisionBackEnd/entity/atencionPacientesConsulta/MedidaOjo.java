@@ -2,14 +2,14 @@ package pe.edu.upeu.geovisionBackEnd.entity.atencionPacientesConsulta;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Check;
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "MEDIDA_OJO", uniqueConstraints =

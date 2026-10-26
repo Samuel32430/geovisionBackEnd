@@ -1,6 +1,7 @@
 package pe.edu.upeu.geovisionBackEnd.dto.atencionPacientesConsulta;
 
 import lombok.Data;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class RecetaRequestDTO {
     @NotNull @Positive
+    @JsonDeserialize(using = IdentificadorPacienteDeserializer.class)
     private Long idExamen;
 
     @Size(max = 2000)
