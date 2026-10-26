@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovisionBackEnd.dto.elaboracionOrdenTrabajo;
 
+import pe.edu.upeu.geovisionBackEnd.enums.elaboracionOrdenTrabajo.EstadoControlCalidad;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -16,7 +18,7 @@ public class ControlCalidadResponseDTO {
 
     private LocalDateTime fechaRegistro;
 
-    private String estado;
+    private EstadoControlCalidad estado;
 
     private String observaciones;
 
