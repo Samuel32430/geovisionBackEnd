@@ -11,6 +11,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,6 +26,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Empleado {
 
     @Id
@@ -37,14 +39,20 @@ public class Empleado {
     private Persona persona;
 
     @Column(name = "estado", nullable = false)
+    @Builder.Default
     private Integer estado = 1;
 
     @Column(name = "fecha_contrato", nullable = false)
+    @Builder.Default
     private LocalDate fechaContrato = LocalDate.now();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_cargo", nullable = false)
     private Cargo cargo;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario", referencedColumnName = "id_usuario", unique = true)
+    private Usuario usuario;
 
     @PrePersist
     public void prePersist() {
