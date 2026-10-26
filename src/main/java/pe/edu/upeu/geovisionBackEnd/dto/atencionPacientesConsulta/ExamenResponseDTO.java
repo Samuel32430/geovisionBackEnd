@@ -12,6 +12,7 @@ public class ExamenResponseDTO {
     private LocalDateTime fechaRegistro;
     private Integer esExterno;
     private String profesionalExterno;
+    private String documentoExterno;
     private String observaciones;
 }
 

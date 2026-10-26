@@ -1,6 +1,7 @@
 package pe.edu.upeu.geovisionBackEnd.dto.atencionPacientesConsulta;
 
 import lombok.Data;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,9 +15,11 @@ public class DocumentoRequestDTO {
     private String numero;
 
     @NotNull @Positive
+    @JsonDeserialize(using = IdentificadorPacienteDeserializer.class)
     private Long idPersona;
 
     @NotNull @Positive
+    @JsonDeserialize(using = IdentificadorPacienteDeserializer.class)
     private Long idTipoDocumento;
 }
 
