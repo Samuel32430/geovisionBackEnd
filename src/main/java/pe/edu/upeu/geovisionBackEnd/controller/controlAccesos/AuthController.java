@@ -12,15 +12,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LoginRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LoginResponseDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LogoutResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.UsuarioResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.service.service.controlAccesos.AuthService;
 
 /**
- * Controlador REST para el proceso de autenticación y sesiones (CU-SEG15).
+ * Controlador REST para el proceso de autenticación y sesiones (CU-SEG15 Login y CU-SEG16 Logout).
  */
 @RestController
 @RequestMapping("/api/v1/auth")
-@Tag(name = "Autenticación", description = "Endpoints para el inicio y consulta de sesión de usuarios")
+@Tag(name = "Autenticación", description = "Endpoints para el inicio, consulta y cierre de sesión de usuarios")
 public class AuthController {
 
     private final AuthService authService;
@@ -30,7 +31,7 @@ public class AuthController {
     }
 
     /**
-     * Endpoint público para iniciar sesión.
+     * Endpoint público para iniciar sesión (CU-SEG15).
      * Retorna token JWT y datos de perfil con roles y permisos asignados.
      */
     @PostMapping("/login")
@@ -46,5 +47,15 @@ public class AuthController {
     @Operation(summary = "Perfil actual", description = "Retorna los datos del usuario dueño del token Bearer enviado")
     public ResponseEntity<UsuarioResponseDTO> me(Authentication authentication) {
         return ResponseEntity.ok(authService.usuarioActual(authentication.getName()));
+    }
+
+    /**
+     * Endpoint protegido para cerrar sesión de forma segura (CU-SEG16).
+     * Invalida la sesión activa y registra el evento de desconexión en auditoría.
+     */
+    @PostMapping("/logout")
+    @Operation(summary = "Cerrar sesión", description = "Cierra la sesión activa del usuario y registra el evento de salida")
+    public ResponseEntity<LogoutResponseDTO> logout(Authentication authentication) {
+        return ResponseEntity.ok(authService.logout(authentication));
     }
 }
