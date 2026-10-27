@@ -398,7 +398,7 @@ CREATE TABLE MOVIMIENTO_STOCK_LOG (
 	cantidad NUMBER(10) NOT NULL,
 	stock_previo NUMBER(10) NOT NULL,
 	stock_posterior NUMBER(10) NOT NULL,
-	motivo NUMBER(4) NOT NULL,
+	motivo NUMBER(2) NOT NULL,
 	observaciones VARCHAR2(500),
 	id_producto NUMBER NOT NULL,
 	id_usuario NUMBER NOT NULL,
