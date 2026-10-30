@@ -74,4 +74,43 @@ public class JwtService {
     public long getExpiracionSegundos() {
         return expiracionMinutos * 60;
     }
+
+    /**
+     * Genera un token JWT temporal para recuperación de contraseña.
+     */
+    public String generarTokenRecuperacion(String email, long minutosExpiracion) {
+        Instant ahora = Instant.now();
+        Instant expira = ahora.plus(minutosExpiracion, ChronoUnit.MINUTES);
+
+        return Jwts.builder()
+                .subject(email)
+                .claim("purpose", "PASSWORD_RESET")
+                .issuedAt(Date.from(ahora))
+                .expiration(Date.from(expira))
+                .signWith(clave)
+                .compact();
+    }
+
+    /**
+     * Valida que un token sea legítimo, no haya expirado y tenga propósito de recuperación.
+     */
+    public boolean validarTokenRecuperacion(String token) {
+        try {
+            Claims claims = leerClaims(token);
+            return "PASSWORD_RESET".equals(claims.get("purpose", String.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Extrae el email o identificador del usuario de un token de recuperación validado.
+     */
+    public String extraerEmailRecuperacion(String token) {
+        Claims claims = leerClaims(token);
+        if (!"PASSWORD_RESET".equals(claims.get("purpose", String.class))) {
+            throw new IllegalArgumentException("El token no es un token de recuperación válido");
+        }
+        return claims.getSubject();
+    }
 }

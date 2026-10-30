@@ -13,34 +13,44 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LoginRequestDTO;
-import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.LoginResponseDTO;
-import pe.edu.upeu.geovisionBackEnd.dto.controlAccesos.UsuarioResponseDTO;
-import pe.edu.upeu.geovisionBackEnd.entity.atencionPacientesConsulta.Persona;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Auditoria;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Empleado;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Rol;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Usuario;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.UsuarioRol;
-import pe.edu.upeu.geovisionBackEnd.mapper.controlAccesos.UsuarioMapper;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.AuditoriaRepository;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.EmpleadoRepository;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.RolPermisoRepository;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.UsuarioRepository;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.UsuarioRolRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import pe.edu.upeu.geovisionBackEnd.dto.CambioPasswordRequestDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.LoginRequestDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.LoginResponseDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.LogoutResponseDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.RecuperarPasswordRequestDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.ResetPasswordRequestDTO;
+import pe.edu.upeu.geovisionBackEnd.entity.Empleado;
+import pe.edu.upeu.geovisionBackEnd.entity.Persona;
+import pe.edu.upeu.geovisionBackEnd.entity.Rol;
+import pe.edu.upeu.geovisionBackEnd.entity.Usuario;
+import pe.edu.upeu.geovisionBackEnd.entity.UsuarioRol;
+import pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum;
+import pe.edu.upeu.geovisionBackEnd.enums.TipoLogEnum;
+import pe.edu.upeu.geovisionBackEnd.exception.ReglaNegocioException;
+import pe.edu.upeu.geovisionBackEnd.mapper.PermisoMapper;
+import pe.edu.upeu.geovisionBackEnd.mapper.RolMapper;
+import pe.edu.upeu.geovisionBackEnd.mapper.UsuarioMapper;
+import pe.edu.upeu.geovisionBackEnd.repository.EmpleadoRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.RolPermisoRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.UsuarioRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.UsuarioRolRepository;
 import pe.edu.upeu.geovisionBackEnd.security.JwtService;
-import pe.edu.upeu.geovisionBackEnd.service.impl.controlAccesos.AuthServiceImpl;
+import pe.edu.upeu.geovisionBackEnd.service.impl.AuthServiceImpl;
+import pe.edu.upeu.geovisionBackEnd.service.service.EmailService;
+import pe.edu.upeu.geovisionBackEnd.service.service.UsuarioLogService;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Pruebas Unitarias - AuthService (Login CU-SEG15)")
 class AuthServiceTest {
 
     @Mock
@@ -53,176 +63,158 @@ class AuthServiceTest {
     private UsuarioRepository usuarioRepository;
 
     @Mock
+    private EmpleadoRepository empleadoRepository;
+
+    @Mock
     private UsuarioRolRepository usuarioRolRepository;
 
     @Mock
     private RolPermisoRepository rolPermisoRepository;
 
     @Mock
-    private EmpleadoRepository empleadoRepository;
+    private PasswordEncoder passwordEncoder;
 
     @Mock
-    private AuditoriaRepository auditoriaRepository;
+    private UsuarioLogService usuarioLogService;
+
+    @Mock
+    private EmailService emailService;
 
     @Mock
     private UsuarioMapper usuarioMapper;
 
+    @Mock
+    private RolMapper rolMapper;
+
+    @Mock
+    private PermisoMapper permisoMapper;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
-    private Usuario usuarioPrueba;
-    private Empleado empleadoPrueba;
-    private Persona personaPrueba;
-    private Rol rolVendedor;
+    private Usuario testUser;
+    private Persona testPersona;
+    private Rol testRol;
 
     @BeforeEach
     void setUp() {
-        usuarioPrueba = Usuario.builder()
-                .idUsuario(1L)
-                .nombre("samuel")
-                .correo("samuel@geovision.pe")
-                .password("$2a$10$hashedpassword")
-                .estado(1)
+        testPersona = Persona.builder()
+                .idPersona(1L)
+                .nombres("Juan")
+                .apellidos("Pérez")
                 .build();
 
-        personaPrueba = new Persona();
-        personaPrueba.setIdPersona(10L);
-        personaPrueba.setNombres("Samuel");
-        personaPrueba.setApellidos("Vilca");
+        testUser = Usuario.builder()
+                .idUsuario(1L)
+                .nombre("juan.perez")
+                .correo("juan@geovision.com")
+                .password("$2a$10$encodedHash")
+                .estado(EstadoGeneralEnum.ACTIVO)
+                .persona(testPersona)
+                .build();
 
-        empleadoPrueba = new Empleado();
-        empleadoPrueba.setIdPersona(10L);
-        empleadoPrueba.setPersona(personaPrueba);
-        empleadoPrueba.setEstado(1);
-        empleadoPrueba.setUsuario(usuarioPrueba);
-
-        rolVendedor = Rol.builder()
-                .idRol(2L)
+        testRol = Rol.builder()
+                .idRol(1L)
                 .nombre("VENDEDOR")
                 .build();
     }
 
     @Test
-    @DisplayName("Debe autenticar exitosamente por nombre de usuario y retornar LoginResponseDTO con token")
-    void login_ConNombreUsuarioExitoso() {
-        LoginRequestDTO request = LoginRequestDTO.builder()
-                .username("samuel")
-                .password("Password123*")
-                .build();
+    @DisplayName("CUS15: Login exitoso retorna token y roles")
+    void loginExitoso() {
+        LoginRequestDTO request = new LoginRequestDTO("juan.perez", "password123");
 
-        UserDetails userDetails = User.withUsername("samuel")
-                .password("encoded")
+        UserDetails principal = User.withUsername("juan.perez")
+                .password("hash")
                 .authorities(Collections.emptyList())
                 .build();
 
         Authentication auth = mock(Authentication.class);
-        when(auth.getPrincipal()).thenReturn(userDetails);
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(principal);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(auth);
+        when(usuarioRepository.findByNombreOrCorreo("juan.perez", "juan.perez")).thenReturn(Optional.of(testUser));
+        when(jwtService.generarToken(principal)).thenReturn("fake.jwt.token");
 
-        when(usuarioRepository.findByNombreOrCorreo("samuel", "samuel"))
-                .thenReturn(Optional.of(usuarioPrueba));
-
-        when(jwtService.generarToken(userDetails)).thenReturn("jwt.token.mock");
-
-        UsuarioRol usuarioRol = UsuarioRol.builder()
-                .idUsuarioRol(1L)
-                .usuario(usuarioPrueba)
-                .rol(rolVendedor)
-                .build();
+        UsuarioRol usuarioRol = UsuarioRol.builder().usuario(testUser).rol(testRol).build();
         when(usuarioRolRepository.findByUsuarioIdUsuario(1L)).thenReturn(List.of(usuarioRol));
-        when(rolPermisoRepository.findNombresPermisosByRolId(2L)).thenReturn(List.of("VENTAS_REGISTRAR", "VENTAS_LEER"));
-        when(empleadoRepository.findByUsuarioIdUsuario(1L)).thenReturn(Optional.of(empleadoPrueba));
+        when(rolPermisoRepository.findNombresPermisosByRolId(1L)).thenReturn(List.of("VENTAS_LEER", "VENTAS_REGISTRAR"));
 
         LoginResponseDTO response = authService.login(request);
 
-        assertNotNull(response);
-        assertEquals("jwt.token.mock", response.getToken());
-        assertEquals("Bearer", response.getTipoToken());
-        assertEquals(1L, response.getIdUsuario());
-        assertEquals("samuel", response.getNombre());
-        assertEquals("samuel@geovision.pe", response.getCorreo());
-        assertTrue(response.getRoles().contains("VENDEDOR"));
-        assertTrue(response.getPermisos().contains("VENTAS_REGISTRAR"));
-        assertEquals(10L, response.getIdEmpleado());
-        assertEquals("Samuel Vilca", response.getNombreCompleto());
-
-        verify(auditoriaRepository, times(1)).save(any(Auditoria.class));
+        assertThat(response).isNotNull();
+        assertThat(response.getToken()).isEqualTo("fake.jwt.token");
+        assertThat(response.getUsername()).isEqualTo("juan.perez");
+        assertThat(response.getRoles()).containsExactly("VENDEDOR");
+        assertThat(response.getPermisos()).containsExactlyInAnyOrder("VENTAS_LEER", "VENTAS_REGISTRAR");
+        verify(usuarioLogService).registrar(testUser, TipoLogEnum.LOGIN);
     }
 
     @Test
-    @DisplayName("Debe autenticar exitosamente cuando se ingresa el correo electrónico")
-    void login_ConCorreoElectronicoExitoso() {
-        LoginRequestDTO request = LoginRequestDTO.builder()
-                .username("samuel@geovision.pe")
-                .password("Password123*")
-                .build();
-
-        UserDetails userDetails = User.withUsername("samuel")
-                .password("encoded")
-                .authorities(Collections.emptyList())
-                .build();
-
-        Authentication auth = mock(Authentication.class);
-        when(auth.getPrincipal()).thenReturn(userDetails);
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(auth);
-
-        when(usuarioRepository.findByNombreOrCorreo("samuel", "samuel"))
-                .thenReturn(Optional.of(usuarioPrueba));
-        when(jwtService.generarToken(userDetails)).thenReturn("jwt.token.mock");
-        when(usuarioRolRepository.findByUsuarioIdUsuario(1L)).thenReturn(Collections.emptyList());
-        when(empleadoRepository.findByUsuarioIdUsuario(1L)).thenReturn(Optional.of(empleadoPrueba));
-
-        LoginResponseDTO response = authService.login(request);
-
-        assertNotNull(response);
-        assertEquals("samuel", response.getNombre());
-        assertEquals("samuel@geovision.pe", response.getCorreo());
-    }
-
-    @Test
-    @DisplayName("Debe propagar BadCredentialsException si la autenticación falla")
-    void login_CredencialesInvalidas_DebeLanzarExcepcion() {
-        LoginRequestDTO request = LoginRequestDTO.builder()
-                .username("samuel")
-                .password("ClaveErronea")
-                .build();
+    @DisplayName("CUS15: Login fallido por credenciales inválidas registra intento fallido")
+    void loginCredencialesInvalidas() {
+        LoginRequestDTO request = new LoginRequestDTO("juan.perez", "wrongPassword");
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
+        when(usuarioRepository.findByNombreOrCorreo("juan.perez", "juan.perez")).thenReturn(Optional.of(testUser));
 
-        assertThrows(BadCredentialsException.class, () -> authService.login(request));
-        verify(auditoriaRepository, never()).save(any(Auditoria.class));
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BadCredentialsException.class);
+
+        verify(usuarioLogService).registrar(testUser, TipoLogEnum.INTENTO_FALLIDO);
     }
 
     @Test
-    @DisplayName("Debe consultar y retornar el perfil del usuario autenticado")
-    void usuarioActual_Exitoso() {
-        when(usuarioRepository.findByNombreOrCorreo("samuel", "samuel"))
-                .thenReturn(Optional.of(usuarioPrueba));
-        when(usuarioRolRepository.findNombresRolesByUsuarioId(1L))
-                .thenReturn(List.of("VENDEDOR"));
-        when(empleadoRepository.findByUsuarioIdUsuario(1L))
-                .thenReturn(Optional.of(empleadoPrueba));
+    @DisplayName("CUS16: Logout exitoso registra auditoría de LOGOUT")
+    void logoutExitoso() {
+        when(usuarioRepository.findByNombreOrCorreo("juan.perez", "juan.perez")).thenReturn(Optional.of(testUser));
 
-        UsuarioResponseDTO expectedDTO = UsuarioResponseDTO.builder()
-                .idUsuario(1L)
-                .nombre("samuel")
-                .correo("samuel@geovision.pe")
-                .estado(1)
-                .idPersona(10L)
-                .nombreCompletoEmpleado("Samuel Vilca")
-                .roles(List.of("VENDEDOR"))
-                .build();
+        LogoutResponseDTO response = authService.logout("juan.perez");
 
-        when(usuarioMapper.toResponseDTO(usuarioPrueba, List.of("VENDEDOR"), 10L, "Samuel Vilca"))
-                .thenReturn(expectedDTO);
+        assertThat(response.getExitoso()).isTrue();
+        assertThat(response.getMensaje()).contains("exitosamente");
+        verify(usuarioLogService).registrar(testUser, TipoLogEnum.LOGOUT);
+    }
 
-        UsuarioResponseDTO result = authService.usuarioActual("samuel");
+    @Test
+    @DisplayName("Cambio de contraseña exitoso")
+    void cambiarPasswordExitoso() {
+        CambioPasswordRequestDTO request = new CambioPasswordRequestDTO("oldPass", "newPass123", "newPass123");
 
-        assertNotNull(result);
-        assertEquals("samuel", result.getNombre());
-        assertEquals("Samuel Vilca", result.getNombreCompletoEmpleado());
+        when(usuarioRepository.findByNombreOrCorreo("juan.perez", "juan.perez")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("oldPass", testUser.getPassword())).thenReturn(true);
+        when(passwordEncoder.matches("newPass123", testUser.getPassword())).thenReturn(false);
+        when(passwordEncoder.encode("newPass123")).thenReturn("$2a$10$newHash");
+
+        authService.cambiarPassword("juan.perez", request);
+
+        verify(usuarioRepository).save(testUser);
+        verify(usuarioLogService).registrar(testUser, TipoLogEnum.CAMBIO_PASSWORD);
+    }
+
+    @Test
+    @DisplayName("CUS19: Flujo de recuperación y restablecimiento de contraseña")
+    void recuperacionYRestablecimientoPassword() {
+        // 1. Solicitud de recuperación
+        RecuperarPasswordRequestDTO solRequest = new RecuperarPasswordRequestDTO("juan@geovision.com");
+        when(usuarioRepository.findByCorreo("juan@geovision.com")).thenReturn(Optional.of(testUser));
+        when(jwtService.generarTokenRecuperacion("juan@geovision.com", 15)).thenReturn("recovery.jwt.token");
+
+        authService.solicitarRecuperacionPassword(solRequest);
+        verify(emailService).enviarRecuperacionPassword("juan@geovision.com", "recovery.jwt.token", "juan.perez");
+
+        // 2. Validación de token
+        when(jwtService.validarTokenRecuperacion("recovery.jwt.token")).thenReturn(true);
+        assertThat(authService.validarTokenRecuperacion("recovery.jwt.token")).isTrue();
+
+        // 3. Reset de contraseña
+        ResetPasswordRequestDTO resetRequest = new ResetPasswordRequestDTO("recovery.jwt.token", "brandNewPass1", "brandNewPass1");
+        when(jwtService.extraerEmailRecuperacion("recovery.jwt.token")).thenReturn("juan@geovision.com");
+        when(passwordEncoder.encode("brandNewPass1")).thenReturn("$2a$10$brandNewHash");
+
+        authService.restablecerPassword(resetRequest);
+
+        verify(usuarioRepository).save(testUser);
+        verify(usuarioLogService).registrar(testUser, TipoLogEnum.CAMBIO_PASSWORD);
     }
 }

@@ -8,13 +8,14 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Empleado;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.Usuario;
-import pe.edu.upeu.geovisionBackEnd.entity.controlAccesos.UsuarioRol;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.EmpleadoRepository;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.RolPermisoRepository;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.UsuarioRepository;
-import pe.edu.upeu.geovisionBackEnd.repository.controlAccesos.UsuarioRolRepository;
+import pe.edu.upeu.geovisionBackEnd.entity.Empleado;
+import pe.edu.upeu.geovisionBackEnd.entity.Usuario;
+import pe.edu.upeu.geovisionBackEnd.entity.UsuarioRol;
+import pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum;
+import pe.edu.upeu.geovisionBackEnd.repository.EmpleadoRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.RolPermisoRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.UsuarioRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.UsuarioRolRepository;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -54,8 +55,8 @@ public class UsuarioDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con: " + termino));
 
         Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
-        boolean empleadoActivo = empleadoOpt.map(e -> e.getEstado() != null && e.getEstado() == 1).orElse(true);
-        boolean cuentaHabilitada = (usuario.getEstado() != null && usuario.getEstado() == 1) && empleadoActivo;
+        boolean empleadoActivo = empleadoOpt.map(e -> e.getEstado() == EstadoGeneralEnum.ACTIVO).orElse(true);
+        boolean cuentaHabilitada = (usuario.getEstado() == EstadoGeneralEnum.ACTIVO) && empleadoActivo;
 
         List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
         Set<GrantedAuthority> authorities = new HashSet<>();
