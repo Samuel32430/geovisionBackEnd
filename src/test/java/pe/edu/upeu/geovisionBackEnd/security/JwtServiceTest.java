@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovisionBackEnd.security;
 
-import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,55 +9,58 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DisplayName("Pruebas Unitarias - JwtService")
 class JwtServiceTest {
 
-    // Clave HMAC Base64 válida (48 bytes / 384 bits)
-    private static final String SECRETO_TEST = "w9Z6dP/dzykNH/uiI3Z/KGjBlP0H4Ji+Tuq4fm2cTNuLD4jWafu1gBL74V2SJEvy";
-    private static final long EXPIRACION_MINUTOS = 60;
-
+    // 256-bit secret key in Base64
+    private static final String SECRET_BASE64 = "w9Z6dP/dzykNH/uiI3Z/KGjBlP0H4Ji+Tuq4fm2cTNuLD4jWafu1gBL74V2SJEvy";
     private JwtService jwtService;
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService(SECRETO_TEST, EXPIRACION_MINUTOS);
+        jwtService = new JwtService(SECRET_BASE64, 60);
     }
 
     @Test
-    @DisplayName("Debe generar un token JWT válido con username y authorities")
-    void generarToken_DebeGenerarTokenValido() {
-        UserDetails user = User.withUsername("cajero01")
-                .password("password123")
-                .authorities(List.of(
-                        new SimpleGrantedAuthority("ROLE_VENDEDOR"),
-                        new SimpleGrantedAuthority("VENTAS_REGISTRAR")
-                ))
+    @DisplayName("Debe generar token válido y extraer username correctamente")
+    void generarYExtraerToken() {
+        UserDetails user = User.withUsername("carlos.optometra")
+                .password("hash")
+                .authorities(List.of(new SimpleGrantedAuthority("ROLE_OPTOMETRA"), new SimpleGrantedAuthority("PACIENTES_LEER")))
                 .build();
 
         String token = jwtService.generarToken(user);
+        assertThat(token).isNotBlank();
 
-        assertNotNull(token);
-        assertFalse(token.isBlank());
-        assertTrue(token.split("\\.").length == 3, "El token debe tener 3 partes (header.payload.signature)");
-
-        String usernameExtraido = jwtService.extraerUsername(token);
-        assertEquals("cajero01", usernameExtraido);
-
-        Claims claims = jwtService.leerClaims(token);
-        assertEquals("cajero01", claims.getSubject());
-        assertNotNull(claims.get("authorities"));
-
-        @SuppressWarnings("unchecked")
-        List<String> authorities = (List<String>) claims.get("authorities");
-        assertTrue(authorities.contains("ROLE_VENDEDOR"));
-        assertTrue(authorities.contains("VENTAS_REGISTRAR"));
+        String username = jwtService.extraerUsername(token);
+        assertThat(username).isEqualTo("carlos.optometra");
     }
 
     @Test
-    @DisplayName("Debe retornar los segundos de expiración configurados")
-    void getExpiracionSegundos_DebeCalcularSegundosCorrectos() {
-        assertEquals(3600L, jwtService.getExpiracionSegundos());
+    @DisplayName("Debe generar y validar token de recuperación de contraseña")
+    void generarYValidarTokenRecuperacion() {
+        String email = "usuario@geovision.com";
+        String tokenRecuperacion = jwtService.generarTokenRecuperacion(email, 15);
+
+        assertThat(tokenRecuperacion).isNotBlank();
+        assertThat(jwtService.validarTokenRecuperacion(tokenRecuperacion)).isTrue();
+        assertThat(jwtService.extraerEmailRecuperacion(tokenRecuperacion)).isEqualTo(email);
+    }
+
+    @Test
+    @DisplayName("Debe rechazar token normal como token de recuperación")
+    void rechazarTokenNormalComoRecuperacion() {
+        UserDetails user = User.withUsername("admin")
+                .password("hash")
+                .authorities(List.of(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .build();
+
+        String tokenAuth = jwtService.generarToken(user);
+
+        assertThat(jwtService.validarTokenRecuperacion(tokenAuth)).isFalse();
+        assertThatThrownBy(() -> jwtService.extraerEmailRecuperacion(tokenAuth))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -32,6 +32,9 @@ public class SecurityConfig {
 
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/login",
+            "/api/v1/auth/recuperar-password",
+            "/api/v1/auth/reset-password",
+            "/api/v1/auth/validar-token",
             "/api/health",
             "/swagger-ui.html",
             "/swagger-ui/**",
@@ -60,6 +63,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(RUTAS_PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/v1/usuarios/**", "/api/v1/roles/**", "/api/v1/permisos/**")
+                        .hasAnyAuthority("SEGURIDAD_ADMINISTRAR", "ROLE_ADMINISTRADOR", "ROLE_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(errores -> errores
                         .authenticationEntryPoint(authenticationEntryPoint)
