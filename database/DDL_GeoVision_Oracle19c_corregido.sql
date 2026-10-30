@@ -142,6 +142,7 @@ CREATE TABLE MEDIDA_OJO (
 
 CREATE TABLE MEDIDA (
 	id_medida NUMBER GENERATED ALWAYS AS IDENTITY,
+	tipo_medida NUMBER(1) DEFAULT 1 NOT NULL,
 	distancia_pupilar NUMBER(5,2),
 	prisma NUMBER(5,2),
 	observaciones VARCHAR2(255),
@@ -389,6 +390,23 @@ ALTER TABLE ENVIO_LABORATORIO
 ADD (id_orden_trabajo NUMBER NOT NULL, id_laboratorio NUMBER NOT NULL)
 ADD CONSTRAINT ENVIO_LAB_orden_trabajo_fk FOREIGN KEY (id_orden_trabajo) REFERENCES ORDEN_TRABAJO(id_orden_trabajo)
 ADD CONSTRAINT ENVIO_LAB_laboratorio_fk FOREIGN KEY (id_laboratorio) REFERENCES LABORATORIO(id_laboratorio);
+
+-- Historial / Kardex de movimientos de inventario
+CREATE TABLE MOVIMIENTO_STOCK_LOG (
+	id_movimiento NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	cantidad NUMBER(10) NOT NULL,
+	stock_previo NUMBER(10) NOT NULL,
+	stock_posterior NUMBER(10) NOT NULL,
+	motivo NUMBER(2) NOT NULL,
+	observaciones VARCHAR2(500),
+	id_producto NUMBER NOT NULL,
+	id_usuario NUMBER NOT NULL,
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_pk PRIMARY KEY (id_movimiento),
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_producto_fk FOREIGN KEY (id_producto) REFERENCES PRODUCTO(id_producto),
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario),
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_cantidad_ck CHECK (cantidad > 0)
+);
 
 
 /*==================================================
