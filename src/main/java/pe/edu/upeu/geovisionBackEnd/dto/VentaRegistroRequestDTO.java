@@ -20,7 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 public class VentaRegistroRequestDTO {
 
-    @NotNull(message = "El ID del vendedor/empleado es obligatorio")
+    // Opcional en el request: si no se envía, se deduce del usuario/empleado autenticado
     private Long idEmpleado;
 
     private Long idPaciente;
