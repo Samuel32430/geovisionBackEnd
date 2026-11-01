@@ -15,6 +15,9 @@ public interface LenteRepository extends JpaRepository<Lente, Long> {
 
     List<Lente> findByRecetaIdReceta(Long idReceta);
 
+    @EntityGraph(attributePaths = {"materialCristal", "montura.producto"})
+    List<Lente> findByRecetaIdRecetaOrderByIdLenteAsc(Long idReceta);
+
     List<Lente> findByMaterialCristalIdMaterialCristal(Long idMaterialCristal);
 
     List<Lente> findByMonturaIdProducto(Long idProducto);

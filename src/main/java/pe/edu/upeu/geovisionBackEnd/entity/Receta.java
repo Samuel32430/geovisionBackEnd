@@ -32,7 +32,7 @@ public class Receta {
     @Column(name = "id_receta")
     private Long idReceta;
 
-    @Column(name = "fecha_registro", nullable = false)
+    @Column(name = "fecha_registro", nullable = false, columnDefinition = "DATE")
     private LocalDateTime fechaRegistro;
 
     @Column(name = "es_externo", nullable = false)
@@ -50,7 +50,7 @@ public class Receta {
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {
-            this.fechaRegistro = LocalDateTime.now();
+            this.fechaRegistro = LocalDateTime.now().withNano(0);
         }
         if (this.esExterno == null) {
             this.esExterno = 0;

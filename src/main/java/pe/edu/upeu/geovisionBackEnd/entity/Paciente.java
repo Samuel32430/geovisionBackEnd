@@ -35,9 +35,9 @@ public class Paciente {
     @Column(name = "id_persona")
     private Long idPersona;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId
-    @JoinColumn(name = "id_persona")
+    @JoinColumn(name = "id_persona", nullable = false)
     private Persona persona;
 
     @Convert(converter = EstadoGeneralConverter.class)
@@ -45,7 +45,7 @@ public class Paciente {
     @Builder.Default
     private EstadoGeneralEnum estado = EstadoGeneralEnum.ACTIVO;
 
-    @Column(name = "fecha_registro", nullable = false)
+    @Column(name = "fecha_registro", nullable = false, columnDefinition = "DATE")
     private LocalDateTime fechaRegistro;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -55,7 +55,7 @@ public class Paciente {
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {
-            this.fechaRegistro = LocalDateTime.now();
+            this.fechaRegistro = LocalDateTime.now().withNano(0);
         }
         if (this.estado == null) {
             this.estado = EstadoGeneralEnum.ACTIVO;
