@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import pe.edu.upeu.geovisionBackEnd.enums.MaterialMonturaEnum;
 import pe.edu.upeu.geovisionBackEnd.enums.ModeloMonturaEnum;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,6 +17,11 @@ import pe.edu.upeu.geovisionBackEnd.enums.ModeloMonturaEnum;
 public class MonturaDTO {
 
     private Long idProducto;
+
+    private String codigo;
+    private String nombre;
+    private BigDecimal precio;
+    private Integer stock;
 
     @Size(max = 100, message = "El color no debe superar los 100 caracteres")
     private String color;
