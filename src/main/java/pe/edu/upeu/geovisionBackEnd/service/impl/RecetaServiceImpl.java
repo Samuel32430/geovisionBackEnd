@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import pe.edu.upeu.geovisionBackEnd.dto.MedidaRequestDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.LenteRequestDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.LenteResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.RecetaRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.RecetaResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.entity.Empleado;
@@ -13,6 +15,12 @@ import pe.edu.upeu.geovisionBackEnd.entity.MedidaOjo;
 import pe.edu.upeu.geovisionBackEnd.entity.Paciente;
 import pe.edu.upeu.geovisionBackEnd.entity.Receta;
 import pe.edu.upeu.geovisionBackEnd.entity.Usuario;
+import pe.edu.upeu.geovisionBackEnd.entity.Lente;
+import pe.edu.upeu.geovisionBackEnd.entity.LenteMedida;
+import pe.edu.upeu.geovisionBackEnd.entity.LenteTratamientoCristal;
+import pe.edu.upeu.geovisionBackEnd.entity.MaterialCristal;
+import pe.edu.upeu.geovisionBackEnd.entity.Montura;
+import pe.edu.upeu.geovisionBackEnd.entity.TratamientoCristal;
 import pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovisionBackEnd.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovisionBackEnd.exception.ReglaNegocioException;
@@ -24,11 +32,20 @@ import pe.edu.upeu.geovisionBackEnd.repository.PacienteRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.PersonaRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.RecetaRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.UsuarioRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.LenteRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.LenteMedidaRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.LenteTratamientoCristalRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.MaterialCristalRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.TratamientoCristalRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.MonturaRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.VentaRepository;
 import pe.edu.upeu.geovisionBackEnd.service.service.RecetaService;
 import pe.edu.upeu.geovisionBackEnd.util.OpticaValidator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Comparator;
 
 @Service
 @Validated
@@ -44,12 +61,24 @@ public class RecetaServiceImpl implements RecetaService {
     private final EmpleadoRepository empleadoRepository;
     private final RecetaMapper recetaMapper;
     private final OpticaValidator opticaValidator;
+    private final LenteRepository lenteRepository;
+    private final LenteMedidaRepository lenteMedidaRepository;
+    private final LenteTratamientoCristalRepository lenteTratamientoCristalRepository;
+    private final MaterialCristalRepository materialCristalRepository;
+    private final TratamientoCristalRepository tratamientoCristalRepository;
+    private final MonturaRepository monturaRepository;
+    private final VentaRepository ventaRepository;
 
     public RecetaServiceImpl(RecetaRepository recetaRepository, MedidaRepository medidaRepository,
                              MedidaOjoRepository medidaOjoRepository, PacienteRepository pacienteRepository,
                              PersonaRepository personaRepository, UsuarioRepository usuarioRepository,
                              EmpleadoRepository empleadoRepository, RecetaMapper recetaMapper,
-                             OpticaValidator opticaValidator) {
+                             OpticaValidator opticaValidator, LenteRepository lenteRepository,
+                             LenteMedidaRepository lenteMedidaRepository,
+                             LenteTratamientoCristalRepository lenteTratamientoCristalRepository,
+                             MaterialCristalRepository materialCristalRepository,
+                             TratamientoCristalRepository tratamientoCristalRepository,
+                             MonturaRepository monturaRepository, VentaRepository ventaRepository) {
         this.recetaRepository = recetaRepository;
         this.medidaRepository = medidaRepository;
         this.medidaOjoRepository = medidaOjoRepository;
@@ -59,6 +88,86 @@ public class RecetaServiceImpl implements RecetaService {
         this.empleadoRepository = empleadoRepository;
         this.recetaMapper = recetaMapper;
         this.opticaValidator = opticaValidator;
+        this.lenteRepository = lenteRepository;
+        this.lenteMedidaRepository = lenteMedidaRepository;
+        this.lenteTratamientoCristalRepository = lenteTratamientoCristalRepository;
+        this.materialCristalRepository = materialCristalRepository;
+        this.tratamientoCristalRepository = tratamientoCristalRepository;
+        this.monturaRepository = monturaRepository;
+        this.ventaRepository = ventaRepository;
+    }
+
+    @Override
+    public LenteResponseDTO configurarLente(Long idReceta, LenteRequestDTO request) {
+        if (!request.getIdReceta().equals(idReceta)) {
+            throw new ReglaNegocioException("La receta del cuerpo debe coincidir con la receta de la ruta");
+        }
+        Receta receta = recetaRepository.findByIdForUpdate(idReceta)
+                .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada"));
+        // Ventas debe tomar este mismo bloqueo antes de asociar una venta a la receta.
+        if (ventaRepository.existsByRecetaIdReceta(idReceta)) {
+            throw new ReglaNegocioException("No se puede configurar una receta que ya está vinculada a una venta");
+        }
+        MaterialCristal material = materialCristalRepository.findById(request.getIdMaterialCristal())
+                .orElseThrow(() -> new RecursosNoEncontradosException("Material de cristal no encontrado"));
+        Montura montura = null;
+        if (request.getIdProducto() != null) {
+            montura = monturaRepository.findById(request.getIdProducto())
+                    .orElseThrow(() -> new RecursosNoEncontradosException("Montura no encontrada"));
+            if (montura.getProducto().getEstado() != EstadoGeneralEnum.ACTIVO
+                    || montura.getProducto().getStock() <= 0) {
+                throw new ReglaNegocioException("La montura debe estar activa y tener stock disponible");
+            }
+        }
+        List<Medida> medidas = seleccionarMedidas(idReceta, request.getMedidasIds());
+        List<TratamientoCristal> tratamientos = seleccionarTratamientos(request.getTratamientosCristalIds());
+        Lente lente = lenteRepository.saveAndFlush(Lente.builder().receta(receta).materialCristal(material)
+                .montura(montura).subTotal(request.getSubTotal()).build());
+        lenteMedidaRepository.saveAllAndFlush(medidas.stream()
+                .map(medida -> LenteMedida.builder().lente(lente).medida(medida).build()).toList());
+        lenteTratamientoCristalRepository.saveAllAndFlush(tratamientos.stream()
+                .map(tratamiento -> LenteTratamientoCristal.builder().lente(lente)
+                        .tratamientoCristal(tratamiento).build()).toList());
+        return recetaMapper.toLenteResponse(lente, medidas, tratamientos);
+    }
+
+    private List<Medida> seleccionarMedidas(Long idReceta, List<Long> ids) {
+        List<Medida> medidas;
+        if (ids == null || ids.isEmpty()) {
+            medidas = medidaRepository.findByRecetaIdRecetaOrderByIdMedidaAsc(idReceta);
+        } else {
+            if (new HashSet<>(ids).size() != ids.size()) {
+                throw new ReglaNegocioException("No se deben repetir IDs de medidas");
+            }
+            medidas = medidaRepository.findByIdMedidaInAndRecetaIdReceta(ids, idReceta);
+            if (medidas.size() != ids.size()) {
+                throw new ReglaNegocioException("Todas las medidas deben existir y pertenecer a la receta");
+            }
+            medidas.sort(Comparator.comparing(Medida::getIdMedida));
+        }
+        if (medidas.isEmpty()) {
+            throw new ReglaNegocioException("La receta debe tener medidas para configurar un lente");
+        }
+        if (medidas.stream().anyMatch(medida -> medida.getMedidaOjoDerecha() == null
+                || medida.getMedidaOjoIzquierda() == null)) {
+            throw new ReglaNegocioException("Cada medida seleccionada debe contener ambos ojos");
+        }
+        return medidas;
+    }
+
+    private List<TratamientoCristal> seleccionarTratamientos(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        if (new HashSet<>(ids).size() != ids.size()) {
+            throw new ReglaNegocioException("No se deben repetir IDs de tratamientos");
+        }
+        List<TratamientoCristal> tratamientos = tratamientoCristalRepository.findAllById(ids);
+        if (tratamientos.size() != ids.size()) {
+            throw new RecursosNoEncontradosException("Uno o más tratamientos de cristal no existen");
+        }
+        tratamientos.sort(Comparator.comparing(TratamientoCristal::getIdTratamientoCristal));
+        return tratamientos;
     }
 
     @Override
