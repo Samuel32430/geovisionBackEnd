@@ -29,6 +29,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
 
     boolean existsByNumeroComprobante(String numeroComprobante);
 
+    boolean existsByRecetaIdReceta(Long idReceta);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM Venta v WHERE v.idVenta = :id")
     Optional<Venta> findByIdForUpdate(@Param("id") Long id);

@@ -23,13 +23,17 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSp
 
     List<Paciente> findByEstado(EstadoGeneralEnum estado);
 
+    @EntityGraph(attributePaths = "persona")
+    Optional<Paciente> findByPersonaNumeroDocumento(String numeroDocumento);
+
     @EntityGraph(attributePaths = {"persona", "usuario"})
     @Query("SELECT p FROM Paciente p WHERE p.idPersona = :id")
     Optional<Paciente> findByIdWithDetails(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = "persona")
     @Query("SELECT p FROM Paciente p JOIN p.persona per WHERE (:estado IS NULL OR p.estado = :estado) " +
-           "AND (:termino IS NULL OR LOWER(CONCAT(CONCAT(per.nombres, ' '), per.apellidos)) LIKE LOWER(CONCAT('%', :termino, '%')) " +
-           "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') " +
-           "OR per.telefono LIKE CONCAT('%', :termino, '%'))")
+           "AND (:termino IS NULL OR LOWER(CONCAT(CONCAT(per.nombres, ' '), per.apellidos)) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
+           "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') ESCAPE '!' " +
+           "OR per.telefono LIKE CONCAT('%', :termino, '%') ESCAPE '!')")
     Page<Paciente> buscarPacientes(@Param("termino") String termino, @Param("estado") EstadoGeneralEnum estado, Pageable pageable);
 }

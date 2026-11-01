@@ -3,17 +3,23 @@ package pe.edu.upeu.geovisionBackEnd.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovisionBackEnd.entity.Montura;
 import pe.edu.upeu.geovisionBackEnd.enums.MaterialMonturaEnum;
 import pe.edu.upeu.geovisionBackEnd.enums.ModeloMonturaEnum;
+import pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum;
 
 import java.util.List;
 
 @Repository
 public interface MonturaRepository extends JpaRepository<Montura, Long> {
+
+    @EntityGraph(attributePaths = "producto")
+    Page<Montura> findByProductoEstadoAndProductoStockGreaterThan(
+            EstadoGeneralEnum estado, Integer stockMinimo, Pageable pageable);
 
     List<Montura> findByModelo(ModeloMonturaEnum modelo);
 

@@ -2,6 +2,8 @@ package pe.edu.upeu.geovisionBackEnd.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Digits;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,18 +19,22 @@ import java.util.List;
 public class LenteRequestDTO {
 
     @NotNull(message = "El ID de la receta es obligatorio")
+    @Positive(message = "El ID de la receta debe ser positivo")
     private Long idReceta;
 
     @NotNull(message = "El ID del material de cristal es obligatorio")
+    @Positive(message = "El ID del material debe ser positivo")
     private Long idMaterialCristal;
 
+    @Positive(message = "El ID de la montura debe ser positivo")
     private Long idProducto;
 
     @NotNull(message = "El subtotal del lente es obligatorio")
     @PositiveOrZero(message = "El subtotal debe ser mayor o igual a cero")
+    @Digits(integer = 10, fraction = 2, message = "El subtotal admite hasta 10 enteros y 2 decimales")
     private BigDecimal subTotal;
 
-    private List<Long> tratamientosCristalIds;
+    private List<@NotNull @Positive Long> tratamientosCristalIds;
 
-    private List<Long> medidasIds;
+    private List<@NotNull @Positive Long> medidasIds;
 }
