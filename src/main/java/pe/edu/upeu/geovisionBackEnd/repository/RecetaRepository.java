@@ -20,7 +20,11 @@ public interface RecetaRepository extends JpaRepository<Receta, Long>, JpaSpecif
 
     List<Receta> findByPacienteIdPersonaOrderByFechaRegistroDesc(Long idPaciente);
 
+    @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
     Page<Receta> findByPacienteIdPersona(Long idPaciente, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
+    List<Receta> findByPacienteIdPersonaOrderByFechaRegistroDescIdRecetaDesc(Long idPaciente);
 
     List<Receta> findByEmpleadoIdPersona(Long idEmpleado);
 

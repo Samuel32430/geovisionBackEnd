@@ -32,7 +32,7 @@ public class PacienteLog {
     @Column(name = "id_paciente_log")
     private Long idPacienteLog;
 
-    @Column(name = "fecha_log", nullable = false)
+    @Column(name = "fecha_log", nullable = false, columnDefinition = "DATE")
     private LocalDateTime fechaLog;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -46,7 +46,7 @@ public class PacienteLog {
     @PrePersist
     public void prePersist() {
         if (this.fechaLog == null) {
-            this.fechaLog = LocalDateTime.now();
+            this.fechaLog = LocalDateTime.now().withNano(0);
         }
     }
 }

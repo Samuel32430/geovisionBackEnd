@@ -4,7 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,6 +24,15 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDTO> handleUnreadableBody(HttpServletRequest request) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                "El cuerpo JSON tiene un formato inválido o contiene valores incompatibles",
+                request.getRequestURI(), null);
+        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponseDTO> handleInvalidParameter(
             MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
@@ -32,7 +43,7 @@ public class GlobalExceptionHandler {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), "Bad Request",
                 message, request.getRequestURI(), Map.of(ex.getName(), message));
-        return ResponseEntity.badRequest().body(error);
+        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(error);
     }
 
     /*
@@ -55,6 +66,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(error);
     }
 
@@ -79,6 +91,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(error);
     }
 
@@ -115,6 +128,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(error);
     }
     /*
@@ -140,6 +154,7 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(error);
     }
 
@@ -164,6 +179,7 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(error);
     }
 }

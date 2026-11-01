@@ -1,6 +1,7 @@
 package pe.edu.upeu.geovisionBackEnd.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -54,10 +55,14 @@ public class JwtService {
     }
 
     /**
-     * Extrae el username (claim 'sub') del token.
+     * Extrae el username de un token de acceso; los tokens con otro propósito no autentican peticiones.
      */
     public String extraerUsername(String token) {
-        return leerClaims(token).getSubject();
+        Claims claims = leerClaims(token);
+        if (claims.get("purpose") != null) {
+            throw new JwtException("El token no es un token de acceso");
+        }
+        return claims.getSubject();
     }
 
     /**
