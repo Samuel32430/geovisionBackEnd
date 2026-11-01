@@ -1,6 +1,11 @@
 package pe.edu.upeu.geovisionBackEnd.service.impl;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -46,6 +51,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Validated
@@ -95,6 +103,74 @@ public class RecetaServiceImpl implements RecetaService {
         this.tratamientoCristalRepository = tratamientoCristalRepository;
         this.monturaRepository = monturaRepository;
         this.ventaRepository = ventaRepository;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RecetaResponseDTO obtenerRecetaPorId(Long idReceta) {
+        Receta receta = recetaRepository.findByIdWithDetails(idReceta)
+                .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada"));
+        return mapearRecetas(List.of(receta)).getFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RecetaResponseDTO> listarHistorialPorPaciente(Long idPaciente) {
+        verificarPaciente(idPaciente);
+        return mapearRecetas(recetaRepository.findByPacienteIdPersonaOrderByFechaRegistroDescIdRecetaDesc(idPaciente));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<RecetaResponseDTO> listarRecetasPaginadas(Long idPaciente, Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100
+                || pageable.getOffset() > Integer.MAX_VALUE) {
+            throw new ReglaNegocioException("La consulta debe estar paginada con un máximo de 100 recetas");
+        }
+        verificarPaciente(idPaciente);
+        // El orden clínico es siempre cronológico y estable, independientemente del orden recibido.
+        Pageable pagina = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "fechaRegistro", "idReceta"));
+        Page<Receta> recetas = recetaRepository.findByPacienteIdPersona(idPaciente, pagina);
+        return new PageImpl<>(mapearRecetas(recetas.getContent()), pagina, recetas.getTotalElements());
+    }
+
+    private void verificarPaciente(Long idPaciente) {
+        if (!pacienteRepository.existsById(idPaciente)) {
+            throw new RecursosNoEncontradosException("Paciente no encontrado");
+        }
+    }
+
+    private List<RecetaResponseDTO> mapearRecetas(List<Receta> recetas) {
+        if (recetas.isEmpty()) {
+            return List.of();
+        }
+        List<Long> idsReceta = recetas.stream().map(Receta::getIdReceta).toList();
+        Map<Long, List<Medida>> medidasPorReceta = medidaRepository
+                .findByRecetaIdRecetaInOrderByIdMedidaAsc(idsReceta).stream()
+                .collect(Collectors.groupingBy(medida -> medida.getReceta().getIdReceta()));
+        List<Lente> lentes = lenteRepository.findByRecetaIdRecetaInOrderByIdLenteAsc(idsReceta);
+        Map<Long, List<LenteResponseDTO>> lentesPorReceta = new HashMap<>();
+        if (!lentes.isEmpty()) {
+            List<Long> idsLente = lentes.stream().map(Lente::getIdLente).toList();
+            Map<Long, List<Medida>> medidasPorLente = lenteMedidaRepository
+                    .findByLenteIdLenteInOrderByMedidaIdMedidaAsc(idsLente).stream()
+                    .collect(Collectors.groupingBy(vinculo -> vinculo.getLente().getIdLente(),
+                            Collectors.mapping(LenteMedida::getMedida, Collectors.toList())));
+            Map<Long, List<TratamientoCristal>> tratamientosPorLente = lenteTratamientoCristalRepository
+                    .findByLenteIdLenteInOrderByTratamientoCristalIdTratamientoCristalAsc(idsLente).stream()
+                    .collect(Collectors.groupingBy(vinculo -> vinculo.getLente().getIdLente(),
+                            Collectors.mapping(LenteTratamientoCristal::getTratamientoCristal, Collectors.toList())));
+            for (Lente lente : lentes) {
+                LenteResponseDTO detalle = recetaMapper.toLenteResponse(lente,
+                        medidasPorLente.getOrDefault(lente.getIdLente(), List.of()),
+                        tratamientosPorLente.getOrDefault(lente.getIdLente(), List.of()));
+                lentesPorReceta.computeIfAbsent(lente.getReceta().getIdReceta(), id -> new ArrayList<>()).add(detalle);
+            }
+        }
+        return recetas.stream().map(receta -> recetaMapper.toRecetaResponse(receta,
+                medidasPorReceta.getOrDefault(receta.getIdReceta(), List.of()),
+                lentesPorReceta.getOrDefault(receta.getIdReceta(), List.of()))).toList();
     }
 
     @Override

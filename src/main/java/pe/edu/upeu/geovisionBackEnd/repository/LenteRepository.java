@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovisionBackEnd.entity.Lente;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
@@ -17,6 +18,9 @@ public interface LenteRepository extends JpaRepository<Lente, Long> {
 
     @EntityGraph(attributePaths = {"materialCristal", "montura.producto"})
     List<Lente> findByRecetaIdRecetaOrderByIdLenteAsc(Long idReceta);
+
+    @EntityGraph(attributePaths = {"materialCristal", "montura.producto"})
+    List<Lente> findByRecetaIdRecetaInOrderByIdLenteAsc(Collection<Long> idsReceta);
 
     List<Lente> findByMaterialCristalIdMaterialCristal(Long idMaterialCristal);
 
