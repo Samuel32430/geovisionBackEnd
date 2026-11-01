@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovisionBackEnd.entity.LenteMedida;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
@@ -13,6 +14,9 @@ public interface LenteMedidaRepository extends JpaRepository<LenteMedida, Long> 
 
     @EntityGraph(attributePaths = {"medida.medidaOjoDerecha", "medida.medidaOjoIzquierda"})
     List<LenteMedida> findByLenteIdLente(Long idLente);
+
+    @EntityGraph(attributePaths = {"medida.medidaOjoDerecha", "medida.medidaOjoIzquierda"})
+    List<LenteMedida> findByLenteIdLenteInOrderByMedidaIdMedidaAsc(Collection<Long> idsLente);
 
     List<LenteMedida> findByMedidaIdMedida(Long idMedida);
 

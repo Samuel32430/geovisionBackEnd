@@ -19,6 +19,9 @@ public interface MedidaRepository extends JpaRepository<Medida, Long> {
     List<Medida> findByRecetaIdRecetaOrderByIdMedidaAsc(Long idReceta);
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
+    List<Medida> findByRecetaIdRecetaInOrderByIdMedidaAsc(Collection<Long> idsReceta);
+
+    @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
     List<Medida> findByIdMedidaInAndRecetaIdReceta(Collection<Long> idsMedida, Long idReceta);
 
     List<Medida> findByRecetaIdRecetaAndTipoMedida(Long idReceta, TipoMedidaEnum tipoMedida);

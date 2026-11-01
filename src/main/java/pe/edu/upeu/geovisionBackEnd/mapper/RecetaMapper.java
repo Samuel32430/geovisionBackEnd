@@ -63,6 +63,10 @@ public class RecetaMapper {
     }
 
     public RecetaResponseDTO toRecetaResponse(Receta receta, List<Medida> medidas) {
+        return toRecetaResponse(receta, medidas, List.of());
+    }
+
+    public RecetaResponseDTO toRecetaResponse(Receta receta, List<Medida> medidas, List<LenteResponseDTO> lentes) {
         Persona paciente = receta.getPaciente().getPersona();
         Persona empleado = receta.getEmpleado().getPersona();
         return RecetaResponseDTO.builder()
@@ -76,7 +80,7 @@ public class RecetaMapper {
                 .idEmpleado(receta.getEmpleado().getIdPersona())
                 .nombreCompletoEmpleado(nombreCompleto(empleado))
                 .medidas(medidas.stream().map(this::toMedidaResponse).toList())
-                .lentes(List.of())
+                .lentes(lentes)
                 .build();
     }
 
@@ -96,6 +100,9 @@ public class RecetaMapper {
     }
 
     private MedidaOjoDTO toMedidaOjoDTO(MedidaOjo ojo) {
+        if (ojo == null) {
+            return null;
+        }
         return MedidaOjoDTO.builder()
                 .idMedidaOjo(ojo.getIdMedidaOjo())
                 .agudezaVisual(ojo.getAgudezaVisual())
