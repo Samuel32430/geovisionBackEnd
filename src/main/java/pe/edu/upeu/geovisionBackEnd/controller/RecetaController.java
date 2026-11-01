@@ -8,6 +8,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.CacheControl;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,15 +27,29 @@ import pe.edu.upeu.geovisionBackEnd.dto.LenteResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.RecetaRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.RecetaResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.service.service.RecetaService;
+import pe.edu.upeu.geovisionBackEnd.service.service.RecetaPdfService;
 
 @RestController
 @RequestMapping("/api/v1/recetas")
 public class RecetaController {
 
     private final RecetaService recetaService;
+    private final RecetaPdfService recetaPdfService;
 
-    public RecetaController(RecetaService recetaService) {
+    public RecetaController(RecetaService recetaService, RecetaPdfService recetaPdfService) {
         this.recetaService = recetaService;
+        this.recetaPdfService = recetaPdfService;
+    }
+
+    @GetMapping(value = "/{idReceta}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAuthority('PACIENTES_LEER')")
+    public ResponseEntity<byte[]> generarRecetaPdf(@PathVariable @Positive Long idReceta) {
+        byte[] pdf = recetaPdfService.generarRecetaPdf(idReceta);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
+                .contentLength(pdf.length).cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename("receta-" + idReceta + ".pdf").build().toString())
+                .body(pdf);
     }
 
     @GetMapping("/{idReceta}")
