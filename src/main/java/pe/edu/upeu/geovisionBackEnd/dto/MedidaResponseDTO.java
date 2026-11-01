@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import pe.edu.upeu.geovisionBackEnd.enums.TipoMedidaEnum;
 
 import java.math.BigDecimal;
 
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 public class MedidaResponseDTO {
 
     private Long idMedida;
+    private TipoMedidaEnum tipoMedida;
     private BigDecimal distanciaPupilar;
     private BigDecimal prisma;
     private String observaciones;
