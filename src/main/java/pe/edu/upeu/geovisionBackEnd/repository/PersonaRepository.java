@@ -9,11 +9,37 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovisionBackEnd.entity.Persona;
+import pe.edu.upeu.geovisionBackEnd.dto.PersonaUsuarioResumenDTO;
 
 import java.util.Optional;
 
 @Repository
 public interface PersonaRepository extends JpaRepository<Persona, Long> {
+
+    @Query(value = """
+        SELECT new pe.edu.upeu.geovisionBackEnd.dto.PersonaUsuarioResumenDTO(
+            p.idPersona, p.nombres, p.apellidos, p.tipoDocumento, p.numeroDocumento,
+            u.idUsuario, u.nombre, u.estado,
+            CASE WHEN e.idPersona IS NOT NULL THEN true ELSE false END,
+            CASE WHEN e.estado = pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum.ACTIVO THEN true ELSE false END)
+        FROM Persona p
+        LEFT JOIN Usuario u ON u.persona.idPersona = p.idPersona
+        JOIN Empleado e ON e.idPersona = p.idPersona
+        WHERE e.estado = pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum.ACTIVO
+          AND (:sinUsuario = false OR u.idUsuario IS NULL)
+          AND (LOWER(CONCAT(CONCAT(p.nombres, ' '), p.apellidos)) LIKE :patron ESCAPE '!'
+               OR LOWER(p.numeroDocumento) LIKE :patron ESCAPE '!')
+        """, countQuery = """
+        SELECT COUNT(p) FROM Persona p
+        LEFT JOIN Usuario u ON u.persona.idPersona = p.idPersona
+        JOIN Empleado e ON e.idPersona = p.idPersona
+        WHERE e.estado = pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum.ACTIVO
+          AND (:sinUsuario = false OR u.idUsuario IS NULL)
+          AND (LOWER(CONCAT(CONCAT(p.nombres, ' '), p.apellidos)) LIKE :patron ESCAPE '!'
+               OR LOWER(p.numeroDocumento) LIKE :patron ESCAPE '!')
+        """)
+    Page<PersonaUsuarioResumenDTO> buscarParaUsuario(@Param("patron") String patron,
+            @Param("sinUsuario") boolean sinUsuario, Pageable pageable);
 
     Optional<Persona> findByNumeroDocumento(String numeroDocumento);
 
