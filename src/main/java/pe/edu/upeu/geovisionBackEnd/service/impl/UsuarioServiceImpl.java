@@ -3,9 +3,15 @@ package pe.edu.upeu.geovisionBackEnd.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.upeu.geovisionBackEnd.dto.PersonaRequestDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.PersonaUsuarioResumenDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.RegistroPersonaUsuarioRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.PermisoDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.RolDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.UsuarioRequestDTO;
@@ -31,9 +37,11 @@ import pe.edu.upeu.geovisionBackEnd.repository.UsuarioRolRepository;
 import pe.edu.upeu.geovisionBackEnd.service.service.UsuarioService;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -97,86 +105,84 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public UsuarioResponseDTO crear(UsuarioRequestDTO request) {
+        return crearCuentaInterna(request);
+    }
+
+    // Ambos métodos públicos de alta abren la transacción antes de llamar a esta lógica común.
+    private UsuarioResponseDTO crearCuentaInterna(UsuarioRequestDTO request) {
         String nombre = request.getNombre().trim();
-        String correo = request.getCorreo().trim().toLowerCase();
-
-        log.info("Registrando usuario={} correo={} idPersona={}", nombre, correo, request.getIdPersona());
-
+        String correo = request.getCorreo().trim().toLowerCase(Locale.ROOT);
+        if (nombre.length() < 3 || nombre.length() > 100) {
+            throw new ReglaNegocioException("El nombre de usuario debe tener entre 3 y 100 caracteres");
+        }
         if (usuarioRepository.existsByNombre(nombre)) {
-            throw new ReglaNegocioException("Ya existe un usuario con el nombre de usuario: " + nombre);
+            throw new ReglaNegocioException("Ya existe una cuenta con ese nombre de usuario");
         }
-
         if (usuarioRepository.existsByCorreo(correo)) {
-            throw new ReglaNegocioException("Ya existe un usuario registrado con el correo: " + correo);
+            throw new ReglaNegocioException("Ya existe una cuenta con ese correo electrónico");
         }
-
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw new ReglaNegocioException("La contraseña es obligatoria para nuevos usuarios");
         }
-
-        if (request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new ReglaNegocioException("La contraseña no puede superar los 72 bytes");
+        if (request.getPassword().length() < 6 || request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new ReglaNegocioException("La contraseña debe tener al menos 6 caracteres y no superar los 72 bytes");
         }
 
-        Persona persona = personaRepository.findById(request.getIdPersona())
-                .orElseThrow(() -> new RecursosNoEncontradosException(
-                        "Persona no encontrada con ID: " + request.getIdPersona()));
-
-        Optional<Usuario> usuarioAsociado = usuarioRepository.findByPersonaIdPersona(persona.getIdPersona());
-        if (usuarioAsociado.isPresent()) {
+        // Serializar las altas para una misma persona, incluso cuando aún no existe su usuario.
+        Persona persona = personaRepository.findByIdForUpdate(request.getIdPersona())
+                .orElseThrow(() -> new RecursosNoEncontradosException("La persona seleccionada no existe"));
+        if (usuarioRepository.findByPersonaIdPersona(persona.getIdPersona()).isPresent()) {
             throw new ReglaNegocioException("La persona seleccionada ya tiene una cuenta de usuario asignada");
+        }
+        Optional<Empleado> existente = empleadoRepository.findById(persona.getIdPersona());
+        if (existente.isEmpty() || existente.get().getEstado() != EstadoGeneralEnum.ACTIVO) {
+            throw new ReglaNegocioException("Solo se pueden crear cuentas para empleados activos");
+        }
+        if (existente.get().getUsuario() != null) {
+            throw new ReglaNegocioException("El empleado ya está vinculado a una cuenta; revise su asociación");
+        }
+        if (request.getEmpleado() != null) {
+            if (request.getEmpleado().getFechaContrato() == null) {
+                throw new ReglaNegocioException("La fecha de contrato es obligatoria para registrar al empleado");
+            }
+            if (existente.isPresent() && existente.get().getEstado() != EstadoGeneralEnum.ACTIVO) {
+                throw new ReglaNegocioException("El empleado está inactivo; no se reactiva mediante el registro de usuarios");
+            }
         }
 
         List<Rol> roles = Collections.emptyList();
         if (request.getRolesIds() != null && !request.getRolesIds().isEmpty()) {
             roles = rolRepository.findAllById(request.getRolesIds());
             if (roles.size() != request.getRolesIds().size()) {
-                Set<Long> encontrados = roles.stream().map(Rol::getIdRol).collect(Collectors.toSet());
-                Set<Long> faltantes = new HashSet<>(request.getRolesIds());
-                faltantes.removeAll(encontrados);
-                throw new RecursosNoEncontradosException("Roles no encontrados con IDs: " + faltantes);
+                throw new RecursosNoEncontradosException("Uno o más roles seleccionados no existen");
             }
         }
-
-        EstadoGeneralEnum estado = (request.getEstado() != null)
-                ? EstadoGeneralEnum.fromCodigo(request.getEstado())
-                : EstadoGeneralEnum.ACTIVO;
-
-        Usuario usuario = Usuario.builder()
-                .nombre(nombre)
-                .correo(correo)
-                .password(passwordEncoder.encode(request.getPassword()))
-                .estado(estado)
-                .persona(persona)
-                .build();
-
-        Usuario guardado = usuarioRepository.save(usuario);
-
-        // Si la persona es un empleado, vincular el usuario al empleado
-        Optional<Empleado> empleadoOpt = empleadoRepository.findById(persona.getIdPersona());
-        empleadoOpt.ifPresent(empleado -> {
-            empleado.setUsuario(guardado);
-            empleadoRepository.save(empleado);
-        });
-
-        // Guardar roles en USUARIO_ROL
-        if (!roles.isEmpty()) {
-            List<UsuarioRol> usuarioRoles = roles.stream()
-                    .map(rol -> UsuarioRol.builder()
-                            .usuario(guardado)
-                            .rol(rol)
-                            .build())
-                    .toList();
-            usuarioRolRepository.saveAll(usuarioRoles);
+        EstadoGeneralEnum estado = request.getEstado() == null ? EstadoGeneralEnum.ACTIVO : EstadoGeneralEnum.fromCodigo(request.getEstado());
+        Usuario usuario = Usuario.builder().nombre(nombre).correo(correo)
+                .password(passwordEncoder.encode(request.getPassword())).estado(estado).persona(persona).build();
+        try {
+            Usuario guardado = usuarioRepository.saveAndFlush(usuario);
+            Empleado empleado = existente.orElse(null);
+            if (empleado != null) {
+                empleado.setUsuario(guardado);
+                empleadoRepository.saveAndFlush(empleado);
+            }
+            List<UsuarioRol> asociaciones = roles.stream().map(rol -> UsuarioRol.builder()
+                    .usuario(guardado).rol(rol).build()).toList();
+            usuarioRolRepository.saveAllAndFlush(asociaciones);
+            log.info("Cuenta creada: idUsuario={}", guardado.getIdUsuario());
+            return cargarUsuarioConRoles(guardado);
+        } catch (DataIntegrityViolationException ex) {
+            throw new ReglaNegocioException("No se pudo registrar la cuenta; compruebe el usuario, correo y asociaciones duplicadas");
         }
-
-        log.info("Usuario creado exitosamente: id={} usuario={}", guardado.getIdUsuario(), guardado.getNombre());
-        return cargarUsuarioConRoles(guardado);
     }
 
     @Override
     @Transactional
     public UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request) {
+        if (request.getEmpleado() != null) {
+            throw new ReglaNegocioException("El alta laboral solo se admite al registrar la cuenta");
+        }
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado con ID: " + id));
 
@@ -297,4 +303,47 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         return usuarioMapper.toUsuarioResponse(usuario, rolesDTO);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PersonaUsuarioResumenDTO> buscarPersonasParaUsuario(String termino, boolean sinUsuario, Pageable pageable) {
+        String texto = termino == null ? "" : termino.trim().toLowerCase(Locale.ROOT);
+        String patron = "%" + texto.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        return personaRepository.buscarParaUsuario(patron, sinUsuario, pageable);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResponseDTO registrarConPersona(RegistroPersonaUsuarioRequestDTO request) {
+        if (request.getEmpleado() == null || request.getEmpleado().getFechaContrato() == null) {
+            throw new ReglaNegocioException("El alta de empleado requiere una fecha de contrato");
+        }
+        PersonaRequestDTO datos = request.getPersona();
+        String documento = datos.getNumeroDocumento().trim();
+        if (personaRepository.existsByNumeroDocumento(documento)) {
+            throw new ReglaNegocioException("El documento ya está registrado; seleccione la persona existente");
+        }
+        if (datos.getFechaNacimiento() != null && datos.getFechaNacimiento().isAfter(LocalDate.now())) {
+            throw new ReglaNegocioException("La fecha de nacimiento no puede estar en el futuro");
+        }
+        Persona persona = Persona.builder().nombres(datos.getNombres().trim())
+                .apellidos(datos.getApellidos().trim()).numeroDocumento(documento)
+                .tipoDocumento(datos.getTipoDocumento()).sexo(datos.getSexo())
+                .fechaNacimiento(datos.getFechaNacimiento()).telefono(limpiar(datos.getTelefono()))
+                .direccion(limpiar(datos.getDireccion())).build();
+        try {
+            personaRepository.saveAndFlush(persona);
+            empleadoRepository.saveAndFlush(Empleado.builder().persona(persona).estado(EstadoGeneralEnum.ACTIVO)
+                    .fechaContrato(request.getEmpleado().getFechaContrato()).build());
+            var cuenta = request.getUsuario();
+            return crearCuentaInterna(UsuarioRequestDTO.builder()
+                    .nombre(cuenta.getNombre()).correo(cuenta.getCorreo()).password(cuenta.getPassword())
+                    .estado(cuenta.getEstado()).rolesIds(cuenta.getRolesIds()).idPersona(persona.getIdPersona())
+                    .build());
+        } catch (DataIntegrityViolationException ex) {
+            throw new ReglaNegocioException("No se pudo registrar la persona y su cuenta; compruebe los datos duplicados");
+        }
+    }
+
+    private String limpiar(String valor) { return valor == null || valor.isBlank() ? null : valor.trim(); }
 }
