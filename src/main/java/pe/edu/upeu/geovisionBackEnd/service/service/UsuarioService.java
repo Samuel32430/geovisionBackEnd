@@ -1,5 +1,9 @@
 package pe.edu.upeu.geovisionBackEnd.service.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import pe.edu.upeu.geovisionBackEnd.dto.PersonaUsuarioResumenDTO;
+import pe.edu.upeu.geovisionBackEnd.dto.RegistroPersonaUsuarioRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.UsuarioRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.UsuarioResponseDTO;
 
@@ -7,6 +11,10 @@ import java.util.List;
 import java.util.Set;
 
 public interface UsuarioService {
+
+    Page<PersonaUsuarioResumenDTO> buscarPersonasParaUsuario(String termino, boolean sinUsuario, Pageable pageable);
+
+    UsuarioResponseDTO registrarConPersona(RegistroPersonaUsuarioRequestDTO request);
 
     List<UsuarioResponseDTO> listar();
 

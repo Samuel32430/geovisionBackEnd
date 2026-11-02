@@ -1,6 +1,11 @@
 package pe.edu.upeu.geovisionBackEnd.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pe.edu.upeu.geovisionBackEnd.dto.UsuarioRequestDTO;
-import pe.edu.upeu.geovisionBackEnd.dto.UsuarioResponseDTO;
+import org.springframework.web.server.ResponseStatusException;
+import pe.edu.upeu.geovisionBackEnd.dto.*;
 import pe.edu.upeu.geovisionBackEnd.service.service.UsuarioService;
 
 import java.util.List;
@@ -84,5 +89,23 @@ public class UsuarioController {
             @RequestBody Set<Long> roleIds,
             Authentication authentication) {
         return ResponseEntity.ok(usuarioService.asignarRoles(id, roleIds, authentication.getName()));
+    }
+
+    @GetMapping("/personas")
+    public ResponseEntity<PaginaResponseDTO<PersonaUsuarioResumenDTO>> buscar(
+            @RequestParam(defaultValue = "") @Size(max = 150) String termino,
+            @RequestParam(defaultValue = "false") boolean sinUsuario,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
+        if ((long) page * size > Integer.MAX_VALUE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La página solicitada excede el límite permitido");
+        }
+        return ResponseEntity.ok(PaginaResponseDTO.de(usuarioService.buscarPersonasParaUsuario(termino, sinUsuario,
+                PageRequest.of(page, size, Sort.by("apellidos", "nombres", "idPersona")))));
+    }
+
+    @PostMapping("/con-persona")
+    public ResponseEntity<UsuarioResponseDTO> registrar(@Valid @RequestBody RegistroPersonaUsuarioRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.registrarConPersona(request));
     }
 }
