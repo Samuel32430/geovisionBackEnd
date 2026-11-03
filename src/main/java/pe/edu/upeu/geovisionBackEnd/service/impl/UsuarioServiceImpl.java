@@ -254,6 +254,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     private void actualizarRolesUsuario(Usuario usuario, Set<Long> roleIds, String authUsername) {
+        usuarioRepository.findByIdForUpdate(usuario.getIdUsuario())
+                .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado"));
         Set<Long> ids = (roleIds != null) ? roleIds : Collections.emptySet();
 
         List<Rol> roles = rolRepository.findAllById(ids);
@@ -274,15 +276,18 @@ public class UsuarioServiceImpl implements UsuarioService {
             }
         }
 
-        usuarioRolRepository.deleteByUsuarioIdUsuario(usuario.getIdUsuario());
+        // Conservar asociaciones vigentes evita reinsertar pares todavía pendientes de borrar.
+        List<UsuarioRol> actuales = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
+        Set<Long> existentes = actuales.stream().map(ur -> ur.getRol().getIdRol()).collect(Collectors.toSet());
+        usuarioRolRepository.deleteAll(actuales.stream().filter(ur -> !ids.contains(ur.getRol().getIdRol())).toList());
 
-        List<UsuarioRol> nuevos = roles.stream()
+        List<UsuarioRol> nuevos = roles.stream().filter(rol -> !existentes.contains(rol.getIdRol()))
                 .map(rol -> UsuarioRol.builder()
                         .usuario(usuario)
                         .rol(rol)
                         .build())
                 .toList();
-        usuarioRolRepository.saveAll(nuevos);
+        usuarioRolRepository.saveAllAndFlush(nuevos);
 
         log.info("Roles actualizados para usuario={}: total={}", usuario.getNombre(), roles.size());
     }

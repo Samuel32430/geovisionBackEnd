@@ -87,7 +87,7 @@ public class RolServiceImpl implements RolService {
     @Override
     @Transactional
     public RolDTO asignarPermisos(Long idRol, Set<Long> permisoIds) {
-        Rol rol = rolRepository.findById(idRol)
+        Rol rol = rolRepository.findByIdForUpdate(idRol)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Rol no encontrado con ID: " + idRol));
 
         Set<Long> ids = (permisoIds != null) ? permisoIds : Collections.emptySet();
@@ -100,15 +100,17 @@ public class RolServiceImpl implements RolService {
             throw new RecursosNoEncontradosException("Permisos no encontrados con IDs: " + faltantes);
         }
 
-        rolPermisoRepository.deleteByRolIdRol(idRol);
+        List<RolPermiso> actuales = rolPermisoRepository.findByRolIdRol(idRol);
+        Set<Long> existentes = actuales.stream().map(rp -> rp.getPermiso().getIdPermiso()).collect(Collectors.toSet());
+        rolPermisoRepository.deleteAll(actuales.stream().filter(rp -> !ids.contains(rp.getPermiso().getIdPermiso())).toList());
 
-        List<RolPermiso> nuevosRolPermisos = permisos.stream()
+        List<RolPermiso> nuevosRolPermisos = permisos.stream().filter(p -> !existentes.contains(p.getIdPermiso()))
                 .map(permiso -> RolPermiso.builder()
                         .rol(rol)
                         .permiso(permiso)
                         .build())
                 .toList();
-        rolPermisoRepository.saveAll(nuevosRolPermisos);
+        rolPermisoRepository.saveAllAndFlush(nuevosRolPermisos);
 
         log.info("Permisos asignados al rol {}: total={}", rol.getNombre(), permisos.size());
 

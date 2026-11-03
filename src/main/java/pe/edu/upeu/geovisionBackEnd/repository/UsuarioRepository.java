@@ -1,6 +1,10 @@
 package pe.edu.upeu.geovisionBackEnd.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovisionBackEnd.entity.Usuario;
 import pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum;
@@ -10,6 +14,10 @@ import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM Usuario e WHERE e.idUsuario = :id")
+    Optional<Usuario> findByIdForUpdate(@Param("id") Long id);
 
     Optional<Usuario> findByNombre(String nombre);
 
