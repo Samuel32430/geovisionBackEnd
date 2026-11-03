@@ -2,6 +2,7 @@ package pe.edu.upeu.geovisionBackEnd.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +25,7 @@ public class ConfiguracionEmpresaDTO {
     private String nombreComercial;
 
     @NotBlank(message = "El RUC de la empresa es obligatorio")
-    @Size(max = 20, message = "El RUC no debe superar los 20 caracteres")
+    @Pattern(regexp = "[0-9]{11}", message = "El RUC debe contener exactamente 11 dígitos")
     private String ruc;
 
     @Size(max = 200, message = "La dirección no debe superar los 200 caracteres")
