@@ -1,7 +1,11 @@
 package pe.edu.upeu.geovisionBackEnd.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(onConstructor_ = @JsonCreator(mode = JsonCreator.Mode.DISABLED))
 public class LaboratorioDTO {
 
     private Long idLaboratorio;
@@ -34,5 +38,8 @@ public class LaboratorioDTO {
     private String correo;
 
     @Builder.Default
+    @NotNull(message = "El estado es obligatorio")
+    @Min(value = 0, message = "El estado debe ser 0 o 1")
+    @Max(value = 1, message = "El estado debe ser 0 o 1")
     private Integer estado = 1;
 }

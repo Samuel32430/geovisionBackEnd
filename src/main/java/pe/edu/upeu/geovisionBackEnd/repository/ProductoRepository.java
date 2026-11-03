@@ -26,6 +26,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 
     List<Producto> findByCategoriaIdCategoria(Long idCategoria);
 
+    boolean existsByCategoriaIdCategoriaAndEstado(Long idCategoria, EstadoGeneralEnum estado);
+
     List<Producto> findByEstado(EstadoGeneralEnum estado);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
