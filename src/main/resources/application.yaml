@@ -3,3 +3,15 @@ spring:
     name: geovisionBackEnd
   profiles:
     active: dev
+
+app:
+  calidad:
+    dioptrias: ${CALIDAD_TOLERANCIA_DIOPTRIAS:}
+    eje-grados: ${CALIDAD_TOLERANCIA_EJE_GRADOS:}
+    distancia-pupilar-mm: ${CALIDAD_TOLERANCIA_DP_MM:}
+    prisma: ${CALIDAD_TOLERANCIA_PRISMA:}
+  textbee:
+    enabled: ${TEXTBEE_ENABLED:false}
+    base-url: ${TEXTBEE_BASE_URL:https://api.textbee.dev/api/v1}
+    api-key: ${TEXTBEE_API_KEY:}
+    device-id: ${TEXTBEE_DEVICE_ID:}

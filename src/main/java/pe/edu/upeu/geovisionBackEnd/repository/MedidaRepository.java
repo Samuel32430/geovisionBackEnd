@@ -29,5 +29,8 @@ public interface MedidaRepository extends JpaRepository<Medida, Long> {
     Optional<Medida> findByEnvioLaboratorioIdEnvioLaboratorio(Long idEnvioLaboratorio);
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
+    List<Medida> findByEnvioLaboratorioIdEnvioLaboratorioOrderByIdMedidaAsc(Long idEnvioLaboratorio);
+
+    @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
     Optional<Medida> findOneWithOjosByIdMedida(Long idMedida);
 }
