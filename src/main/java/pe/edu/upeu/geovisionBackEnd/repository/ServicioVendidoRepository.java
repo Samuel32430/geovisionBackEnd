@@ -3,6 +3,7 @@ package pe.edu.upeu.geovisionBackEnd.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovisionBackEnd.entity.ServicioVendido;
+import pe.edu.upeu.geovisionBackEnd.enums.EstadoVentaEnum;
 
 import java.util.List;
 
@@ -12,4 +13,6 @@ public interface ServicioVendidoRepository extends JpaRepository<ServicioVendido
     List<ServicioVendido> findByVentaIdVenta(Long idVenta);
 
     List<ServicioVendido> findByServicioIdServicio(Long idServicio);
+
+    boolean existsByServicioIdServicioAndVentaEstado(Long idServicio, EstadoVentaEnum estado);
 }
