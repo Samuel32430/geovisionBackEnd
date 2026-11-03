@@ -89,7 +89,7 @@ public class VentaServiceImpl implements VentaService {
             if (paciente == null) {
                 throw new ReglaNegocioException("Toda venta con receta debe estar asociada obligatoriamente a un paciente (RN-VE02)");
             }
-            receta = recetaRepository.findById(request.getIdReceta())
+            receta = recetaRepository.findByIdForUpdate(request.getIdReceta())
                     .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada con ID: " + request.getIdReceta()));
 
             if (receta.getPaciente() == null ||

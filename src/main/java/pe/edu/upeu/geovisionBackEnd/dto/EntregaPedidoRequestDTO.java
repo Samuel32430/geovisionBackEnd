@@ -14,9 +14,10 @@ import lombok.NoArgsConstructor;
 public class EntregaPedidoRequestDTO {
 
     @NotNull(message = "El ID de la orden de trabajo es obligatorio")
+    @jakarta.validation.constraints.Positive
     private Long idOrdenTrabajo;
 
-    @NotNull(message = "El ID del empleado que realiza la entrega es obligatorio")
+    // Opcional para compatibilidad; si se proporciona debe coincidir con la sesion.
     private Long idEmpleadoEntrega;
 
     @Size(max = 500, message = "Las observaciones no deben superar los 500 caracteres")

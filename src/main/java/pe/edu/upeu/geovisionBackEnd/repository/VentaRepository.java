@@ -19,6 +19,25 @@ import java.util.Optional;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecificationExecutor<Venta> {
 
+    @Query("SELECT new pe.edu.upeu.geovisionBackEnd.dto.PendienteOrdenTrabajoDTO(" +
+           "v.idVenta, v.numeroComprobante, l.idLente, v.receta.idReceta, p.idPersona, " +
+           "CONCAT(CONCAT(per.nombres, ' '), per.apellidos), v.total) " +
+           "FROM Venta v JOIN v.paciente p JOIN p.persona per JOIN Lente l ON l.receta = v.receta " +
+           "WHERE v.estado <> pe.edu.upeu.geovisionBackEnd.enums.EstadoVentaEnum.ANULADA " +
+           "AND (SELECT COUNT(v2.idVenta) FROM Venta v2 WHERE v2.receta = v.receta) = 1 " +
+           "AND EXISTS (SELECT pago.idPago FROM Pago pago WHERE pago.venta = v AND pago.monto > 0) " +
+           "AND EXISTS (SELECT lm.idLenteMedidas FROM LenteMedida lm WHERE lm.lente = l) " +
+           "AND NOT EXISTS (SELECT o.idOrdenTrabajo FROM OrdenTrabajo o WHERE o.lente = l) " +
+           "AND (:termino IS NULL OR LOWER(per.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
+           "OR LOWER(per.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
+           "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') ESCAPE '!' " +
+           "OR v.numeroComprobante LIKE CONCAT('%', :termino, '%') ESCAPE '!') " +
+           "ORDER BY v.fechaRegistro DESC, v.idVenta DESC, l.idLente ASC")
+    Page<pe.edu.upeu.geovisionBackEnd.dto.PendienteOrdenTrabajoDTO> buscarPendientesOrdenTrabajo(
+            @Param("termino") String termino, Pageable pageable);
+
+    List<Venta> findByRecetaIdReceta(Long idReceta);
+
     List<Venta> findByPacienteIdPersona(Long idPaciente);
 
     List<Venta> findByEmpleadoIdPersona(Long idEmpleado);
