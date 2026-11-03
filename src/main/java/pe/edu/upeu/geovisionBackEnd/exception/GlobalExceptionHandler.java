@@ -3,6 +3,7 @@ package pe.edu.upeu.geovisionBackEnd.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,15 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIntegrityConflict(HttpServletRequest request) {
+        log.warn("Conflicto de integridad en {}", request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(
+                new ErrorResponseDTO(LocalDateTime.now(), HttpStatus.CONFLICT.value(), "Conflict",
+                        "No se pudieron guardar los cambios por un conflicto de datos. Actualiza la información e inténtalo nuevamente.",
+                        request.getRequestURI(), null));
+    }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponseDTO> handleUnreadableBody(HttpServletRequest request) {
