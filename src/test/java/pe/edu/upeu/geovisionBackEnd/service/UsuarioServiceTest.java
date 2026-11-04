@@ -14,13 +14,13 @@ import pe.edu.upeu.geovisionBackEnd.entity.Empleado;
 import pe.edu.upeu.geovisionBackEnd.entity.Persona;
 import pe.edu.upeu.geovisionBackEnd.entity.Rol;
 import pe.edu.upeu.geovisionBackEnd.entity.Usuario;
-import pe.edu.upeu.geovisionBackEnd.entity.UsuarioRol;
 import pe.edu.upeu.geovisionBackEnd.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovisionBackEnd.exception.ReglaNegocioException;
 import pe.edu.upeu.geovisionBackEnd.mapper.PermisoMapper;
 import pe.edu.upeu.geovisionBackEnd.mapper.RolMapper;
 import pe.edu.upeu.geovisionBackEnd.mapper.UsuarioMapper;
 import pe.edu.upeu.geovisionBackEnd.repository.EmpleadoRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.PermisoRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.PersonaRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.RolPermisoRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.RolRepository;
@@ -36,7 +36,10 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
@@ -122,20 +125,25 @@ class UsuarioServiceTest {
 
         when(usuarioRepository.existsByNombre("nuevo.usuario")).thenReturn(false);
         when(usuarioRepository.existsByCorreo("nuevo@geovision.com")).thenReturn(false);
-        when(personaRepository.findById(2L)).thenReturn(Optional.of(personaVendedor));
+        when(personaRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(personaVendedor));
         when(usuarioRepository.findByPersonaIdPersona(2L)).thenReturn(Optional.empty());
         when(rolRepository.findAllById(Set.of(2L))).thenReturn(List.of(rolVendedor));
         when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(vendedorUser);
-        when(empleadoRepository.findById(2L)).thenReturn(Optional.empty());
+        when(usuarioRepository.saveAndFlush(any(Usuario.class))).thenReturn(vendedorUser);
+        Empleado empleadoVendedor = Empleado.builder()
+                .idPersona(2L)
+                .estado(EstadoGeneralEnum.ACTIVO)
+                .persona(personaVendedor)
+                .build();
+        when(empleadoRepository.findById(2L)).thenReturn(Optional.of(empleadoVendedor));
         when(usuarioRolRepository.findByUsuarioIdUsuario(2L)).thenReturn(Collections.emptyList());
         when(usuarioMapper.toUsuarioResponse(eq(vendedorUser), any())).thenReturn(new UsuarioResponseDTO());
 
         UsuarioResponseDTO response = usuarioService.crear(request);
 
         assertThat(response).isNotNull();
-        verify(usuarioRepository).save(any(Usuario.class));
-        verify(usuarioRolRepository).saveAll(any());
+        verify(usuarioRepository).saveAndFlush(any(Usuario.class));
+        verify(usuarioRolRepository).saveAllAndFlush(any());
     }
 
     @Test
@@ -154,6 +162,7 @@ class UsuarioServiceTest {
     @DisplayName("CUS18: Asignar roles impide que un admin se quite el rol ADMINISTRADOR (RF-89)")
     void asignarRolesAdminSeQuitaAdminRechazado() {
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(adminUser));
+        when(usuarioRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(adminUser));
         when(rolRepository.findAllById(Set.of(2L))).thenReturn(List.of(rolVendedor));
 
         assertThatThrownBy(() -> usuarioService.asignarRoles(1L, Set.of(2L), "admin"))
