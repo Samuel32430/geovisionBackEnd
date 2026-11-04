@@ -17,6 +17,9 @@ import java.util.Optional;
 @Repository
 public interface EnvioLaboratorioRepository extends JpaRepository<EnvioLaboratorio, Long>, JpaSpecificationExecutor<EnvioLaboratorio> {
 
+    @Query("SELECT e.ordenTrabajo.idOrdenTrabajo FROM EnvioLaboratorio e WHERE e.idEnvioLaboratorio = :id")
+    Optional<Long> findIdOrdenByIdEnvio(@Param("id") Long id);
+
     List<EnvioLaboratorio> findByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDesc(Long idOrdenTrabajo);
 
     Page<EnvioLaboratorio> findByOrdenTrabajoIdOrdenTrabajo(Long idOrdenTrabajo, Pageable pageable);

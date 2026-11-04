@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import pe.edu.upeu.geovisionBackEnd.enums.EstadoOrdenTrabajoEnum;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,7 +17,9 @@ public class OrdenTrabajoResponseDTO {
 
     private Long idOrdenTrabajo;
     private LocalDateTime fechaRegistro;
-    private LocalDate fechaEntrega;
+    private LocalDateTime fechaEntrega;
+    private Long idVenta;
+    private java.math.BigDecimal saldoPendiente;
     private LocalDateTime fechaNotificacion;
     private EstadoOrdenTrabajoEnum estado;
     private String estadoDescripcion;

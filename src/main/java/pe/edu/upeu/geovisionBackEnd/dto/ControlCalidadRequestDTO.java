@@ -1,32 +1,16 @@
 package pe.edu.upeu.geovisionBackEnd.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.*;
+import lombok.*;
+import java.util.List;
 
-import java.math.BigDecimal;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class ControlCalidadRequestDTO {
-
-    @NotNull(message = "El ID del envío al laboratorio es obligatorio")
+    @NotNull @Positive
     private Long idEnvioLaboratorio;
-
-    @NotNull(message = "Debe indicar si el control de calidad es aprobado")
-    private Boolean aprobado;
-
-    private BigDecimal tolerancia;
-
-    @Size(max = 500, message = "Las observaciones no deben superar los 500 caracteres")
+    @NotEmpty @Size(max=3) @Valid
+    private List<@NotNull MedidaRequestDTO> medidasLensometria;
+    @Size(max=500)
     private String observaciones;
-
-    @Valid
-    private MedidaRequestDTO medidasLensometria;
 }

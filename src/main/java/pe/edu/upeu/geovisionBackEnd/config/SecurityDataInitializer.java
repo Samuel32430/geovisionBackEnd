@@ -64,6 +64,7 @@ public class SecurityDataInitializer implements CommandLineRunner {
 
             permisosCreados.add(crearPermisoSiNoExiste("ORDENES_TRABAJO_LEER", ModuloEnum.ORDENES_TRABAJO));
             permisosCreados.add(crearPermisoSiNoExiste("ORDENES_TRABAJO_GESTIONAR", ModuloEnum.ORDENES_TRABAJO));
+            permisosCreados.add(crearPermisoSiNoExiste("ORDENES_TRABAJO_CALIDAD", ModuloEnum.ORDENES_TRABAJO));
 
             permisosCreados.add(crearPermisoSiNoExiste("INVENTARIO_LEER", ModuloEnum.INVENTARIO));
             permisosCreados.add(crearPermisoSiNoExiste("PRODUCTOS_LEER", ModuloEnum.INVENTARIO));

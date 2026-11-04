@@ -14,6 +14,10 @@ import java.util.Optional;
 @Repository
 public interface LenteRepository extends JpaRepository<Lente, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM Lente l WHERE l.idLente = :id")
+    Optional<Lente> findByIdForUpdate(@Param("id") Long id);
+
     List<Lente> findByRecetaIdReceta(Long idReceta);
 
     @EntityGraph(attributePaths = {"materialCristal", "montura.producto"})

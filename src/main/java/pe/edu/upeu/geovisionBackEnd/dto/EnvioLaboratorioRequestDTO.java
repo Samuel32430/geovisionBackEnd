@@ -16,9 +16,11 @@ import java.time.LocalDate;
 public class EnvioLaboratorioRequestDTO {
 
     @NotNull(message = "El ID de la orden de trabajo es obligatorio")
+    @jakarta.validation.constraints.Positive
     private Long idOrdenTrabajo;
 
     @NotNull(message = "El ID del laboratorio es obligatorio")
+    @jakarta.validation.constraints.Positive
     private Long idLaboratorio;
 
     private LocalDate fechaRecepcionEstimada;
