@@ -28,7 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RolServiceTest {
@@ -80,7 +82,7 @@ class RolServiceTest {
     void asignarPermisosExitosoCrossModulo() {
         Set<Long> permisoIds = Set.of(10L, 20L);
 
-        when(rolRepository.findById(1L)).thenReturn(Optional.of(testRol));
+        when(rolRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testRol));
         when(permisoRepository.findAllById(permisoIds)).thenReturn(List.of(permisoVentas, permisoPacientes));
         when(permisoMapper.toDTO(permisoVentas)).thenReturn(PermisoDTO.builder().idPermiso(10L).nombre("VENTAS_REGISTRAR").build());
         when(permisoMapper.toDTO(permisoPacientes)).thenReturn(PermisoDTO.builder().idPermiso(20L).nombre("PACIENTES_REGISTRAR").build());
@@ -89,8 +91,8 @@ class RolServiceTest {
         RolDTO response = rolService.asignarPermisos(1L, permisoIds);
 
         assertThat(response).isNotNull();
-        verify(rolPermisoRepository).deleteByRolIdRol(1L);
-        verify(rolPermisoRepository).saveAll(any());
+        verify(rolPermisoRepository).deleteAll(any());
+        verify(rolPermisoRepository).saveAllAndFlush(any());
     }
 
     @Test
@@ -98,13 +100,13 @@ class RolServiceTest {
     void asignarPermisosPermisoInexistente() {
         Set<Long> permisoIds = Set.of(10L, 999L);
 
-        when(rolRepository.findById(1L)).thenReturn(Optional.of(testRol));
+        when(rolRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testRol));
         when(permisoRepository.findAllById(permisoIds)).thenReturn(List.of(permisoVentas));
 
         assertThatThrownBy(() -> rolService.asignarPermisos(1L, permisoIds))
                 .isInstanceOf(RecursosNoEncontradosException.class)
                 .hasMessageContaining("Permisos no encontrados");
 
-        verify(rolPermisoRepository, never()).deleteByRolIdRol(any());
+        verify(rolPermisoRepository, never()).deleteAll(any());
     }
 }
