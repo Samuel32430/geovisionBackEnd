@@ -91,7 +91,7 @@ public class RecetaMapper {
                 .distanciaPupilar(medida.getDistanciaPupilar())
                 .prisma(medida.getPrisma())
                 .observaciones(medida.getObservaciones())
-                .idReceta(medida.getReceta().getIdReceta())
+                .idReceta(medida.getReceta() == null ? null : medida.getReceta().getIdReceta())
                 .ojoDerecho(toMedidaOjoDTO(medida.getMedidaOjoDerecha()))
                 .ojoIzquierdo(toMedidaOjoDTO(medida.getMedidaOjoIzquierda()))
                 .idEnvioLaboratorio(medida.getEnvioLaboratorio() == null
