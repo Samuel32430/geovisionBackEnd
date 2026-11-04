@@ -66,6 +66,11 @@ public class SecurityDataInitializer implements CommandLineRunner {
             permisosCreados.add(crearPermisoSiNoExiste("ORDENES_TRABAJO_GESTIONAR", ModuloEnum.ORDENES_TRABAJO));
 
             permisosCreados.add(crearPermisoSiNoExiste("INVENTARIO_LEER", ModuloEnum.INVENTARIO));
+            permisosCreados.add(crearPermisoSiNoExiste("PRODUCTOS_LEER", ModuloEnum.INVENTARIO));
+            permisosCreados.add(crearPermisoSiNoExiste("PRODUCTOS_REGISTRAR", ModuloEnum.INVENTARIO));
+            permisosCreados.add(crearPermisoSiNoExiste("PRODUCTOS_GESTIONAR", ModuloEnum.INVENTARIO));
+            permisosCreados.add(crearPermisoSiNoExiste("INVENTARIO_REGISTRAR", ModuloEnum.INVENTARIO));
+            permisosCreados.add(crearPermisoSiNoExiste("INVENTARIO_AJUSTAR", ModuloEnum.INVENTARIO));
             permisosCreados.add(crearPermisoSiNoExiste("INVENTARIO_GESTIONAR", ModuloEnum.INVENTARIO));
 
             permisosCreados.add(crearPermisoSiNoExiste("MANTENIMIENTO_GESTIONAR", ModuloEnum.GESTION_MANTENIMIENTO));
@@ -94,6 +99,8 @@ public class SecurityDataInitializer implements CommandLineRunner {
                 asignarPermisoARol(vendedor, "PAGOS_GESTIONAR");
                 asignarPermisoARol(vendedor, "PACIENTES_LEER");
                 asignarPermisoARol(vendedor, "PACIENTES_REGISTRAR");
+                asignarPermisoARol(vendedor, "PRODUCTOS_LEER");
+                asignarPermisoARol(vendedor, "INVENTARIO_LEER");
             }
 
             log.info("Catálogo base de seguridad inicializado correctamente");
