@@ -30,6 +30,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 
     List<Producto> findByEstado(EstadoGeneralEnum estado);
 
+    Page<Producto> findByEstadoAndStockGreaterThan(EstadoGeneralEnum estado, Integer stock, Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Producto p WHERE p.idProducto = :id")
     Optional<Producto> findByIdForUpdate(@Param("id") Long id);
