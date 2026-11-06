@@ -292,7 +292,7 @@ class VentaServiceTest {
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
-        when(recetaRepository.findById(5L))
+        when(recetaRepository.findByIdForUpdate(5L))
                 .thenReturn(Optional.of(receta));
         when(servicioRepository.findById(20L))
                 .thenReturn(Optional.of(servicioTest));
@@ -342,7 +342,7 @@ class VentaServiceTest {
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
-        when(recetaRepository.findById(5L))
+        when(recetaRepository.findByIdForUpdate(5L))
                 .thenReturn(Optional.of(receta));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
@@ -377,7 +377,7 @@ class VentaServiceTest {
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
-        when(recetaRepository.findById(5L))
+        when(recetaRepository.findByIdForUpdate(5L))
                 .thenReturn(Optional.of(receta));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
