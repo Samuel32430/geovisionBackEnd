@@ -12,6 +12,9 @@ import pe.edu.upeu.geovisionBackEnd.dto.PagoRegistroRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.VentaRegistroRequestDTO;
 import pe.edu.upeu.geovisionBackEnd.dto.VentaResponseDTO;
 import pe.edu.upeu.geovisionBackEnd.entity.Empleado;
+import pe.edu.upeu.geovisionBackEnd.entity.MovimientoStockLog;
+import pe.edu.upeu.geovisionBackEnd.enums.MotivoMovimientoStockEnum;
+import pe.edu.upeu.geovisionBackEnd.repository.MovimientoStockLogRepository;
 import pe.edu.upeu.geovisionBackEnd.entity.Paciente;
 import pe.edu.upeu.geovisionBackEnd.entity.Pago;
 import pe.edu.upeu.geovisionBackEnd.entity.Producto;
@@ -62,6 +65,7 @@ public class VentaServiceImpl implements VentaService {
     private final PacienteRepository pacienteRepository;
     private final EmpleadoRepository empleadoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final MovimientoStockLogRepository movimientoStockLogRepository;
     private final VentaMapper ventaMapper;
     private final PagoMapper pagoMapper;
 
@@ -98,49 +102,7 @@ public class VentaServiceImpl implements VentaService {
             }
         }
 
-        // 4. Validar y descontar stock de productos físicos (RN-VE05)
-        List<ProductoVendido> productosParaGuardar = new ArrayList<>();
-        if (request.getProductos() != null && !request.getProductos().isEmpty()) {
-            for (ProductoVendidoDTO prodDTO : request.getProductos()) {
-                Producto producto = productoRepository.findById(prodDTO.getIdProducto())
-                        .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.getIdProducto()));
-
-                if (producto.getStock() < prodDTO.getCantidad()) {
-                    throw new ReglaNegocioException("Stock insuficiente para el producto '" + producto.getNombre() +
-                            "'. Stock disponible: " + producto.getStock() + ", Solicitado: " + prodDTO.getCantidad() + " (RN-VE05)");
-                }
-
-                // Descuento atómico de stock
-                producto.setStock(producto.getStock() - prodDTO.getCantidad());
-                productoRepository.save(producto);
-
-                BigDecimal subTotal = prodDTO.getPrecioUnit().multiply(BigDecimal.valueOf(prodDTO.getCantidad()));
-                ProductoVendido pv = ProductoVendido.builder()
-                        .producto(producto)
-                        .cantidad(prodDTO.getCantidad())
-                        .precioUnit(prodDTO.getPrecioUnit())
-                        .subTotal(subTotal)
-                        .build();
-                productosParaGuardar.add(pv);
-            }
-        }
-
-        // 5. Validar servicios solicitados
-        List<ServicioVendido> serviciosParaGuardar = new ArrayList<>();
-        if (request.getServicios() != null && !request.getServicios().isEmpty()) {
-            for (ServicioVendidoDTO servDTO : request.getServicios()) {
-                Servicio servicio = servicioRepository.findById(servDTO.getIdServicio())
-                        .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.getIdServicio()));
-
-                ServicioVendido sv = ServicioVendido.builder()
-                        .servicio(servicio)
-                        .precio(servDTO.getPrecio())
-                        .build();
-                serviciosParaGuardar.add(sv);
-            }
-        }
-
-        // 6. Validar pagos, adelantos y métodos de pago (RN-VE06, RN-VE07, RN-VE08, RN-VE12, RN-VE13)
+        // 4. Validar pagos, adelantos y métodos de pago de forma anticipada (Fail-Fast)
         if (request.getPagos() == null || request.getPagos().isEmpty()) {
             throw new ReglaNegocioException("Debe registrar al menos un pago inicial o completo para la venta");
         }
@@ -185,12 +147,12 @@ public class VentaServiceImpl implements VentaService {
             }
         }
 
-        // 7. Determinar estado inicial de la venta (RN-VE09)
+        // 5. Determinar estado inicial de la venta (RN-VE09)
         EstadoVentaEnum estadoInicial = (totalPagado.compareTo(request.getTotal()) >= 0)
                 ? EstadoVentaEnum.PAGADA
                 : EstadoVentaEnum.PENDIENTE;
 
-        // 8. Generar número de comprobante si no se proporcionó
+        // 6. Generar número de comprobante si no se proporcionó
         String numeroComprobante = request.getNumeroComprobante();
         if (numeroComprobante == null || numeroComprobante.trim().isEmpty()) {
             numeroComprobante = generarNumeroComprobante(request.getTipoComprobante());
@@ -201,7 +163,78 @@ public class VentaServiceImpl implements VentaService {
             }
         }
 
-        // 9. Persistir cabecera de la venta
+        // 7. Determinar usuario responsable para auditoría de inventario (Kardex)
+        Usuario usuarioResponsable = empleado.getUsuario();
+        if (usuarioResponsable == null) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+                usuarioResponsable = usuarioRepository.findByNombreOrCorreo(auth.getName(), auth.getName()).orElse(null);
+            }
+        }
+        if (usuarioResponsable == null) {
+            usuarioResponsable = usuarioRepository.findById(1L).orElse(null);
+        }
+
+        // 8. Validar y descontar stock de productos físicos con bloqueo pesimista (RN-VE05)
+        List<ProductoVendido> productosParaGuardar = new ArrayList<>();
+        List<MovimientoStockLog> movimientosParaGuardar = new ArrayList<>();
+
+        if (request.getProductos() != null && !request.getProductos().isEmpty()) {
+            for (ProductoVendidoDTO prodDTO : request.getProductos()) {
+                Producto producto = productoRepository.findByIdForUpdate(prodDTO.getIdProducto())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.getIdProducto()));
+
+                int stockPrevio = producto.getStock() != null ? producto.getStock() : 0;
+                if (stockPrevio < prodDTO.getCantidad()) {
+                    throw new ReglaNegocioException("Stock insuficiente para el producto '" + producto.getNombre() +
+                            "'. Stock disponible: " + stockPrevio + ", Solicitado: " + prodDTO.getCantidad() + " (RN-VE05)");
+                }
+
+                // Descuento atómico de stock
+                int nuevoStock = stockPrevio - prodDTO.getCantidad();
+                producto.setStock(nuevoStock);
+                productoRepository.save(producto);
+
+                BigDecimal subTotal = prodDTO.getPrecioUnit().multiply(BigDecimal.valueOf(prodDTO.getCantidad()));
+                ProductoVendido pv = ProductoVendido.builder()
+                        .producto(producto)
+                        .cantidad(prodDTO.getCantidad())
+                        .precioUnit(prodDTO.getPrecioUnit())
+                        .subTotal(subTotal)
+                        .build();
+                productosParaGuardar.add(pv);
+
+                // Preparar log de Kardex (Motivo 5: SALIDA_POR_VENTA)
+                MovimientoStockLog movimiento = MovimientoStockLog.builder()
+                        .producto(producto)
+                        .usuario(usuarioResponsable)
+                        .fechaRegistro(LocalDateTime.now())
+                        .cantidad(prodDTO.getCantidad())
+                        .stockPrevio(stockPrevio)
+                        .stockPosterior(nuevoStock)
+                        .motivo(MotivoMovimientoStockEnum.SALIDA_POR_VENTA.getCodigo())
+                        .observaciones("Salida por venta. Comprobante: " + numeroComprobante)
+                        .build();
+                movimientosParaGuardar.add(movimiento);
+            }
+        }
+
+        // 9. Validar servicios solicitados
+        List<ServicioVendido> serviciosParaGuardar = new ArrayList<>();
+        if (request.getServicios() != null && !request.getServicios().isEmpty()) {
+            for (ServicioVendidoDTO servDTO : request.getServicios()) {
+                Servicio servicio = servicioRepository.findById(servDTO.getIdServicio())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.getIdServicio()));
+
+                ServicioVendido sv = ServicioVendido.builder()
+                        .servicio(servicio)
+                        .precio(servDTO.getPrecio())
+                        .build();
+                serviciosParaGuardar.add(sv);
+            }
+        }
+
+        // 10. Persistir cabecera de la venta
         Venta venta = Venta.builder()
                 .empleado(empleado)
                 .paciente(paciente)
@@ -215,19 +248,24 @@ public class VentaServiceImpl implements VentaService {
 
         Venta ventaGuardada = ventaRepository.save(venta);
 
-        // 10. Persistir detalles de productos
+        // 11. Persistir detalles de productos y movimientos de kardex
         for (ProductoVendido pv : productosParaGuardar) {
             pv.setVenta(ventaGuardada);
             productoVendidoRepository.save(pv);
         }
 
-        // 11. Persistir detalles de servicios
+        for (MovimientoStockLog mov : movimientosParaGuardar) {
+            mov.setObservaciones("Salida por venta. Comprobante ID: " + ventaGuardada.getIdVenta() + " (" + numeroComprobante + ")");
+            movimientoStockLogRepository.save(mov);
+        }
+
+        // 12. Persistir detalles de servicios
         for (ServicioVendido sv : serviciosParaGuardar) {
             sv.setVenta(ventaGuardada);
             servicioVendidoRepository.save(sv);
         }
 
-        // 12. Persistir pagos realizados
+        // 13. Persistir pagos realizados
         List<Pago> pagosGuardados = new ArrayList<>();
         for (PagoRegistroRequestDTO pagoDTO : request.getPagos()) {
             Pago pago = pagoMapper.toEntity(pagoDTO, ventaGuardada);

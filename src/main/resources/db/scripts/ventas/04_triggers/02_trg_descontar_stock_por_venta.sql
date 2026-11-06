@@ -14,7 +14,21 @@ DECLARE
     v_stock_actual NUMBER;
     v_stock_nuevo NUMBER;
     v_id_usuario NUMBER;
+    v_ya_registrado NUMBER;
 BEGIN
+    -- Verificar si la aplicacion backend ya registro la salida de inventario (evitar doble descuento)
+    SELECT COUNT(*)
+    INTO v_ya_registrado
+    FROM MOVIMIENTO_STOCK_LOG
+    WHERE id_producto = :NEW.id_producto
+      AND motivo = 5
+      AND (observaciones LIKE '%ID: ' || :NEW.id_venta || '%' 
+           OR observaciones LIKE '%(' || :NEW.id_venta || ')%');
+
+    IF v_ya_registrado > 0 THEN
+        RETURN; -- Ya procesado atomicamente por la capa de aplicacion
+    END IF;
+
     -- Obtener stock actual con bloqueo pesimista
     SELECT stock 
     INTO v_stock_actual

@@ -30,6 +30,7 @@ import pe.edu.upeu.geovisionBackEnd.exception.ReglaNegocioException;
 import pe.edu.upeu.geovisionBackEnd.mapper.PagoMapper;
 import pe.edu.upeu.geovisionBackEnd.mapper.VentaMapper;
 import pe.edu.upeu.geovisionBackEnd.repository.EmpleadoRepository;
+import pe.edu.upeu.geovisionBackEnd.repository.MovimientoStockLogRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.PacienteRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.PagoRepository;
 import pe.edu.upeu.geovisionBackEnd.repository.ProductoRepository;
@@ -85,6 +86,9 @@ class VentaServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private MovimientoStockLogRepository movimientoStockLogRepository;
 
     @Mock
     private VentaMapper ventaMapper;
@@ -170,7 +174,7 @@ class VentaServiceTest {
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
-        when(productoRepository.findById(10L))
+        when(productoRepository.findByIdForUpdate(10L))
                 .thenReturn(Optional.of(productoTest));
         when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> {
             Venta v = inv.getArgument(0);
@@ -198,6 +202,7 @@ class VentaServiceTest {
         assertThat(resultado.getSaldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(productoTest.getStock()).isEqualTo(9); // 10 - 1
         verify(productoRepository).save(productoTest);
+        verify(movimientoStockLogRepository).save(any());
         verify(ventaRepository).save(any(Venta.class));
     }
 
@@ -223,7 +228,7 @@ class VentaServiceTest {
 
         when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
                 .thenReturn(Optional.of(empleadoTest));
-        when(productoRepository.findById(10L))
+        when(productoRepository.findByIdForUpdate(10L))
                 .thenReturn(Optional.of(productoTest));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
@@ -253,8 +258,6 @@ class VentaServiceTest {
 
         when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
                 .thenReturn(Optional.of(empleadoTest));
-        when(productoRepository.findById(10L))
-                .thenReturn(Optional.of(productoTest));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
                 .isInstanceOf(ReglaNegocioException.class)
@@ -406,8 +409,6 @@ class VentaServiceTest {
 
         when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
                 .thenReturn(Optional.of(empleadoTest));
-        when(productoRepository.findById(10L))
-                .thenReturn(Optional.of(productoTest));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
                 .isInstanceOf(ReglaNegocioException.class)

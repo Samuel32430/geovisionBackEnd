@@ -60,7 +60,8 @@ BEGIN
         );
     END IF;
 
-    COMMIT;
+    -- Se prescinde de COMMIT explicito para permitir transaccionalidad atomica desde la aplicacion
+    -- y asegurar capacidad de ROLLBACK integral ante excepciones concurrentes.
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
