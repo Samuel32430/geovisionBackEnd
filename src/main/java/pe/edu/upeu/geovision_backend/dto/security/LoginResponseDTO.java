@@ -1,28 +1,26 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class LoginResponseDTO {
-
-    private String token;
-
-    @Builder.Default
-    private String tipoToken = "Bearer";
-
-    private Long idUsuario;
-    private String username;
-    private String correo;
-    private Long idPersona;
-    private String nombreCompleto;
-    private List<String> roles;
-    private List<String> permisos;
+@Builder(toBuilder = true)
+@com.fasterxml.jackson.databind.annotation.JsonDeserialize(builder = LoginResponseDTO.LoginResponseDTOBuilder.class)
+@tools.jackson.databind.annotation.JsonDeserialize(builder = LoginResponseDTO.LoginResponseDTOBuilder.class)
+public record LoginResponseDTO(
+    String token,
+    String tipoToken,
+    Long idUsuario,
+    String username,
+    String correo,
+    Long idPersona,
+    String nombreCompleto,
+    List<String> roles,
+    List<String> permisos
+) {
+    @com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
+    @tools.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
+    public static class LoginResponseDTOBuilder {
+        private String tipoToken = "Bearer";
+    }
 }

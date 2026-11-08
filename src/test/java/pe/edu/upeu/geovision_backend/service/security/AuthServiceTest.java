@@ -141,10 +141,10 @@ class AuthServiceTest {
         LoginResponseDTO response = authService.login(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.getToken()).isEqualTo("fake.jwt.token");
-        assertThat(response.getUsername()).isEqualTo("juan.perez");
-        assertThat(response.getRoles()).containsExactly("VENDEDOR");
-        assertThat(response.getPermisos()).containsExactlyInAnyOrder("VENTAS_LEER", "VENTAS_REGISTRAR");
+        assertThat(response.token()).isEqualTo("fake.jwt.token");
+        assertThat(response.username()).isEqualTo("juan.perez");
+        assertThat(response.roles()).containsExactly("VENDEDOR");
+        assertThat(response.permisos()).containsExactlyInAnyOrder("VENTAS_LEER", "VENTAS_REGISTRAR");
         verify(usuarioLogService).registrar(testUser, TipoLogEnum.LOGIN);
     }
 
@@ -170,8 +170,8 @@ class AuthServiceTest {
 
         LogoutResponseDTO response = authService.logout("juan.perez");
 
-        assertThat(response.getExitoso()).isTrue();
-        assertThat(response.getMensaje()).contains("exitosamente");
+        assertThat(response.exitoso()).isTrue();
+        assertThat(response.mensaje()).contains("exitosamente");
         verify(usuarioLogService).registrar(testUser, TipoLogEnum.LOGOUT);
     }
 

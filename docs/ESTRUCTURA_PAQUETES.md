@@ -73,9 +73,10 @@ general, sus siete converters y los métodos `getEstadoCodigo`/`setEstadoCodigo`
 asociados. Lombok proporciona `getActivo`/`setActivo`; las consultas JPQL y los
 métodos derivados de repositorios usan la propiedad `activo`.
 
-Se conservan las columnas `estado` y su representación numérica `0/1`, mediante
-`@JdbcTypeCode(SqlTypes.INTEGER)`, sin converters propios. También se conservan
-los campos numéricos de los DTO y parámetros públicos, con validación `0/1` en
+Se conservan los nombres de columna `estado`, sin converters propios ni
+anotaciones de tipo JDBC. Hibernate elige la representación Boolean según el
+dialecto configurado. También se conservan los campos numéricos de los DTO y
+parámetros públicos, con validación `0/1` en
 la entrada y mapeo al Boolean. El ordenamiento público `sortBy=estado` se dirige
 a la propiedad `activo`. Las comprobaciones de permisos, autenticación y
 disponibilidad utilizan `Boolean.TRUE.equals(...)`.
@@ -88,6 +89,28 @@ predeterminado activo cuando se inserta un indicador nulo.
 Verificación final de este cambio: `./mvnw.cmd -o clean test`, **234 pruebas
 correctas, 0 fallos, 0 errores**. El clean elimina también los binarios antiguos
 del enum y sus converters. Log: `target/boolean-activo-verification.log`.
+
+Tras retirar las siete anotaciones de tipo JDBC y sus imports, `./mvnw.cmd -o
+test` también termina correctamente: **234 pruebas, 0 fallos y 0 errores**.
+Log: `target/remove-jdbc-type-tests.log`.
+
+## DTO como records
+
+Los 62 tipos DTO son records: se convirtieron las 55 clases restantes y se
+conservaron los siete records existentes, incluido el DTO genérico de paginación.
+El DTO de errores también es un record. Los consumidores usan accesores como
+`request.nombre()`; las actualizaciones de fixtures construyen nuevas instancias.
+Los builders y `toBuilder()` facilitan la construcción de los DTO con muchos campos.
+
+Las restricciones Jakarta Validation permanecen en los componentes. Los DTO con
+valores predeterminados se deserializan mediante sus builders para conservar la
+diferencia entre campo omitido y `null` explícito, con soporte para Jackson 2 y 3.
+Se mantienen los campos JSON calculados, la proyección de selección de empleados
+y la exclusión de contraseñas de `UsuarioRequestDTO.toString()`.
+
+`./mvnw.cmd -o clean test`: **241 pruebas correctas, 0 fallos y 0 errores**.
+Incluye siete pruebas de compatibilidad JSON, defaults, propiedades calculadas y
+redacción de contraseñas. Log: `target/dto-record-final-tests.log`.
 
 ## Inventario completo
 
@@ -359,3 +382,4 @@ del enum y sus converters. Log: `target/boolean-activo-verification.log`.
 | `src/test/java/pe/edu/upeu/geovisionBackEnd/service/VentaHistorialServiceTest.java` | `src/test/java/pe/edu/upeu/geovision_backend/service/ventas/VentaHistorialServiceTest.java` |
 | `src/test/java/pe/edu/upeu/geovisionBackEnd/service/VentaServiceTest.java` | `src/test/java/pe/edu/upeu/geovision_backend/service/ventas/VentaServiceTest.java` |
 | `—` | `src/test/java/pe/edu/upeu/geovision_backend/exception/comun/GlobalExceptionHandlerTest.java` |
+| `—` | `src/test/java/pe/edu/upeu/geovision_backend/dto/DtoRecordJsonContractTest.java` |

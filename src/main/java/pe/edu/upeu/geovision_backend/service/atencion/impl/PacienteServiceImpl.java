@@ -90,26 +90,26 @@ public class PacienteServiceImpl implements PacienteService {
     @Override
     @Transactional
     public PacienteResponseDTO registrarPaciente(PacienteRequestDTO request, String usernameAuditoria) {
-        Usuario actor = obtenerActor(usernameAuditoria, request.getIdUsuario());
-        if ((request.getIdPersona() == null) == (request.getPersona() == null)) {
+        Usuario actor = obtenerActor(usernameAuditoria, request.idUsuario());
+        if ((request.idPersona() == null) == (request.persona() == null)) {
             throw new ReglaNegocioException("Envíe idPersona o los datos de persona, exclusivamente uno de ellos");
         }
         Persona persona;
-        if (request.getIdPersona() != null) {
-            persona = bloquearPersona(request.getIdPersona());
+        if (request.idPersona() != null) {
+            persona = bloquearPersona(request.idPersona());
             if (pacienteRepository.existsById(persona.getIdPersona())) {
                 throw new ReglaNegocioException("La persona ya está registrada como paciente");
             }
         } else {
-            String documento = request.getPersona().getNumeroDocumento().trim();
+            String documento = request.persona().numeroDocumento().trim();
             if (personaRepository.existsByNumeroDocumento(documento)) {
                 throw new ReglaNegocioException("El documento ya está registrado; seleccione la persona existente");
             }
-            persona = pacienteMapper.toPersona(request.getPersona());
+            persona = pacienteMapper.toPersona(request.persona());
             guardarPersona(persona);
         }
         Paciente paciente = Paciente.builder().persona(persona).usuario(actor)
-                .activo(estado(request.getEstado() == null ? 1 : request.getEstado())).build();
+                .activo(estado(request.estado() == null ? 1 : request.estado())).build();
         pacienteRepository.saveAndFlush(paciente);
         auditar(paciente, actor);
         return pacienteMapper.toPacienteResponse(paciente);
@@ -119,20 +119,20 @@ public class PacienteServiceImpl implements PacienteService {
     @Transactional
     public PacienteResponseDTO actualizarPaciente(Long idPaciente, PacienteRequestDTO request,
                                                   String usernameAuditoria) {
-        Usuario actor = obtenerActor(usernameAuditoria, request.getIdUsuario());
-        if (request.getPersona() == null) {
+        Usuario actor = obtenerActor(usernameAuditoria, request.idUsuario());
+        if (request.persona() == null) {
             throw new ReglaNegocioException("Los datos de persona son obligatorios para actualizar");
         }
-        if (request.getIdPersona() != null && !request.getIdPersona().equals(idPaciente)) {
+        if (request.idPersona() != null && !request.idPersona().equals(idPaciente)) {
             throw new ReglaNegocioException("No se puede cambiar la identidad del paciente");
         }
         Persona persona = bloquearPersona(idPaciente);
         Paciente paciente = buscarPaciente(idPaciente);
-        String documento = request.getPersona().getNumeroDocumento().trim();
+        String documento = request.persona().numeroDocumento().trim();
         if (personaRepository.existsByNumeroDocumentoAndIdPersonaNot(documento, idPaciente)) {
             throw new ReglaNegocioException("El documento ya pertenece a otra persona");
         }
-        pacienteMapper.actualizarPersona(persona, request.getPersona());
+        pacienteMapper.actualizarPersona(persona, request.persona());
         guardarPersona(persona);
         // El estado se gestiona exclusivamente con cambiarEstadoPaciente.
         auditar(paciente, actor);

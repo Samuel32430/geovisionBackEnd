@@ -1,34 +1,27 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import pe.edu.upeu.geovision_backend.enums.atencion.SexoEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 
 import java.time.LocalDate;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class PersonaResponseDTO {
-
-    private Long idPersona;
-    private String nombres;
-    private String apellidos;
-    private String nombreCompleto;
-    private String telefono;
-    private LocalDate fechaNacimiento;
-    private SexoEnum sexo;
-    private String sexoDescripcion;
-    private String direccion;
-    private TipoDocumentoEnum tipoDocumento;
-    private String tipoDocumentoDescripcion;
-    private String numeroDocumento;
-
-    public String getNombreCompleto() {
+@Builder(toBuilder = true)
+public record PersonaResponseDTO(
+    Long idPersona,
+    String nombres,
+    String apellidos,
+    String nombreCompleto,
+    String telefono,
+    LocalDate fechaNacimiento,
+    SexoEnum sexo,
+    String sexoDescripcion,
+    String direccion,
+    TipoDocumentoEnum tipoDocumento,
+    String tipoDocumentoDescripcion,
+    String numeroDocumento
+) {
+    public String nombreCompleto() {
         if (nombreCompleto != null && !nombreCompleto.isBlank()) {
             return nombreCompleto;
         }

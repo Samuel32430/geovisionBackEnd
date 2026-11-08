@@ -48,7 +48,7 @@ public class MantenimientoController {
     @PostMapping("/categorias")
     public ResponseEntity<CategoriaDTO> registrarCategoria(@Valid @RequestBody CategoriaDTO request) {
         var response = service.registrarCategoria(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/categorias/" + response.getIdCategoria())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/categorias/" + response.idCategoria())).body(response);
     }
 
     @PutMapping("/categorias/{id}")
@@ -72,7 +72,7 @@ public class MantenimientoController {
     @PostMapping("/materiales-cristal")
     public ResponseEntity<MaterialCristalDTO> registrarMaterialCristal(@Valid @RequestBody MaterialCristalDTO request) {
         var response = service.registrarMaterialCristal(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/materiales-cristal/" + response.getIdMaterialCristal())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/materiales-cristal/" + response.idMaterialCristal())).body(response);
     }
 
     @PutMapping("/materiales-cristal/{id}")
@@ -96,7 +96,7 @@ public class MantenimientoController {
     @PostMapping("/tratamientos-cristal")
     public ResponseEntity<TratamientoCristalDTO> registrarTratamientoCristal(@Valid @RequestBody TratamientoCristalDTO request) {
         var response = service.registrarTratamientoCristal(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/tratamientos-cristal/" + response.getIdTratamientoCristal())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/tratamientos-cristal/" + response.idTratamientoCristal())).body(response);
     }
 
     @PutMapping("/tratamientos-cristal/{id}")
@@ -121,7 +121,7 @@ public class MantenimientoController {
     @PostMapping("/servicios")
     public ResponseEntity<ServicioDTO> registrarServicio(@Valid @RequestBody ServicioDTO request) {
         var response = service.registrarServicio(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/servicios/" + response.getIdServicio())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/servicios/" + response.idServicio())).body(response);
     }
 
     @PutMapping("/servicios/{id}")
@@ -146,7 +146,7 @@ public class MantenimientoController {
     @PostMapping("/laboratorios")
     public ResponseEntity<LaboratorioDTO> registrarLaboratorio(@Valid @RequestBody LaboratorioDTO request) {
         var response = service.registrarLaboratorio(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/laboratorios/" + response.getIdLaboratorio())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/laboratorios/" + response.idLaboratorio())).body(response);
     }
 
     @PutMapping("/laboratorios/{id}")

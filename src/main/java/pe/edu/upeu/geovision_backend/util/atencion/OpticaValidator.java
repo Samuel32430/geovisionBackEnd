@@ -15,16 +15,16 @@ public class OpticaValidator {
 
     public void validarMedidas(List<MedidaRequestDTO> medidas) {
         for (MedidaRequestDTO medida : medidas) {
-            validarOjo(medida.getOjoDerecho());
-            validarOjo(medida.getOjoIzquierdo());
+            validarOjo(medida.ojoDerecho());
+            validarOjo(medida.ojoIzquierdo());
         }
     }
 
     private void validarOjo(MedidaOjoDTO ojo) {
-        validarPaso(ojo.getEsfera(), "esfera");
-        validarPaso(ojo.getCilindro(), "cilindro");
-        validarPaso(ojo.getAdicion(), "adición");
-        if (ojo.getEje() != null && (ojo.getEje() < 0 || ojo.getEje() > 180)) {
+        validarPaso(ojo.esfera(), "esfera");
+        validarPaso(ojo.cilindro(), "cilindro");
+        validarPaso(ojo.adicion(), "adición");
+        if (ojo.eje() != null && (ojo.eje() < 0 || ojo.eje() > 180)) {
             throw new ReglaNegocioException("El eje debe estar entre 0 y 180 grados");
         }
     }

@@ -18,8 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -57,7 +55,6 @@ public class Producto {
     @Builder.Default
     private Integer stock = 0;
 
-    @JdbcTypeCode(SqlTypes.INTEGER)
     @Column(name = "estado", nullable = false)
     @Builder.Default
     private Boolean activo = true;

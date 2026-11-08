@@ -119,7 +119,7 @@ class HistorialClinicoControllerTest {
                 .idMaterialCristal(material.getIdMaterialCristal()).idProducto(frameId).subTotal(new BigDecimal("380.00"))
                 .medidasIds(selectedMeasures)
                 .tratamientosCristalIds(withTreatment ? List.of(treatment.getIdTratamientoCristal()) : null)
-                .build()).getIdLente();
+                .build()).idLente();
     }
 
     @Test
@@ -287,7 +287,7 @@ class HistorialClinicoControllerTest {
             statistics.clear();
             var result = service.listarRecetasPaginadas(patientId, PageRequest.of(0, 4));
             long largePageStatements = statistics.getPrepareStatementCount();
-            assertThat(result.getContent()).hasSize(4).allSatisfy(dto -> assertThat(dto.getLentes()).hasSize(1));
+            assertThat(result.getContent()).hasSize(4).allSatisfy(dto -> assertThat(dto.lentes()).hasSize(1));
             assertThat(largePageStatements).isLessThanOrEqualTo(smallPageStatements + 1).isLessThanOrEqualTo(9);
         } finally {
             statistics.setStatisticsEnabled(previouslyEnabled);

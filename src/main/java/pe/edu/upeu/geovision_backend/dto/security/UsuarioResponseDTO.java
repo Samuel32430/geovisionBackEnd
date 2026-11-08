@@ -1,24 +1,18 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class UsuarioResponseDTO {
-
-    private Long idUsuario;
-    private String nombre;
-    private String correo;
-    private Integer estado;
-    private String estadoDescripcion;
-    private Long idPersona;
-    private String nombreCompletoPersona;
-    private Set<RolDTO> roles;
+@Builder(toBuilder = true)
+public record UsuarioResponseDTO(
+    Long idUsuario,
+    String nombre,
+    String correo,
+    Integer estado,
+    String estadoDescripcion,
+    Long idPersona,
+    String nombreCompletoPersona,
+    Set<RolDTO> roles
+) {
 }

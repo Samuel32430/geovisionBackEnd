@@ -110,7 +110,7 @@ class PagoPendienteServiceTest {
         List<PagoPendienteResponseDTO> resultado = pagoPendienteService.listarVentasConPagosPendientes("Maria");
 
         assertThat(resultado).hasSize(1);
-        assertThat(resultado.get(0).getSaldoPendiente()).isEqualByComparingTo(new BigDecimal("200.00"));
+        assertThat(resultado.get(0).saldoPendiente()).isEqualByComparingTo(new BigDecimal("200.00"));
     }
 
     @Test
@@ -133,8 +133,8 @@ class PagoPendienteServiceTest {
         PagoPendienteResponseDTO resultado = pagoPendienteService.obtenerSaldoPendientePorVenta(100L);
 
         assertThat(resultado).isNotNull();
-        assertThat(resultado.getIdVenta()).isEqualTo(100L);
-        assertThat(resultado.getSaldoPendiente()).isEqualByComparingTo(new BigDecimal("200.00"));
+        assertThat(resultado.idVenta()).isEqualTo(100L);
+        assertThat(resultado.saldoPendiente()).isEqualByComparingTo(new BigDecimal("200.00"));
     }
 
     @Test
@@ -164,7 +164,7 @@ class PagoPendienteServiceTest {
         PagoResponseDTO resultado = pagoPendienteService.registrarPagoPendiente(request);
 
         assertThat(resultado).isNotNull();
-        assertThat(resultado.getIdPago()).isEqualTo(50L);
+        assertThat(resultado.idPago()).isEqualTo(50L);
         assertThat(ventaPendiente.getEstado()).isEqualTo(EstadoVentaEnum.PENDIENTE);
         verify(ventaRepository, never()).save(any());
     }

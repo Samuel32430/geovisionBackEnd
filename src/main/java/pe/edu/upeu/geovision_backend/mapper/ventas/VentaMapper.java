@@ -42,10 +42,10 @@ public class VentaMapper {
         }
 
         return Venta.builder()
-                .total(dto.getTotal())
+                .total(dto.total())
                 .estado(estado)
-                .tipoComprobante(dto.getTipoComprobante())
-                .numeroComprobante(dto.getNumeroComprobante() != null ? dto.getNumeroComprobante().trim() : null)
+                .tipoComprobante(dto.tipoComprobante())
+                .numeroComprobante(dto.numeroComprobante() != null ? dto.numeroComprobante().trim() : null)
                 .empleado(empleado)
                 .paciente(paciente)
                 .receta(receta)

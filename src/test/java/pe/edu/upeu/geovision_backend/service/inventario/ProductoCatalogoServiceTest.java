@@ -125,9 +125,9 @@ class ProductoCatalogoServiceTest {
         ProductoResponseDTO response = productoCatalogoService.registrarProducto(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.getIdProducto()).isEqualTo(20L);
-        assertThat(response.getCodigo()).isEqualTo("ACC-001");
-        assertThat(response.getEsMontura()).isFalse();
+        assertThat(response.idProducto()).isEqualTo(20L);
+        assertThat(response.codigo()).isEqualTo("ACC-001");
+        assertThat(response.esMontura()).isFalse();
         verify(monturaRepository, never()).save(any());
     }
 
@@ -159,9 +159,9 @@ class ProductoCatalogoServiceTest {
         ProductoResponseDTO response = productoCatalogoService.registrarProducto(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.getIdProducto()).isEqualTo(10L);
-        assertThat(response.getEsMontura()).isTrue();
-        assertThat(response.getMontura().getColor()).isEqualTo("Dorado");
+        assertThat(response.idProducto()).isEqualTo(10L);
+        assertThat(response.esMontura()).isTrue();
+        assertThat(response.montura().color()).isEqualTo("Dorado");
         verify(productoRepository).save(any(Producto.class));
         verify(monturaRepository).save(any(Montura.class));
     }
@@ -233,7 +233,7 @@ class ProductoCatalogoServiceTest {
         Page<ProductoResponseDTO> resultado = productoCatalogoService.listarDisponiblesParaVenta(pageable);
 
         assertThat(resultado.getContent()).hasSize(1);
-        assertThat(resultado.getContent().get(0).getStock()).isEqualTo(15);
+        assertThat(resultado.getContent().get(0).stock()).isEqualTo(15);
     }
 
     @Test

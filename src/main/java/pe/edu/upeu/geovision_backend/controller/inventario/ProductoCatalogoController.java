@@ -121,7 +121,7 @@ public class ProductoCatalogoController {
     @PostMapping
     @PreAuthorize("hasAnyAuthority('PRODUCTOS_REGISTRAR', 'INVENTARIO_GESTIONAR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<ProductoResponseDTO> registrarProducto(@Valid @RequestBody ProductoRequestDTO request) {
-        log.info("REST registrar producto con código: {}", request.getCodigo());
+        log.info("REST registrar producto con código: {}", request.codigo());
         ProductoResponseDTO response = productoCatalogoService.registrarProducto(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

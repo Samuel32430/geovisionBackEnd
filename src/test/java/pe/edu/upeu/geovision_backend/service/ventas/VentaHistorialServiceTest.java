@@ -125,7 +125,7 @@ class VentaHistorialServiceTest {
 
         assertThat(resultado).isNotNull();
         assertThat(resultado.getTotalElements()).isEqualTo(1);
-        assertThat(resultado.getContent().get(0).getClienteNombre()).isEqualTo("Ana Torres");
+        assertThat(resultado.getContent().get(0).clienteNombre()).isEqualTo("Ana Torres");
     }
 
     @Test
@@ -152,8 +152,8 @@ class VentaHistorialServiceTest {
         VentaResponseDTO resultado = ventaHistorialService.obtenerDetalleModalVenta(200L);
 
         assertThat(resultado).isNotNull();
-        assertThat(resultado.getIdVenta()).isEqualTo(200L);
-        assertThat(resultado.getNumeroComprobante()).isEqualTo("B001-00000200");
+        assertThat(resultado.idVenta()).isEqualTo(200L);
+        assertThat(resultado.numeroComprobante()).isEqualTo("B001-00000200");
     }
 
     @Test

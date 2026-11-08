@@ -1,36 +1,31 @@
 package pe.edu.upeu.geovision_backend.dto.orden_trabajo;
 
+import lombok.Builder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class NotificacionPacienteDTO {
-
+@Builder(toBuilder = true)
+@com.fasterxml.jackson.databind.annotation.JsonDeserialize(builder = NotificacionPacienteDTO.NotificacionPacienteDTOBuilder.class)
+@tools.jackson.databind.annotation.JsonDeserialize(builder = NotificacionPacienteDTO.NotificacionPacienteDTOBuilder.class)
+public record NotificacionPacienteDTO(
     @NotNull(message = "El ID de la orden de trabajo es obligatorio")
-    private Long idOrdenTrabajo;
-
+    Long idOrdenTrabajo,
     @NotBlank(message = "El teléfono de destino es obligatorio")
     @Size(max = 50, message = "El teléfono no debe superar los 50 caracteres")
-    private String telefono;
-
+    String telefono,
     @NotBlank(message = "El mensaje a enviar es obligatorio")
     @Size(max = 500, message = "El mensaje no debe superar los 500 caracteres")
-    private String mensaje;
-
-    @Builder.Default
-    private String canal = "WHATSAPP";
-
-    private Boolean exitoso;
-
-    private LocalDateTime fechaEnvio;
+    String mensaje,
+    String canal,
+    Boolean exitoso,
+    LocalDateTime fechaEnvio
+) {
+    @com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
+    @tools.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
+    public static class NotificacionPacienteDTOBuilder {
+        private String canal = "WHATSAPP";
+    }
 }

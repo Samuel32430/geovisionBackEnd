@@ -17,14 +17,14 @@ public class PacienteMapper {
     }
 
     public void actualizarPersona(Persona persona, PersonaRequestDTO request) {
-        persona.setNombres(request.getNombres().trim());
-        persona.setApellidos(request.getApellidos().trim());
-        persona.setTelefono(limpiar(request.getTelefono()));
-        persona.setDireccion(limpiar(request.getDireccion()));
-        persona.setFechaNacimiento(request.getFechaNacimiento());
-        persona.setSexo(request.getSexo());
-        persona.setTipoDocumento(request.getTipoDocumento());
-        persona.setNumeroDocumento(request.getNumeroDocumento().trim());
+        persona.setNombres(request.nombres().trim());
+        persona.setApellidos(request.apellidos().trim());
+        persona.setTelefono(limpiar(request.telefono()));
+        persona.setDireccion(limpiar(request.direccion()));
+        persona.setFechaNacimiento(request.fechaNacimiento());
+        persona.setSexo(request.sexo());
+        persona.setTipoDocumento(request.tipoDocumento());
+        persona.setNumeroDocumento(request.numeroDocumento().trim());
     }
 
     public PacienteResponseDTO toPacienteResponse(Paciente paciente) {

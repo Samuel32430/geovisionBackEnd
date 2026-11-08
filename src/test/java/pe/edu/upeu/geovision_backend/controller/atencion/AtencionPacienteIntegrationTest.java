@@ -280,16 +280,17 @@ class AtencionPacienteIntegrationTest {
             Long id = independent.execute(status -> people.saveAndFlush(Persona.builder()
                     .nombres("Paciente concurrente").apellidos("Prueba").numeroDocumento(document)
                     .tipoDocumento(TipoDocumentoEnum.DNI).build()).getIdPersona());
-            request.setIdPersona(id);
+            request = request.toBuilder().idPersona(id).build();
         } else {
-            request.setPersona(PersonaRequestDTO.builder().nombres("Paciente concurrente").apellidos("Prueba")
-                    .numeroDocumento(document).tipoDocumento(TipoDocumentoEnum.DNI).build());
+            request = request.toBuilder().persona(PersonaRequestDTO.builder().nombres("Paciente concurrente").apellidos("Prueba")
+                    .numeroDocumento(document).tipoDocumento(TipoDocumentoEnum.DNI).build()).build();
         }
         CyclicBarrier start = new CyclicBarrier(2);
+        var registration = request;
         Callable<Boolean> register = () -> {
             start.await(10, TimeUnit.SECONDS);
             try {
-                patientService.registrarPaciente(request, actor.getNombre());
+                patientService.registrarPaciente(registration, actor.getNombre());
                 return true;
             } catch (ReglaNegocioException ex) {
                 return false;

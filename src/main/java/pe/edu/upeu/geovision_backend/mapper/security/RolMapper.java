@@ -40,8 +40,8 @@ public class RolMapper {
         }
 
         return Rol.builder()
-                .idRol(dto.getIdRol())
-                .nombre(dto.getNombre())
+                .idRol(dto.idRol())
+                .nombre(dto.nombre())
                 .build();
     }
 }

@@ -26,9 +26,9 @@ public class PermisoMapper {
         }
 
         return Permiso.builder()
-                .idPermiso(dto.getIdPermiso())
-                .nombre(dto.getNombre())
-                .modulo(dto.getModulo())
+                .idPermiso(dto.idPermiso())
+                .nombre(dto.nombre())
+                .modulo(dto.modulo())
                 .build();
     }
 }

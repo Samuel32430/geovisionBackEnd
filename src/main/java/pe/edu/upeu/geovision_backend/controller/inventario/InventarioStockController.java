@@ -62,7 +62,7 @@ public class InventarioStockController {
             Authentication authentication) {
 
         String username = authentication != null ? authentication.getName() : "SISTEMA";
-        log.info("REST registrar entrada de stock para producto ID: {} por usuario: {}", request.getIdProducto(), username);
+        log.info("REST registrar entrada de stock para producto ID: {} por usuario: {}", request.idProducto(), username);
 
         MovimientoStockResponseDTO response = inventarioStockService.registrarEntradaStock(request, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -78,7 +78,7 @@ public class InventarioStockController {
             Authentication authentication) {
 
         String username = authentication != null ? authentication.getName() : "SISTEMA";
-        log.info("REST registrar ajuste de stock para producto ID: {} por usuario: {}", request.getIdProducto(), username);
+        log.info("REST registrar ajuste de stock para producto ID: {} por usuario: {}", request.idProducto(), username);
 
         MovimientoStockResponseDTO response = inventarioStockService.registrarAjusteStock(request, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

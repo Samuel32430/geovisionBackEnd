@@ -29,21 +29,21 @@ public class ComparadorLensometria {
         var tipos = new HashSet<TipoMedidaEnum>();
         boolean aprobado = true;
         for (var m : control) {
-            if (m == null || m.getTipoMedida() == null || !tipos.add(m.getTipoMedida()) || !referencias.containsKey(m.getTipoMedida()))
+            if (m == null || m.tipoMedida() == null || !tipos.add(m.tipoMedida()) || !referencias.containsKey(m.tipoMedida()))
                 throw new ReglaNegocioException("La lensometria contiene tipos repetidos o ajenos al lente");
-            if (m.getIdReceta() != null || m.getIdEnvioLaboratorio() != null || m.getOjoDerecho() == null || m.getOjoIzquierdo() == null
-                    || m.getOjoDerecho().getIdMedidaOjo() != null || m.getOjoIzquierdo().getIdMedidaOjo() != null)
+            if (m.idReceta() != null || m.idEnvioLaboratorio() != null || m.ojoDerecho() == null || m.ojoIzquierdo() == null
+                    || m.ojoDerecho().idMedidaOjo() != null || m.ojoIzquierdo().idMedidaOjo() != null)
                 throw new ReglaNegocioException("Ingrese medidas nuevas de ambos ojos sin identificadores internos");
-            var original = referencias.get(m.getTipoMedida());
+            var original = referencias.get(m.tipoMedida());
             validarOriginal(original);
-            validarControl(m.getOjoDerecho());
-            validarControl(m.getOjoIzquierdo());
-            if (m.getDistanciaPupilar() == null || m.getDistanciaPupilar().signum() <= 0)
+            validarControl(m.ojoDerecho());
+            validarControl(m.ojoIzquierdo());
+            if (m.distanciaPupilar() == null || m.distanciaPupilar().signum() <= 0)
                 throw new ReglaNegocioException("La distancia pupilar medida debe ser positiva");
-            aprobado &= diferencia(original.getDistanciaPupilar(), m.getDistanciaPupilar(), p.distanciaPupilarMm());
-            aprobado &= diferencia(original.getPrisma(), m.getPrisma(), p.prisma());
-            aprobado &= ojo(original.getMedidaOjoDerecha(), m.getOjoDerecho(), p);
-            aprobado &= ojo(original.getMedidaOjoIzquierda(), m.getOjoIzquierdo(), p);
+            aprobado &= diferencia(original.getDistanciaPupilar(), m.distanciaPupilar(), p.distanciaPupilarMm());
+            aprobado &= diferencia(original.getPrisma(), m.prisma(), p.prisma());
+            aprobado &= ojo(original.getMedidaOjoDerecha(), m.ojoDerecho(), p);
+            aprobado &= ojo(original.getMedidaOjoIzquierda(), m.ojoIzquierdo(), p);
         }
         return aprobado;
     }
@@ -59,15 +59,15 @@ public class ComparadorLensometria {
     }
 
     private void validarControl(MedidaOjoDTO o) {
-        if (o.getEsfera() == null || o.getCilindro() == null || o.getEje() == null || o.getEje() < 0 || o.getEje() > 180)
+        if (o.esfera() == null || o.cilindro() == null || o.eje() == null || o.eje() < 0 || o.eje() > 180)
             throw new ReglaNegocioException("La lensometria requiere esfera, cilindro y eje validos para ambos ojos");
     }
 
     private boolean ojo(MedidaOjo r, MedidaOjoDTO c, PoliticaCalidadDTO p) {
-        int diff = Math.abs(r.getEje() - c.getEje());
-        boolean cumple = diferencia(r.getEsfera(), c.getEsfera(), p.dioptrias());
-        cumple &= diferencia(r.getCilindro(), c.getCilindro(), p.dioptrias());
-        cumple &= diferencia(r.getAdicion(), c.getAdicion(), p.dioptrias());
+        int diff = Math.abs(r.getEje() - c.eje());
+        boolean cumple = diferencia(r.getEsfera(), c.esfera(), p.dioptrias());
+        cumple &= diferencia(r.getCilindro(), c.cilindro(), p.dioptrias());
+        cumple &= diferencia(r.getAdicion(), c.adicion(), p.dioptrias());
         cumple &= BigDecimal.valueOf(Math.min(diff, 180 - diff)).compareTo(p.ejeGrados()) <= 0;
         return cumple;
     }
