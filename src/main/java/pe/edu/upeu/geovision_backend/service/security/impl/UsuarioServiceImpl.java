@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.security.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioServiceImpl.class);
@@ -57,32 +59,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final UsuarioRolRepository usuarioRolRepository;
     private final RolPermisoRepository rolPermisoRepository;
     private final PasswordEncoder passwordEncoder;
-    private final UsuarioMapper usuarioMapper;
-    private final RolMapper rolMapper;
-    private final PermisoMapper permisoMapper;
-
-    public UsuarioServiceImpl(
-            UsuarioRepository usuarioRepository,
-            PersonaRepository personaRepository,
-            EmpleadoRepository empleadoRepository,
-            RolRepository rolRepository,
-            UsuarioRolRepository usuarioRolRepository,
-            RolPermisoRepository rolPermisoRepository,
-            PasswordEncoder passwordEncoder,
-            UsuarioMapper usuarioMapper,
-            RolMapper rolMapper,
-            PermisoMapper permisoMapper) {
-        this.usuarioRepository = usuarioRepository;
-        this.personaRepository = personaRepository;
-        this.empleadoRepository = empleadoRepository;
-        this.rolRepository = rolRepository;
-        this.usuarioRolRepository = usuarioRolRepository;
-        this.rolPermisoRepository = rolPermisoRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.usuarioMapper = usuarioMapper;
-        this.rolMapper = rolMapper;
-        this.permisoMapper = permisoMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -130,10 +106,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Serializar las altas para una misma persona, incluso cuando aún no existe su usuario.
         Persona persona = personaRepository.findByIdForUpdate(request.idPersona())
                 .orElseThrow(() -> new RecursosNoEncontradosException("La persona seleccionada no existe"));
-        if (usuarioRepository.findByPersonaIdPersona(persona.getIdPersona()).isPresent()) {
+        if (usuarioRepository.findByPersonaId(persona.getId()).isPresent()) {
             throw new ReglaNegocioException("La persona seleccionada ya tiene una cuenta de usuario asignada");
         }
-        Optional<Empleado> existente = empleadoRepository.findById(persona.getIdPersona());
+        Optional<Empleado> existente = empleadoRepository.findById(persona.getId());
         if (existente.isEmpty() || !Boolean.TRUE.equals(existente.get().getActivo())) {
             throw new ReglaNegocioException("Solo se pueden crear cuentas para empleados activos");
         }
@@ -160,8 +136,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new ReglaNegocioException("El estado debe ser 0 o 1");
         }
         Boolean estado = request.estado() == null || request.estado() == 1;
-        Usuario usuario = Usuario.builder().nombre(nombre).correo(correo)
-                .password(passwordEncoder.encode(request.password())).activo(estado).persona(persona).build();
+        Usuario usuario = new Usuario(null, nombre, passwordEncoder.encode(request.password()), correo, estado, persona);
         try {
             Usuario guardado = usuarioRepository.saveAndFlush(usuario);
             Empleado empleado = existente.orElse(null);
@@ -169,10 +144,9 @@ public class UsuarioServiceImpl implements UsuarioService {
                 empleado.setUsuario(guardado);
                 empleadoRepository.saveAndFlush(empleado);
             }
-            List<UsuarioRol> asociaciones = roles.stream().map(rol -> UsuarioRol.builder()
-                    .usuario(guardado).rol(rol).build()).toList();
+            List<UsuarioRol> asociaciones = roles.stream().map(rol -> new UsuarioRol(null, guardado, rol)).toList();
             usuarioRolRepository.saveAllAndFlush(asociaciones);
-            log.info("Cuenta creada: idUsuario={}", guardado.getIdUsuario());
+            log.info("Cuenta creada: idUsuario={}", guardado.getId());
             return cargarUsuarioConRoles(guardado);
         } catch (DataIntegrityViolationException ex) {
             throw new ReglaNegocioException("No se pudo registrar la cuenta; compruebe el usuario, correo y asociaciones duplicadas");
@@ -191,11 +165,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         String nombre = request.nombre().trim();
         String correo = request.correo().trim().toLowerCase();
 
-        if (usuarioRepository.existsByNombreAndIdUsuarioNot(nombre, id)) {
+        if (usuarioRepository.existsByNombreAndIdNot(nombre, id)) {
             throw new ReglaNegocioException("Ya existe otro usuario con el nombre: " + nombre);
         }
 
-        if (usuarioRepository.existsByCorreoAndIdUsuarioNot(correo, id)) {
+        if (usuarioRepository.existsByCorreoAndIdNot(correo, id)) {
             throw new ReglaNegocioException("Ya existe otro usuario con el correo: " + correo);
         }
 
@@ -222,7 +196,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             actualizarRolesUsuario(usuario, request.rolesIds(), null);
         }
 
-        log.info("Usuario actualizado exitosamente: id={} usuario={}", actualizado.getIdUsuario(), actualizado.getNombre());
+        log.info("Usuario actualizado exitosamente: id={} usuario={}", actualizado.getId(), actualizado.getNombre());
         return cargarUsuarioConRoles(actualizado);
     }
 
@@ -246,7 +220,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario actualizado = usuarioRepository.save(usuario);
 
         log.info("Estado de usuario actualizado: id={} usuario={} estado={}",
-                actualizado.getIdUsuario(), actualizado.getNombre(), Boolean.TRUE.equals(estado) ? "Activo" : "Inactivo");
+                actualizado.getId(), actualizado.getNombre(), Boolean.TRUE.equals(estado) ? "Activo" : "Inactivo");
 
         return cargarUsuarioConRoles(actualizado);
     }
@@ -262,13 +236,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     private void actualizarRolesUsuario(Usuario usuario, Set<Long> roleIds, String authUsername) {
-        usuarioRepository.findByIdForUpdate(usuario.getIdUsuario())
+        usuarioRepository.findByIdForUpdate(usuario.getId())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado"));
         Set<Long> ids = (roleIds != null) ? roleIds : Collections.emptySet();
 
         List<Rol> roles = rolRepository.findAllById(ids);
         if (roles.size() != ids.size()) {
-            Set<Long> encontrados = roles.stream().map(Rol::getIdRol).collect(Collectors.toSet());
+            Set<Long> encontrados = roles.stream().map(Rol::getId).collect(Collectors.toSet());
             Set<Long> faltantes = new HashSet<>(ids);
             faltantes.removeAll(encontrados);
             throw new RecursosNoEncontradosException("Roles no encontrados con IDs: " + faltantes);
@@ -285,15 +259,12 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         // Conservar asociaciones vigentes evita reinsertar pares todavía pendientes de borrar.
-        List<UsuarioRol> actuales = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
-        Set<Long> existentes = actuales.stream().map(ur -> ur.getRol().getIdRol()).collect(Collectors.toSet());
-        usuarioRolRepository.deleteAll(actuales.stream().filter(ur -> !ids.contains(ur.getRol().getIdRol())).toList());
+        List<UsuarioRol> actuales = usuarioRolRepository.findByUsuarioId(usuario.getId());
+        Set<Long> existentes = actuales.stream().map(ur -> ur.getRol().getId()).collect(Collectors.toSet());
+        usuarioRolRepository.deleteAll(actuales.stream().filter(ur -> !ids.contains(ur.getRol().getId())).toList());
 
-        List<UsuarioRol> nuevos = roles.stream().filter(rol -> !existentes.contains(rol.getIdRol()))
-                .map(rol -> UsuarioRol.builder()
-                        .usuario(usuario)
-                        .rol(rol)
-                        .build())
+        List<UsuarioRol> nuevos = roles.stream().filter(rol -> !existentes.contains(rol.getId()))
+                .map(rol -> new UsuarioRol(null, usuario, rol))
                 .toList();
         usuarioRolRepository.saveAllAndFlush(nuevos);
 
@@ -301,20 +272,20 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     private UsuarioResponseDTO cargarUsuarioConRoles(Usuario usuario) {
-        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
+        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioId(usuario.getId());
 
         Set<RolDTO> rolesDTO = usuarioRoles.stream()
                 .map(ur -> {
                     Rol rol = ur.getRol();
-                    List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolIdRol(rol.getIdRol());
+                    List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
                     Set<PermisoDTO> permisosDTO = rolPermisos.stream()
-                            .map(rp -> permisoMapper.toDTO(rp.getPermiso()))
+                            .map(rp -> PermisoMapper.toDTO(rp.getPermiso()))
                             .collect(Collectors.toSet());
-                    return rolMapper.toDTO(rol, permisosDTO);
+                    return RolMapper.toDTO(rol, permisosDTO);
                 })
                 .collect(Collectors.toSet());
 
-        return usuarioMapper.toUsuarioResponse(usuario, rolesDTO);
+        return UsuarioMapper.toUsuarioResponse(usuario, rolesDTO);
     }
 
     @Override
@@ -339,20 +310,12 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (datos.fechaNacimiento() != null && datos.fechaNacimiento().isAfter(LocalDate.now())) {
             throw new ReglaNegocioException("La fecha de nacimiento no puede estar en el futuro");
         }
-        Persona persona = Persona.builder().nombres(datos.nombres().trim())
-                .apellidos(datos.apellidos().trim()).numeroDocumento(documento)
-                .tipoDocumento(datos.tipoDocumento()).sexo(datos.sexo())
-                .fechaNacimiento(datos.fechaNacimiento()).telefono(limpiar(datos.telefono()))
-                .direccion(limpiar(datos.direccion())).build();
+        Persona persona = new Persona(null, datos.nombres().trim(), datos.apellidos().trim(), limpiar(datos.telefono()), datos.fechaNacimiento(), datos.sexo(), limpiar(datos.direccion()), documento, datos.tipoDocumento());
         try {
             personaRepository.saveAndFlush(persona);
-            empleadoRepository.saveAndFlush(Empleado.builder().persona(persona).activo(true)
-                    .fechaContrato(request.empleado().fechaContrato()).build());
+            empleadoRepository.saveAndFlush(new Empleado(null, persona, true, request.empleado().fechaContrato(), null));
             var cuenta = request.usuario();
-            return crearCuentaInterna(UsuarioRequestDTO.builder()
-                    .nombre(cuenta.nombre()).correo(cuenta.correo()).password(cuenta.password())
-                    .estado(cuenta.estado()).rolesIds(cuenta.rolesIds()).idPersona(persona.getIdPersona())
-                    .build());
+            return crearCuentaInterna(new UsuarioRequestDTO(cuenta.nombre(), cuenta.password(), cuenta.correo(), cuenta.estado(), persona.getId(), cuenta.rolesIds(), null));
         } catch (DataIntegrityViolationException ex) {
             throw new ReglaNegocioException("No se pudo registrar la persona y su cuenta; compruebe los datos duplicados");
         }

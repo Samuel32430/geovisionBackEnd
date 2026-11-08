@@ -14,5 +14,5 @@ public interface MaterialCristalRepository extends JpaRepository<MaterialCristal
 
     boolean existsByNombreIgnoreCase(String nombre);
 
-    boolean existsByNombreIgnoreCaseAndIdMaterialCristalNot(String nombre, Long idMaterialCristal);
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idMaterialCristal);
 }

@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.ventas;
 
-import lombok.Builder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -11,7 +10,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-@Builder(toBuilder = true)
 public record VentaRegistroRequestDTO(
     // Opcional en el request: si no se envía, se deduce del usuario/empleado autenticado
     Long idEmpleado,

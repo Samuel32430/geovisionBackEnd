@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.Page;
@@ -22,13 +23,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/catalogos-opticos")
 @PreAuthorize("hasAnyAuthority('PACIENTES_LEER', 'EXAMENES_REGISTRAR', 'RECETAS_REGISTRAR')")
+@RequiredArgsConstructor
 public class CatalogoOpticoController {
 
     private final CatalogoOpticoService catalogoOpticoService;
-
-    public CatalogoOpticoController(CatalogoOpticoService catalogoOpticoService) {
-        this.catalogoOpticoService = catalogoOpticoService;
-    }
 
     @GetMapping("/materiales-cristal")
     public ResponseEntity<List<MaterialCristalDTO>> listarMaterialesCristal() {

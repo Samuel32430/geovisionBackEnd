@@ -40,7 +40,7 @@ public class OrdenTrabajoController {
     public Page<OrdenTrabajoResponseDTO> listar(@RequestParam(required = false) EstadoOrdenTrabajoEnum estado,
                                                 @RequestParam(required = false) @Size(max = 100) String termino, @RequestParam(defaultValue = "0") @Min(0) int page,
                                                 @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
-        return servicio.listar(estado, termino, pagina(page, size, Sort.by(Sort.Direction.DESC, "fechaRegistro", "idOrdenTrabajo")));
+        return servicio.listar(estado, termino, pagina(page, size, Sort.by(Sort.Direction.DESC, "fechaRegistro", "id")));
     }
 
     @GetMapping("/{id}")

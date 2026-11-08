@@ -61,8 +61,6 @@ public class VentaServiceImpl implements VentaService {
     private final PacienteRepository pacienteRepository;
     private final EmpleadoRepository empleadoRepository;
     private final UsuarioRepository usuarioRepository;
-    private final VentaMapper ventaMapper;
-    private final PagoMapper pagoMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -92,7 +90,7 @@ public class VentaServiceImpl implements VentaService {
                     .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada con ID: " + request.idReceta()));
 
             if (receta.getPaciente() == null ||
-                    !receta.getPaciente().getIdPersona().equals(paciente.getIdPersona())) {
+                    !receta.getPaciente().getId().equals(paciente.getId())) {
                 throw new ReglaNegocioException("La receta seleccionada no corresponde al paciente indicado (RN-VE03)");
             }
         }
@@ -114,12 +112,7 @@ public class VentaServiceImpl implements VentaService {
                 productoRepository.save(producto);
 
                 BigDecimal subTotal = prodDTO.precioUnit().multiply(BigDecimal.valueOf(prodDTO.cantidad()));
-                ProductoVendido pv = ProductoVendido.builder()
-                        .producto(producto)
-                        .cantidad(prodDTO.cantidad())
-                        .precioUnit(prodDTO.precioUnit())
-                        .subTotal(subTotal)
-                        .build();
+                ProductoVendido pv = new ProductoVendido(null, prodDTO.cantidad(), prodDTO.precioUnit(), subTotal, null, producto);
                 productosParaGuardar.add(pv);
             }
         }
@@ -131,10 +124,7 @@ public class VentaServiceImpl implements VentaService {
                 Servicio servicio = servicioRepository.findById(servDTO.idServicio())
                         .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.idServicio()));
 
-                ServicioVendido sv = ServicioVendido.builder()
-                        .servicio(servicio)
-                        .precio(servDTO.precio())
-                        .build();
+                ServicioVendido sv = new ServicioVendido(null, servDTO.precio(), null, servicio);
                 serviciosParaGuardar.add(sv);
             }
         }
@@ -201,16 +191,7 @@ public class VentaServiceImpl implements VentaService {
         }
 
         // 9. Persistir cabecera de la venta
-        Venta venta = Venta.builder()
-                .empleado(empleado)
-                .paciente(paciente)
-                .receta(receta)
-                .tipoComprobante(request.tipoComprobante())
-                .numeroComprobante(numeroComprobante)
-                .total(request.total())
-                .estado(estadoInicial)
-                .fechaRegistro(LocalDateTime.now())
-                .build();
+        Venta venta = new Venta(null, LocalDateTime.now(), request.total(), estadoInicial, numeroComprobante, request.tipoComprobante(), empleado, paciente, receta);
 
         Venta ventaGuardada = ventaRepository.save(venta);
 
@@ -229,16 +210,16 @@ public class VentaServiceImpl implements VentaService {
         // 12. Persistir pagos realizados
         List<Pago> pagosGuardados = new ArrayList<>();
         for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
-            Pago pago = pagoMapper.toEntity(pagoDTO, ventaGuardada);
+            Pago pago = PagoMapper.toEntity(pagoDTO, ventaGuardada);
             pagosGuardados.add(pagoRepository.save(pago));
         }
 
         BigDecimal saldoPendiente = request.total().subtract(totalPagado);
 
         log.info("Venta registrada exitosamente con ID: {}, comprobante: {}, estado: {}, saldo pendiente: S/ {}",
-                ventaGuardada.getIdVenta(), numeroComprobante, estadoInicial, saldoPendiente);
+                ventaGuardada.getId(), numeroComprobante, estadoInicial, saldoPendiente);
 
-        return ventaMapper.toResponseDTO(
+        return VentaMapper.toResponseDTO(
                 ventaGuardada,
                 totalPagado,
                 saldoPendiente,
@@ -261,11 +242,11 @@ public class VentaServiceImpl implements VentaService {
         }
         BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagado);
 
-        List<ProductoVendido> productos = productoVendidoRepository.findByVentaIdVenta(idVenta);
-        List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaIdVenta(idVenta);
-        List<Pago> pagos = pagoRepository.findByVentaIdVenta(idVenta);
+        List<ProductoVendido> productos = productoVendidoRepository.findByVentaId(idVenta);
+        List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaId(idVenta);
+        List<Pago> pagos = pagoRepository.findByVentaId(idVenta);
 
-        return ventaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
+        return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
     }
 
     private Empleado obtenerEmpleadoResponsable(Long idEmpleadoFallback) {
@@ -274,7 +255,7 @@ public class VentaServiceImpl implements VentaService {
             String username = auth.getName();
             Optional<Usuario> usuarioOpt = usuarioRepository.findByNombreOrCorreo(username, username);
             if (usuarioOpt.isPresent()) {
-                Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioIdUsuario(usuarioOpt.get().getIdUsuario());
+                Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioId(usuarioOpt.get().getId());
                 if (empleadoOpt.isPresent()) {
                     Empleado emp = empleadoOpt.get();
                     if (Boolean.TRUE.equals(emp.getActivo())) {
@@ -286,7 +267,7 @@ public class VentaServiceImpl implements VentaService {
 
         // Fallback para pruebas o llamadas con ID explícito
         if (idEmpleadoFallback != null) {
-            return empleadoRepository.findByIdPersonaAndActivo(idEmpleadoFallback, true)
+            return empleadoRepository.findByIdAndActivo(idEmpleadoFallback, true)
                     .orElseThrow(() -> new RecursosNoEncontradosException("Empleado responsable no encontrado o inactivo con ID: " + idEmpleadoFallback));
         }
 

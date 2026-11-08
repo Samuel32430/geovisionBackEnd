@@ -30,9 +30,7 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCri
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteMedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.LenteRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteTratamientoCristalRepository;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.MaterialCristalRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaOjoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaRepository;
@@ -69,8 +67,6 @@ class HistorialClinicoControllerTest {
     @Autowired MedidaRepository measures;
     @Autowired MedidaOjoRepository eyes;
     @Autowired LenteRepository lenses;
-    @Autowired LenteMedidaRepository lensMeasures;
-    @Autowired LenteTratamientoCristalRepository lensTreatments;
     @Autowired MaterialCristalRepository materials;
     @Autowired TratamientoCristalRepository treatments;
     @Autowired ProductoRepository products;
@@ -84,42 +80,31 @@ class HistorialClinicoControllerTest {
     Montura frame;
 
     Persona person(String name) {
-        return people.saveAndFlush(Persona.builder().nombres(name).apellidos("Prueba")
-                .numeroDocumento(UUID.randomUUID().toString()).tipoDocumento(TipoDocumentoEnum.DNI).build());
+        return people.saveAndFlush(new Persona(null, name, "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
     @BeforeEach
     void fixture() {
-        patient = patients.saveAndFlush(Paciente.builder().persona(person("Paciente")).build());
-        employee = employees.saveAndFlush(Empleado.builder().persona(person("Profesional")).build());
-        material = materials.saveAndFlush(MaterialCristal.builder().nombre("Material " + UUID.randomUUID()).build());
-        treatment = treatments.saveAndFlush(TratamientoCristal.builder().nombre("Filtro " + UUID.randomUUID()).build());
-        Producto product = products.saveAndFlush(Producto.builder().codigo(UUID.randomUUID().toString())
-                .nombre("Montura histórica").precio(new BigDecimal("120.00")).stock(4).build());
-        frame = frames.saveAndFlush(Montura.builder().producto(product).build());
+        patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
+        employee = employees.saveAndFlush(new Empleado(null, person("Profesional"), true, null, null));
+        material = materials.saveAndFlush(new MaterialCristal(null, "Material " + UUID.randomUUID()));
+        treatment = treatments.saveAndFlush(new TratamientoCristal(null, "Filtro " + UUID.randomUUID()));
+        Producto product = products.saveAndFlush(new Producto(null, UUID.randomUUID().toString(), "Montura histórica", null, null, new BigDecimal("120.00"), 4, true, null, null));
+        frame = frames.saveAndFlush(new Montura(null, product, null, null, null));
     }
 
     Receta recipe(LocalDateTime date, int external) {
-        return prescriptions.saveAndFlush(Receta.builder().paciente(patient).empleado(employee)
-                .fechaRegistro(date).esExterno(external).build());
+        return prescriptions.saveAndFlush(new Receta(null, date, external, patient, employee));
     }
 
     Medida measure(Receta recipe, TipoMedidaEnum type) {
-        MedidaOjo right = eyes.saveAndFlush(MedidaOjo.builder().esfera(new BigDecimal("-1.25"))
-                .cilindro(new BigDecimal("-0.50")).eje(90).agudezaVisual("20/20").build());
-        MedidaOjo left = eyes.saveAndFlush(MedidaOjo.builder().esfera(new BigDecimal("2.50"))
-                .adicion(new BigDecimal("1.00")).eje(80).agudezaVisual("20/25").build());
-        return measures.saveAndFlush(Medida.builder().receta(recipe).tipoMedida(type)
-                .distanciaPupilar(new BigDecimal("62.50")).prisma(new BigDecimal("0.30"))
-                .observaciones("Material recomendado: resina").medidaOjoDerecha(right).medidaOjoIzquierda(left).build());
+        MedidaOjo right = eyes.saveAndFlush(new MedidaOjo(null, "20/20", new BigDecimal("-1.25"), new BigDecimal("-0.50"), 90, null));
+        MedidaOjo left = eyes.saveAndFlush(new MedidaOjo(null, "20/25", new BigDecimal("2.50"), null, 80, new BigDecimal("1.00")));
+        return measures.saveAndFlush(new Medida(null, type, new BigDecimal("62.50"), new BigDecimal("0.30"), "Material recomendado: resina", recipe, right, left, null));
     }
 
     Long lens(Receta recipe, Long frameId, List<Long> selectedMeasures, boolean withTreatment) {
-        return service.configurarLente(recipe.getIdReceta(), LenteRequestDTO.builder().idReceta(recipe.getIdReceta())
-                .idMaterialCristal(material.getIdMaterialCristal()).idProducto(frameId).subTotal(new BigDecimal("380.00"))
-                .medidasIds(selectedMeasures)
-                .tratamientosCristalIds(withTreatment ? List.of(treatment.getIdTratamientoCristal()) : null)
-                .build()).idLente();
+        return service.configurarLente(recipe.getId(), new LenteRequestDTO(recipe.getId(), material.getId(), frameId, new BigDecimal("380.00"), withTreatment ? List.of(treatment.getId()) : null, selectedMeasures)).id();
     }
 
     @Test
@@ -128,8 +113,8 @@ class HistorialClinicoControllerTest {
         var far = measure(recipe, TipoMedidaEnum.LEJOS);
         var near = measure(recipe, TipoMedidaEnum.CERCA);
         Long ownLens = lens(recipe, null, null, true);
-        Long storeLens = lens(recipe, frame.getIdProducto(), List.of(near.getIdMedida()), false);
-        Long id = recipe.getIdReceta(), patientId = patient.getIdPersona(), frameId = frame.getIdProducto();
+        Long storeLens = lens(recipe, frame.getId(), List.of(near.getId()), false);
+        Long id = recipe.getId(), patientId = patient.getId(), frameId = frame.getId();
         String document = patient.getPersona().getNumeroDocumento(), materialName = material.getNombre();
         em.flush();
         em.clear();
@@ -139,20 +124,20 @@ class HistorialClinicoControllerTest {
                 .andExpect(jsonPath("$.nombreCompletoEmpleado").value("Profesional Prueba"))
                 .andExpect(jsonPath("$.esRecetaExterna").value(true))
                 .andExpect(jsonPath("$.medidas.length()").value(2))
-                .andExpect(jsonPath("$.medidas[0].idMedida").value(far.getIdMedida()))
+                .andExpect(jsonPath("$.medidas[0].id").value(far.getId()))
                 .andExpect(jsonPath("$.medidas[0].ojoDerecho.esfera").value(-1.25))
                 .andExpect(jsonPath("$.medidas[0].ojoIzquierdo.agudezaVisual").value("20/25"))
                 .andExpect(jsonPath("$.medidas[0].observaciones").value("Material recomendado: resina"))
                 .andExpect(jsonPath("$.lentes.length()").value(2))
-                .andExpect(jsonPath("$.lentes[0].idLente").value(ownLens))
+                .andExpect(jsonPath("$.lentes[0].id").value(ownLens))
                 .andExpect(jsonPath("$.lentes[0].idProductoMontura").doesNotExist())
                 .andExpect(jsonPath("$.lentes[0].nombreMaterialCristal").value(materialName))
                 .andExpect(jsonPath("$.lentes[0].tratamientos.length()").value(1))
                 .andExpect(jsonPath("$.lentes[0].medidas.length()").value(2))
-                .andExpect(jsonPath("$.lentes[1].idLente").value(storeLens))
+                .andExpect(jsonPath("$.lentes[1].id").value(storeLens))
                 .andExpect(jsonPath("$.lentes[1].idProductoMontura").value(frameId))
                 .andExpect(jsonPath("$.lentes[1].nombreMontura").value("Montura histórica"))
-                .andExpect(jsonPath("$.lentes[1].medidas[0].idMedida").value(near.getIdMedida()))
+                .andExpect(jsonPath("$.lentes[1].medidas[0].id").value(near.getId()))
                 .andExpect(jsonPath("$.lentes[1].tratamientos").isEmpty());
     }
 
@@ -161,22 +146,21 @@ class HistorialClinicoControllerTest {
         var old = recipe(LocalDateTime.of(2026, 10, 1, 10, 0), 0);
         var sameDateFirst = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 0);
         var sameDateLast = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 1);
-        var otherPatient = patients.saveAndFlush(Paciente.builder().persona(person("Otro paciente")).build());
-        prescriptions.saveAndFlush(Receta.builder().paciente(otherPatient).empleado(employee)
-                .fechaRegistro(LocalDateTime.of(2026, 11, 2, 10, 0)).build());
-        Long patientId = patient.getIdPersona();
+        var otherPatient = patients.saveAndFlush(new Paciente(null, person("Otro paciente"), true, null, null));
+        prescriptions.saveAndFlush(new Receta(null, LocalDateTime.of(2026, 11, 2, 10, 0), 0, otherPatient, employee));
+        Long patientId = patient.getId();
         em.flush();
         em.clear();
         mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patientId).param("size", "2"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3))
                 .andExpect(jsonPath("$.totalPages").value(2))
-                .andExpect(jsonPath("$.content[0].idReceta").value(sameDateLast.getIdReceta()))
-                .andExpect(jsonPath("$.content[1].idReceta").value(sameDateFirst.getIdReceta()));
+                .andExpect(jsonPath("$.content[0].id").value(sameDateLast.getId()))
+                .andExpect(jsonPath("$.content[1].id").value(sameDateFirst.getId()));
         mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patientId).param("size", "2").param("page", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].idReceta").value(old.getIdReceta()));
-        assertThat(service.listarHistorialPorPaciente(patientId)).extracting("idReceta")
-                .containsExactly(sameDateLast.getIdReceta(), sameDateFirst.getIdReceta(), old.getIdReceta());
+                .andExpect(jsonPath("$.content[0].id").value(old.getId()));
+        assertThat(service.listarHistorialPorPaciente(patientId)).extracting("id")
+                .containsExactly(sameDateLast.getId(), sameDateFirst.getId(), old.getId());
     }
 
     @Test
@@ -186,27 +170,27 @@ class HistorialClinicoControllerTest {
         var oldMeasure = measure(old, TipoMedidaEnum.LEJOS);
         var recentMeasure = measure(recent, TipoMedidaEnum.MEDIO);
         Long oldLens = lens(old, null, null, true);
-        Long recentLens = lens(recent, frame.getIdProducto(), null, false);
-        Long patientId = patient.getIdPersona();
+        Long recentLens = lens(recent, frame.getId(), null, false);
+        Long patientId = patient.getId();
         em.flush();
         em.clear();
         mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patientId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].medidas[0].idMedida").value(recentMeasure.getIdMedida()))
-                .andExpect(jsonPath("$.content[0].lentes[0].idLente").value(recentLens))
+                .andExpect(jsonPath("$.content[0].medidas[0].id").value(recentMeasure.getId()))
+                .andExpect(jsonPath("$.content[0].lentes[0].id").value(recentLens))
                 .andExpect(jsonPath("$.content[0].lentes[0].tratamientos").isEmpty())
-                .andExpect(jsonPath("$.content[1].medidas[0].idMedida").value(oldMeasure.getIdMedida()))
-                .andExpect(jsonPath("$.content[1].lentes[0].idLente").value(oldLens))
+                .andExpect(jsonPath("$.content[1].medidas[0].id").value(oldMeasure.getId()))
+                .andExpect(jsonPath("$.content[1].lentes[0].id").value(oldLens))
                 .andExpect(jsonPath("$.content[1].lentes[0].tratamientos.length()").value(1));
     }
 
     @Test
     void historialVacioYPaginaFueraDeRangoDevuelvenPaginaVacia() throws Exception {
-        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona()))
+        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0));
         recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 0);
-        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona()).param("page", "3"))
+        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId()).param("page", "3"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
@@ -216,19 +200,19 @@ class HistorialClinicoControllerTest {
         var recipe = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 0);
         patient.setActivo(false);
         patients.saveAndFlush(patient);
-        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].idReceta").value(recipe.getIdReceta()));
-        mvc.perform(get("/api/v1/recetas/{id}", recipe.getIdReceta())).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(recipe.getId()));
+        mvc.perform(get("/api/v1/recetas/{id}", recipe.getId())).andExpect(status().isOk());
     }
 
     @Test
     void datosHistoricosOpcionalesNoProvocanErrorNiSeInventanValores() throws Exception {
         var empty = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 0);
-        var legacy = measures.saveAndFlush(Medida.builder().receta(empty).build());
+        var legacy = measures.saveAndFlush(new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, empty, null, null, null));
         em.flush();
         em.clear();
-        mvc.perform(get("/api/v1/recetas/{id}", empty.getIdReceta())).andExpect(status().isOk())
-                .andExpect(jsonPath("$.medidas[0].idMedida").value(legacy.getIdMedida()))
+        mvc.perform(get("/api/v1/recetas/{id}", empty.getId())).andExpect(status().isOk())
+                .andExpect(jsonPath("$.medidas[0].id").value(legacy.getId()))
                 .andExpect(jsonPath("$.medidas[0].ojoDerecho").doesNotExist())
                 .andExpect(jsonPath("$.medidas[0].ojoIzquierdo").doesNotExist())
                 .andExpect(jsonPath("$.lentes").isEmpty());
@@ -243,10 +227,10 @@ class HistorialClinicoControllerTest {
             mvc.perform(get("/api/v1/recetas/paciente/" + invalid + "/historial")).andExpect(status().isBadRequest());
         }
         for (String[] invalid : new String[][]{{"page", "-1"}, {"size", "0"}, {"size", "101"}, {"page", "abc"}}) {
-            mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona())
+            mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId())
                     .param(invalid[0], invalid[1])).andExpect(status().isBadRequest());
         }
-        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona())
+        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId())
                 .param("page", "2147483647").param("size", "100")).andExpect(status().isBadRequest());
     }
 
@@ -254,7 +238,7 @@ class HistorialClinicoControllerTest {
     @WithMockUser(authorities = {"RECETAS_REGISTRAR", "EXAMENES_REGISTRAR"})
     void permisosDeEscrituraNoOtorganLecturaClinica() throws Exception {
         mvc.perform(get("/api/v1/recetas/1")).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona()))
+        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId()))
                 .andExpect(status().isForbidden());
     }
 
@@ -262,7 +246,7 @@ class HistorialClinicoControllerTest {
     @WithAnonymousUser
     void exigeAutenticacion() throws Exception {
         mvc.perform(get("/api/v1/recetas/1")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona()))
+        mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId()))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -271,9 +255,9 @@ class HistorialClinicoControllerTest {
         for (int i = 1; i <= 4; i++) {
             var recipe = recipe(LocalDateTime.of(2026, 11, i, 10, 0), i % 2);
             measure(recipe, TipoMedidaEnum.LEJOS);
-            lens(recipe, frame.getIdProducto(), null, true);
+            lens(recipe, frame.getId(), null, true);
         }
-        Long patientId = patient.getIdPersona();
+        Long patientId = patient.getId();
         em.flush();
         var statistics = emf.unwrap(SessionFactory.class).getStatistics();
         boolean previouslyEnabled = statistics.isStatisticsEnabled();
@@ -299,28 +283,26 @@ class HistorialClinicoControllerTest {
     void serializaDetalleFueraDeTransaccionSinOpenInView() throws Exception {
         var recipe = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 0);
         var measure = measure(recipe, TipoMedidaEnum.LEJOS);
-        Long lensId = lens(recipe, frame.getIdProducto(), null, true);
+        Long lensId = lens(recipe, frame.getId(), null, true);
         try {
-            mvc.perform(get("/api/v1/recetas/{id}", recipe.getIdReceta())).andExpect(status().isOk())
-                    .andExpect(jsonPath("$.lentes[0].idLente").value(lensId))
+            mvc.perform(get("/api/v1/recetas/{id}", recipe.getId())).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.lentes[0].id").value(lensId))
                     .andExpect(jsonPath("$.lentes[0].medidas[0].ojoDerecho.esfera").value(-1.25));
-            mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona()))
-                    .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].lentes[0].idLente").value(lensId));
+            mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId()))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].lentes[0].id").value(lensId));
         } finally {
-            lensTreatments.deleteAll(lensTreatments.findByLenteIdLente(lensId));
-            lensMeasures.deleteAll(lensMeasures.findByLenteIdLente(lensId));
             lenses.deleteById(lensId);
-            measures.deleteById(measure.getIdMedida());
-            eyes.deleteAllById(List.of(measure.getMedidaOjoDerecha().getIdMedidaOjo(),
-                    measure.getMedidaOjoIzquierda().getIdMedidaOjo()));
-            prescriptions.deleteById(recipe.getIdReceta());
-            patients.deleteById(patient.getIdPersona());
-            employees.deleteById(employee.getIdPersona());
-            people.deleteAllById(List.of(patient.getIdPersona(), employee.getIdPersona()));
-            frames.deleteById(frame.getIdProducto());
-            products.deleteById(frame.getIdProducto());
-            materials.deleteById(material.getIdMaterialCristal());
-            treatments.deleteById(treatment.getIdTratamientoCristal());
+            measures.deleteById(measure.getId());
+            eyes.deleteAllById(List.of(measure.getMedidaOjoDerecha().getId(),
+                    measure.getMedidaOjoIzquierda().getId()));
+            prescriptions.deleteById(recipe.getId());
+            patients.deleteById(patient.getId());
+            employees.deleteById(employee.getId());
+            people.deleteAllById(List.of(patient.getId(), employee.getId()));
+            frames.deleteById(frame.getId());
+            products.deleteById(frame.getId());
+            materials.deleteById(material.getId());
+            treatments.deleteById(treatment.getId());
         }
     }
 }

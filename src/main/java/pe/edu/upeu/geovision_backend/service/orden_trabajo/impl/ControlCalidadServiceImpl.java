@@ -14,13 +14,11 @@ import pe.edu.upeu.geovision_backend.dto.orden_trabajo.PoliticaCalidadDTO;
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.repository.orden_trabajo.EnvioLaboratorioRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteMedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaOjoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.orden_trabajo.OrdenTrabajoRepository;
-import pe.edu.upeu.geovision_backend.entity.atencion.LenteMedida;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.mapper.orden_trabajo.OrdenTrabajoMapper;
+
 import pe.edu.upeu.geovision_backend.mapper.atencion.RecetaMapper;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.ActorOrdenTrabajo;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.ComparadorLensometria;
@@ -34,23 +32,22 @@ import pe.edu.upeu.geovision_backend.service.orden_trabajo.ControlCalidadService
 @RequiredArgsConstructor
 @Transactional
 public class ControlCalidadServiceImpl implements ControlCalidadService {
+    private final OrdenTrabajoDetalleService detalles;
     private final OrdenTrabajoRepository ordenes;
     private final EnvioLaboratorioRepository envios;
-    private final LenteMedidaRepository lenteMedidas;
     private final MedidaRepository medidas;
     private final MedidaOjoRepository ojos;
     private final ActorOrdenTrabajo actores;
     private final FlujoOrdenTrabajo flujo;
     private final PoliticaCalidad politica;
     private final ComparadorLensometria comparador;
-    private final RecetaMapper recetas;
-    private final OrdenTrabajoMapper mapper;
+
     private final VentaOrdenTrabajo ventasOrden;
 
     @Override
     @Transactional(readOnly = true)
     public Page<OrdenTrabajoResponseDTO> pendientes(Pageable pageable) {
-        return ordenes.findByEstado(EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO, pageable).map(mapper::orden);
+        return ordenes.findByEstado(EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO, pageable).map(detalles::orden);
     }
 
     @Override
@@ -68,16 +65,16 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         var ot = envio.getOrdenTrabajo();
         if (ot.getEstado() != EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO || envio.getFechaRecepcion() == null)
             throw new ReglaNegocioException("Debe recibir el ultimo envio antes de registrar calidad");
-        if (envio.getFechaRevision() != null || envio.getAprobado() != null || !medidas.findByEnvioLaboratorioIdEnvioLaboratorioOrderByIdMedidaAsc(envio.getIdEnvioLaboratorio()).isEmpty())
+        if (envio.getFechaRevision() != null || envio.getAprobado() != null || !medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
             throw new ReglaNegocioException("Este envio ya tiene un control; para recontrolar registre un nuevo envio y recepcion");
-        ventasOrden.bloquear(ot.getLente().getReceta().getIdReceta());
-        var referencia = lenteMedidas.findByLenteIdLente(ot.getLente().getIdLente()).stream().map(LenteMedida::getMedida).toList();
+        ventasOrden.bloquear(ot.getLente().getReceta().getId());
+        var referencia = new java.util.ArrayList<>(ot.getLente().getMedidas());
         boolean aprobado = comparador.comparar(referencia, request.medidasLensometria(), p);
         for (var m : request.medidasLensometria()) {
-            var derecha = ojos.save(recetas.toMedidaOjo(m.ojoDerecho()));
-            var izquierda = ojos.save(recetas.toMedidaOjo(m.ojoIzquierdo()));
+            var derecha = ojos.save(RecetaMapper.toMedidaOjo(m.ojoDerecho()));
+            var izquierda = ojos.save(RecetaMapper.toMedidaOjo(m.ojoIzquierdo()));
             // Las medidas de taller se vinculan al envio, nunca a la receta clinica ni a LENTE_MEDIDA.
-            var medida = recetas.toMedida(m, null, derecha, izquierda);
+            var medida = RecetaMapper.toMedida(m, null, derecha, izquierda);
             medida.setEnvioLaboratorio(envio);
             medidas.save(medida);
         }
@@ -92,6 +89,6 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         medidas.flush();
         envios.saveAndFlush(envio);
         ordenes.saveAndFlush(ot);
-        return mapper.envio(envio);
+        return detalles.envio(envio);
     }
 }

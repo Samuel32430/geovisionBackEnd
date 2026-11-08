@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
-import lombok.Builder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -9,7 +8,6 @@ import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 
 import java.time.LocalDate;
 
-@Builder(toBuilder = true)
 public record PersonaRequestDTO(
     @NotBlank(message = "Los nombres son obligatorios")
     @Size(max = 150, message = "Los nombres no deben superar los 150 caracteres")

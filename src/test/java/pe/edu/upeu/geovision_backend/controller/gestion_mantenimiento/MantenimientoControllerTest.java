@@ -63,11 +63,11 @@ class MantenimientoControllerTest {
 
     static Stream<Caso> catalogos() {
         return Stream.of(
-                new Caso("categorias", "idCategoria", "{\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \"}", 100, true),
-                new Caso("materiales-cristal", "idMaterialCristal", "{\"nombre\":\"Catálogo prueba\"}", 100, false),
-                new Caso("tratamientos-cristal", "idTratamientoCristal", "{\"nombre\":\"Catálogo prueba\"}", 100, false),
-                new Caso("servicios", "idServicio", "{\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \",\"precio\":25.50}", 200, true),
-                new Caso("laboratorios", "idLaboratorio", "{\"nombre\":\"Catálogo prueba\",\"ruc\":\"20123456789\",\"telefono\":\" 999123456 \",\"direccion\":\" Lima \",\"correo\":\"contacto@example.com\"}", 200, true));
+                new Caso("categorias", "id", "{\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \"}", 100, true),
+                new Caso("materiales-cristal", "id", "{\"nombre\":\"Catálogo prueba\"}", 100, false),
+                new Caso("tratamientos-cristal", "id", "{\"nombre\":\"Catálogo prueba\"}", 100, false),
+                new Caso("servicios", "id", "{\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \",\"precio\":25.50}", 200, true),
+                new Caso("laboratorios", "id", "{\"nombre\":\"Catálogo prueba\",\"ruc\":\"20123456789\",\"telefono\":\" 999123456 \",\"direccion\":\" Lima \",\"correo\":\"contacto@example.com\"}", 200, true));
     }
 
     @Autowired MockMvc mvc;
@@ -211,60 +211,58 @@ class MantenimientoControllerTest {
 
     @Test
     void bloqueaCategoriaConProductoActivoYPermiteDependenciaInactiva() throws Exception {
-        Categoria categoria = persistir(Categoria.builder().nombre("Categoría dependiente").build());
-        Producto producto = persistir(Producto.builder().codigo("PRUEBA-CUS22").nombre("Producto")
-                .precio(BigDecimal.TEN).categoria(categoria).build());
+        Categoria categoria = persistir(new Categoria(null, "Categoría dependiente", null, true, null));
+        Producto producto = persistir(new Producto(null, "PRUEBA-CUS22", "Producto", null, null, BigDecimal.TEN, 0, true, null, categoria));
         String body = "{\"nombre\":\"Categoría dependiente\",\"estado\":0}";
-        mvc.perform(put(BASE + "categorias/" + categoria.getIdCategoria()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put(BASE + "categorias/" + categoria.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isConflict());
         assertThat(categoria.getActivo()).isEqualTo(true);
         producto.setActivo(false); em.flush();
-        mvc.perform(put(BASE + "categorias/" + categoria.getIdCategoria()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put(BASE + "categorias/" + categoria.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.estado").value(0));
         verify(lock, times(2)).bloquear(Catalogo.CATEGORIA, true);
     }
 
     @Test
     void conservaPrecioHistoricoYBloqueaServicioConVentaPendiente() throws Exception {
-        Servicio servicio = persistir(Servicio.builder().nombre("Servicio vendido").precio(BigDecimal.TEN).build());
-        Venta venta = persistir(Venta.builder().total(BigDecimal.TEN).estado(EstadoVentaEnum.PENDIENTE)
-                .tipoComprobante(TipoComprobanteEnum.BOLETA).empleado(empleado()).build());
-        ServicioVendido detalle = persistir(ServicioVendido.builder().venta(venta).servicio(servicio).precio(BigDecimal.TEN).build());
+        Servicio servicio = persistir(new Servicio(null, "Servicio vendido", null, BigDecimal.TEN, true));
+        Venta venta = persistir(new Venta(null, null, BigDecimal.TEN, EstadoVentaEnum.PENDIENTE, null, TipoComprobanteEnum.BOLETA, empleado(), null, null));
+        ServicioVendido detalle = persistir(new ServicioVendido(null, BigDecimal.TEN, venta, servicio));
         String body = "{\"nombre\":\"Servicio vendido\",\"precio\":20,\"estado\":0}";
-        mvc.perform(put(BASE + "servicios/" + servicio.getIdServicio()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put(BASE + "servicios/" + servicio.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isConflict());
         venta.setEstado(EstadoVentaEnum.PAGADA); em.flush();
-        mvc.perform(put(BASE + "servicios/" + servicio.getIdServicio()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put(BASE + "servicios/" + servicio.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.precio").value(20));
         em.flush(); em.clear();
-        assertThat(em.find(ServicioVendido.class, detalle.getIdServicioVendido()).getPrecio()).isEqualByComparingTo("10");
+        assertThat(em.find(ServicioVendido.class, detalle.getId()).getPrecio()).isEqualByComparingTo("10");
     }
 
     @Test
     void bloqueaLaboratorioHastaRecepcionYRevisionSinCambiarEnvios() throws Exception {
-        Laboratorio laboratorio = persistir(Laboratorio.builder().nombre("Laboratorio con envío").build());
+        Laboratorio laboratorio = persistir(new Laboratorio(null, "Laboratorio con envío", null, null, null, null, true));
         Empleado empleado = empleado();
-        Paciente paciente = persistir(Paciente.builder().persona(persona()).build());
-        Receta receta = persistir(Receta.builder().empleado(empleado).paciente(paciente).build());
-        MaterialCristal material = persistir(MaterialCristal.builder().nombre("Material envío").build());
-        Lente lente = persistir(Lente.builder().receta(receta).materialCristal(material).subTotal(BigDecimal.TEN).build());
-        OrdenTrabajo orden = persistir(OrdenTrabajo.builder().lente(lente).estado(EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO).build());
-        EnvioLaboratorio envio = persistir(EnvioLaboratorio.builder().laboratorio(laboratorio).ordenTrabajo(orden).build());
+        Paciente paciente = persistir(new Paciente(null, persona(), true, null, null));
+        Receta receta = persistir(new Receta(null, null, 0, paciente, empleado));
+        MaterialCristal material = persistir(new MaterialCristal(null, "Material envío"));
+        Lente lente = persistir(new Lente(null, BigDecimal.TEN, receta, material, null, new java.util.LinkedHashSet<>(), new java.util.LinkedHashSet<>()));
+        OrdenTrabajo orden = persistir(new OrdenTrabajo(null, null, null, null, EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO, null, lente));
+        EnvioLaboratorio envio = persistir(new EnvioLaboratorio(null, null, null, null, null, null, null, null, orden, laboratorio));
         String body = "{\"nombre\":\"Laboratorio con envío\",\"estado\":0}";
-        mvc.perform(put(BASE + "laboratorios/" + laboratorio.getIdLaboratorio()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put(BASE + "laboratorios/" + laboratorio.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isConflict());
         envio.setFechaRecepcion(LocalDateTime.now()); em.flush();
-        mvc.perform(put(BASE + "laboratorios/" + laboratorio.getIdLaboratorio()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put(BASE + "laboratorios/" + laboratorio.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isConflict());
         envio.setFechaRevision(LocalDateTime.now()); em.flush();
-        mvc.perform(put(BASE + "laboratorios/" + laboratorio.getIdLaboratorio()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put(BASE + "laboratorios/" + laboratorio.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isOk());
-        assertThat(envio.getLaboratorio().getIdLaboratorio()).isEqualTo(laboratorio.getIdLaboratorio());
+        assertThat(envio.getLaboratorio().getId()).isEqualTo(laboratorio.getId());
     }
 
     @Test
     void validacionDelServicioNoSeOmiteFueraDelController() {
-        assertThatThrownBy(() -> service.registrarCategoria(CategoriaDTO.builder().nombre(" ").build()))
+        assertThatThrownBy(() -> service.registrarCategoria(new CategoriaDTO(null, " ", null, 1, null)))
                 .isInstanceOf(jakarta.validation.ConstraintViolationException.class);
         verifyNoInteractions(lock);
     }
@@ -301,8 +299,7 @@ class MantenimientoControllerTest {
 
     private <T> T persistir(T entity) { em.persist(entity); em.flush(); return entity; }
     private Persona persona() {
-        return persistir(Persona.builder().nombres("Persona").apellidos("Prueba")
-                .numeroDocumento(UUID.randomUUID().toString()).tipoDocumento(TipoDocumentoEnum.DNI).build());
+        return persistir(new Persona(null, "Persona", "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
-    private Empleado empleado() { return persistir(Empleado.builder().persona(persona()).build()); }
+    private Empleado empleado() { return persistir(new Empleado(null, persona(), true, null, null)); }
 }

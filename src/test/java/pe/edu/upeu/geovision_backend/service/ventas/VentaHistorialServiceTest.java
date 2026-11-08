@@ -20,7 +20,6 @@ import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
-import pe.edu.upeu.geovision_backend.mapper.ventas.VentaMapper;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.ProductoVendidoRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.ServicioVendidoRepository;
@@ -54,9 +53,6 @@ class VentaHistorialServiceTest {
     @Mock
     private ServicioVendidoRepository servicioVendidoRepository;
 
-    @Mock
-    private VentaMapper ventaMapper;
-
     @InjectMocks
     private VentaHistorialServiceImpl ventaHistorialService;
 
@@ -64,31 +60,13 @@ class VentaHistorialServiceTest {
 
     @BeforeEach
     void setUp() {
-        Persona persona = Persona.builder()
-                .nombres("Ana")
-                .apellidos("Torres")
-                .numeroDocumento("77889900")
-                .build();
+        Persona persona = new Persona(null, "Ana", "Torres", null, null, null, null, "77889900", null);
 
-        Paciente paciente = Paciente.builder()
-                .idPersona(3L)
-                .persona(persona)
-                .build();
+        Paciente paciente = new Paciente(3L, persona, true, null, null);
 
-        Empleado empleado = Empleado.builder()
-                .idPersona(1L)
-                .build();
+        Empleado empleado = new Empleado(1L, null, true, null, null);
 
-        ventaTest = Venta.builder()
-                .idVenta(200L)
-                .numeroComprobante("B001-00000200")
-                .tipoComprobante(TipoComprobanteEnum.BOLETA)
-                .total(new BigDecimal("250.00"))
-                .estado(EstadoVentaEnum.PAGADA)
-                .paciente(paciente)
-                .empleado(empleado)
-                .fechaRegistro(LocalDateTime.now())
-                .build();
+        ventaTest = new Venta(200L, LocalDateTime.now(), new BigDecimal("250.00"), EstadoVentaEnum.PAGADA, "B001-00000200", TipoComprobanteEnum.BOLETA, empleado, paciente, null);
     }
 
     @Test
@@ -100,20 +78,10 @@ class VentaHistorialServiceTest {
         when(ventaRepository.buscarHistorialVentas(eq("Ana"), eq(EstadoVentaEnum.PAGADA), any(), any(), eq(pageable)))
                 .thenReturn(paginaVentas);
         when(pagoRepository.sumMontoPagadoByVentaId(200L)).thenReturn(new BigDecimal("250.00"));
-        when(productoVendidoRepository.findByVentaIdVenta(200L)).thenReturn(Collections.emptyList());
-        when(servicioVendidoRepository.findByVentaIdVenta(200L)).thenReturn(Collections.emptyList());
+        when(productoVendidoRepository.findByVentaId(200L)).thenReturn(Collections.emptyList());
+        when(servicioVendidoRepository.findByVentaId(200L)).thenReturn(Collections.emptyList());
 
-        VentaHistorialResponseDTO dtoMock = VentaHistorialResponseDTO.builder()
-                .idVenta(200L)
-                .numeroComprobante("B001-00000200")
-                .clienteNombre("Ana Torres")
-                .total(new BigDecimal("250.00"))
-                .totalPagado(new BigDecimal("250.00"))
-                .saldoPendiente(BigDecimal.ZERO)
-                .estado(EstadoVentaEnum.PAGADA)
-                .build();
-
-        when(ventaMapper.toHistorialResponseDTO(eq(ventaTest), any(), any(), any())).thenReturn(dtoMock);
+        VentaHistorialResponseDTO dtoMock = new VentaHistorialResponseDTO(200L, null, "B001-00000200", null, null, "Ana Torres", null, null, new BigDecimal("250.00"), new BigDecimal("250.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null);
 
         Page<VentaHistorialResponseDTO> resultado = ventaHistorialService.buscarHistorialVentas(
                 "Ana",
@@ -133,26 +101,16 @@ class VentaHistorialServiceTest {
     void obtenerDetalleModalVenta_existente_retornaResponseDTO() {
         when(ventaRepository.findById(200L)).thenReturn(Optional.of(ventaTest));
         when(pagoRepository.sumMontoPagadoByVentaId(200L)).thenReturn(new BigDecimal("250.00"));
-        when(productoVendidoRepository.findByVentaIdVenta(200L)).thenReturn(Collections.emptyList());
-        when(servicioVendidoRepository.findByVentaIdVenta(200L)).thenReturn(Collections.emptyList());
-        when(pagoRepository.findByVentaIdVenta(200L)).thenReturn(Collections.emptyList());
+        when(productoVendidoRepository.findByVentaId(200L)).thenReturn(Collections.emptyList());
+        when(servicioVendidoRepository.findByVentaId(200L)).thenReturn(Collections.emptyList());
+        when(pagoRepository.findByVentaId(200L)).thenReturn(Collections.emptyList());
 
-        VentaResponseDTO dtoMock = VentaResponseDTO.builder()
-                .idVenta(200L)
-                .numeroComprobante("B001-00000200")
-                .total(new BigDecimal("250.00"))
-                .totalPagado(new BigDecimal("250.00"))
-                .saldoPendiente(BigDecimal.ZERO)
-                .estado(EstadoVentaEnum.PAGADA)
-                .build();
-
-        when(ventaMapper.toResponseDTO(eq(ventaTest), any(), any(), any(), any(), any()))
-                .thenReturn(dtoMock);
+        VentaResponseDTO dtoMock = new VentaResponseDTO(200L, null, new BigDecimal("250.00"), new BigDecimal("250.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, "B001-00000200", null, null, null, null, null, null, null, null);
 
         VentaResponseDTO resultado = ventaHistorialService.obtenerDetalleModalVenta(200L);
 
         assertThat(resultado).isNotNull();
-        assertThat(resultado.idVenta()).isEqualTo(200L);
+        assertThat(resultado.id()).isEqualTo(200L);
         assertThat(resultado.numeroComprobante()).isEqualTo("B001-00000200");
     }
 

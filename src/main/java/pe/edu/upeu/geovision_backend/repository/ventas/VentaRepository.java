@@ -20,27 +20,27 @@ import java.util.Optional;
 public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecificationExecutor<Venta> {
 
     @Query("SELECT new pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO(" +
-           "v.idVenta, v.numeroComprobante, l.idLente, v.receta.idReceta, p.idPersona, " +
+           "v.id, v.numeroComprobante, l.id, v.receta.id, p.id, " +
            "CONCAT(CONCAT(per.nombres, ' '), per.apellidos), v.total) " +
            "FROM Venta v JOIN v.paciente p JOIN p.persona per JOIN Lente l ON l.receta = v.receta " +
            "WHERE v.estado <> pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum.ANULADA " +
-           "AND (SELECT COUNT(v2.idVenta) FROM Venta v2 WHERE v2.receta = v.receta) = 1 " +
-           "AND EXISTS (SELECT pago.idPago FROM Pago pago WHERE pago.venta = v AND pago.monto > 0) " +
-           "AND EXISTS (SELECT lm.idLenteMedidas FROM LenteMedida lm WHERE lm.lente = l) " +
-           "AND NOT EXISTS (SELECT o.idOrdenTrabajo FROM OrdenTrabajo o WHERE o.lente = l) " +
+           "AND (SELECT COUNT(v2.id) FROM Venta v2 WHERE v2.receta = v.receta) = 1 " +
+           "AND EXISTS (SELECT pago.id FROM Pago pago WHERE pago.venta = v AND pago.monto > 0) " +
+           "AND l.medidas IS NOT EMPTY " +
+           "AND NOT EXISTS (SELECT o.id FROM OrdenTrabajo o WHERE o.lente = l) " +
            "AND (:termino IS NULL OR LOWER(per.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
            "OR LOWER(per.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
            "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') ESCAPE '!' " +
            "OR v.numeroComprobante LIKE CONCAT('%', :termino, '%') ESCAPE '!') " +
-           "ORDER BY v.fechaRegistro DESC, v.idVenta DESC, l.idLente ASC")
+           "ORDER BY v.fechaRegistro DESC, v.id DESC, l.id ASC")
     Page<pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO> buscarPendientesOrdenTrabajo(
             @Param("termino") String termino, Pageable pageable);
 
-    List<Venta> findByRecetaIdReceta(Long idReceta);
+    List<Venta> findByRecetaId(Long idReceta);
 
-    List<Venta> findByPacienteIdPersona(Long idPaciente);
+    List<Venta> findByPacienteId(Long idPaciente);
 
-    List<Venta> findByEmpleadoIdPersona(Long idEmpleado);
+    List<Venta> findByEmpleadoId(Long idEmpleado);
 
     List<Venta> findByEstado(EstadoVentaEnum estado);
 
@@ -48,10 +48,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
 
     boolean existsByNumeroComprobante(String numeroComprobante);
 
-    boolean existsByRecetaIdReceta(Long idReceta);
+    boolean existsByRecetaId(Long idReceta);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT v FROM Venta v WHERE v.idVenta = :id")
+    @Query("SELECT v FROM Venta v WHERE v.id = :id")
     Optional<Venta> findByIdForUpdate(@Param("id") Long id);
 
     @Query("SELECT v FROM Venta v LEFT JOIN v.paciente p LEFT JOIN p.persona per " +

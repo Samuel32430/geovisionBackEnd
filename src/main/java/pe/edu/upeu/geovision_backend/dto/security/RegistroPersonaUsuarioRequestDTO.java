@@ -1,12 +1,10 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import lombok.Builder;
 import pe.edu.upeu.geovision_backend.dto.atencion.PersonaRequestDTO;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
-@Builder(toBuilder = true)
 public record RegistroPersonaUsuarioRequestDTO(
     @Valid
     @NotNull(message = "Los datos de la persona son obligatorios")

@@ -15,22 +15,22 @@ import java.util.Optional;
 public interface LenteRepository extends JpaRepository<Lente, Long> {
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT l FROM Lente l WHERE l.idLente = :id")
+    @Query("SELECT l FROM Lente l WHERE l.id = :id")
     Optional<Lente> findByIdForUpdate(@Param("id") Long id);
 
-    List<Lente> findByRecetaIdReceta(Long idReceta);
+    List<Lente> findByRecetaId(Long idReceta);
 
-    @EntityGraph(attributePaths = {"materialCristal", "montura.producto"})
-    List<Lente> findByRecetaIdRecetaOrderByIdLenteAsc(Long idReceta);
+    @EntityGraph(attributePaths = {"materialCristal", "tratamientosCristal", "montura.producto", "medidas.medidaOjoDerecha", "medidas.medidaOjoIzquierda"})
+    List<Lente> findByRecetaIdOrderByIdAsc(Long idReceta);
 
-    @EntityGraph(attributePaths = {"materialCristal", "montura.producto"})
-    List<Lente> findByRecetaIdRecetaInOrderByIdLenteAsc(Collection<Long> idsReceta);
+    @EntityGraph(attributePaths = {"materialCristal", "tratamientosCristal", "montura.producto", "medidas.medidaOjoDerecha", "medidas.medidaOjoIzquierda"})
+    List<Lente> findByRecetaIdInOrderByIdAsc(Collection<Long> idsReceta);
 
-    List<Lente> findByMaterialCristalIdMaterialCristal(Long idMaterialCristal);
+    List<Lente> findByMaterialCristalId(Long idMaterialCristal);
 
-    List<Lente> findByMonturaIdProducto(Long idProducto);
+    List<Lente> findByMonturaId(Long idProducto);
 
-    @EntityGraph(attributePaths = {"receta", "materialCristal", "montura.producto"})
-    @Query("SELECT l FROM Lente l WHERE l.idLente = :id")
+    @EntityGraph(attributePaths = {"receta", "materialCristal", "tratamientosCristal", "montura.producto", "medidas.medidaOjoDerecha", "medidas.medidaOjoIzquierda"})
+    @Query("SELECT l FROM Lente l WHERE l.id = :id")
     Optional<Lente> findByIdWithDetails(@Param("id") Long id);
 }

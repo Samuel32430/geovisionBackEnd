@@ -14,5 +14,5 @@ public interface TratamientoCristalRepository extends JpaRepository<TratamientoC
 
     boolean existsByNombreIgnoreCase(String nombre);
 
-    boolean existsByNombreIgnoreCaseAndIdTratamientoCristalNot(String nombre, Long idTratamientoCristal);
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idTratamientoCristal);
 }

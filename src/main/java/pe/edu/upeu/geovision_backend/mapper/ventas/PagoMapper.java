@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.mapper.ventas;
 
-import org.springframework.stereotype.Component;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoPendienteResponseDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoRegistroRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoResponseDTO;
@@ -14,49 +13,35 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
-public class PagoMapper {
+public final class PagoMapper {
+    private PagoMapper() {}
 
-    public Pago toEntity(PagoRegistroRequestDTO dto, Venta venta) {
+    public static Pago toEntity(PagoRegistroRequestDTO dto, Venta venta) {
         if (dto == null) {
             return null;
         }
 
-        return Pago.builder()
-                .venta(venta)
-                .monto(dto.monto())
-                .metodoPago(dto.metodoPago())
-                .numeroOperacion(dto.numeroOperacion() != null ? dto.numeroOperacion().trim() : null)
-                .fechaRegistro(LocalDateTime.now())
-                .build();
+        return new Pago(null, LocalDateTime.now(), dto.numeroOperacion() != null ? dto.numeroOperacion().trim() : null, dto.monto(), dto.metodoPago(), venta);
     }
 
-    public PagoResponseDTO toDTO(Pago entity) {
+    public static PagoResponseDTO toDTO(Pago entity) {
         if (entity == null) {
             return null;
         }
 
-        return PagoResponseDTO.builder()
-                .idPago(entity.getIdPago())
-                .idVenta(entity.getVenta() != null ? entity.getVenta().getIdVenta() : null)
-                .monto(entity.getMonto())
-                .metodoPago(entity.getMetodoPago())
-                .metodoPagoDescripcion(entity.getMetodoPago() != null ? entity.getMetodoPago().getDescripcion() : null)
-                .numeroOperacion(entity.getNumeroOperacion())
-                .fechaRegistro(entity.getFechaRegistro())
-                .build();
+        return new PagoResponseDTO(entity.getId(), entity.getVenta() != null ? entity.getVenta().getId() : null, entity.getMonto(), entity.getMetodoPago(), entity.getMetodoPago() != null ? entity.getMetodoPago().getDescripcion() : null, entity.getNumeroOperacion(), entity.getFechaRegistro());
     }
 
-    public List<PagoResponseDTO> toDTOList(List<Pago> entities) {
+    public static List<PagoResponseDTO> toDTOList(List<Pago> entities) {
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
         return entities.stream()
-                .map(this::toDTO)
+                .map(PagoMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
-    public PagoPendienteResponseDTO toPagoPendienteResponseDTO(
+    public static PagoPendienteResponseDTO toPagoPendienteResponseDTO(
             Venta venta,
             BigDecimal totalPagado,
             BigDecimal saldoPendiente,
@@ -72,7 +57,7 @@ public class PagoMapper {
         Long idPaciente = null;
 
         if (venta.getPaciente() != null) {
-            idPaciente = venta.getPaciente().getIdPersona();
+            idPaciente = venta.getPaciente().getId();
             Persona persona = venta.getPaciente().getPersona();
             if (persona != null) {
                 pacienteNombre = (persona.getNombres() + " " + persona.getApellidos()).trim();
@@ -81,19 +66,6 @@ public class PagoMapper {
             }
         }
 
-        return PagoPendienteResponseDTO.builder()
-                .idVenta(venta.getIdVenta())
-                .numeroComprobante(venta.getNumeroComprobante())
-                .fechaVenta(venta.getFechaRegistro())
-                .idPaciente(idPaciente)
-                .pacienteNombre(pacienteNombre)
-                .pacienteTelefono(pacienteTelefono)
-                .pacienteDocumento(pacienteDocumento)
-                .totalVenta(venta.getTotal())
-                .totalPagado(totalPagado != null ? totalPagado : BigDecimal.ZERO)
-                .saldoPendiente(saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO)
-                .estado(venta.getEstado())
-                .historialPagos(toDTOList(pagos))
-                .build();
+        return new PagoPendienteResponseDTO(venta.getId(), venta.getNumeroComprobante(), venta.getFechaRegistro(), idPaciente, pacienteNombre, pacienteTelefono, pacienteDocumento, venta.getTotal(), totalPagado != null ? totalPagado : BigDecimal.ZERO, saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO, venta.getEstado(), toDTOList(pagos));
     }
 }

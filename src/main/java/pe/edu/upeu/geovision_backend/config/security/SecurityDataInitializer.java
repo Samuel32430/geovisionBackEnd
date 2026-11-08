@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.config.security;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -23,6 +24,7 @@ import java.util.List;
  */
 @Component
 @Profile("!prod")
+@RequiredArgsConstructor
 public class SecurityDataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SecurityDataInitializer.class);
@@ -30,15 +32,6 @@ public class SecurityDataInitializer implements CommandLineRunner {
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
     private final RolPermisoRepository rolPermisoRepository;
-
-    public SecurityDataInitializer(
-            RolRepository rolRepository,
-            PermisoRepository permisoRepository,
-            RolPermisoRepository rolPermisoRepository) {
-        this.rolRepository = rolRepository;
-        this.permisoRepository = permisoRepository;
-        this.rolPermisoRepository = rolPermisoRepository;
-    }
 
     @Override
     @Transactional
@@ -87,8 +80,8 @@ public class SecurityDataInitializer implements CommandLineRunner {
             // 3. Asignación inicial de permisos a ADMINISTRADOR si no tiene
             if (admin != null) {
                 for (Permiso p : permisosCreados) {
-                    if (p != null && !rolPermisoRepository.existsByRolIdRolAndPermisoIdPermiso(admin.getIdRol(), p.getIdPermiso())) {
-                        rolPermisoRepository.save(RolPermiso.builder().rol(admin).permiso(p).build());
+                    if (p != null && !rolPermisoRepository.existsByRolIdAndPermisoId(admin.getId(), p.getId())) {
+                        rolPermisoRepository.save(new RolPermiso(null, admin, p));
                     }
                 }
             }
@@ -112,23 +105,18 @@ public class SecurityDataInitializer implements CommandLineRunner {
 
     private Permiso crearPermisoSiNoExiste(String nombre, ModuloEnum modulo) {
         return permisoRepository.findByNombreIgnoreCase(nombre)
-                .orElseGet(() -> permisoRepository.save(Permiso.builder()
-                        .nombre(nombre)
-                        .modulo(modulo)
-                        .build()));
+                .orElseGet(() -> permisoRepository.save(new Permiso(null, nombre, modulo)));
     }
 
     private Rol crearRolSiNoExiste(String nombre) {
         return rolRepository.findByNombreIgnoreCase(nombre)
-                .orElseGet(() -> rolRepository.save(Rol.builder()
-                        .nombre(nombre)
-                        .build()));
+                .orElseGet(() -> rolRepository.save(new Rol(null, nombre)));
     }
 
     private void asignarPermisoARol(Rol rol, String nombrePermiso) {
         permisoRepository.findByNombreIgnoreCase(nombrePermiso).ifPresent(p -> {
-            if (!rolPermisoRepository.existsByRolIdRolAndPermisoIdPermiso(rol.getIdRol(), p.getIdPermiso())) {
-                rolPermisoRepository.save(RolPermiso.builder().rol(rol).permiso(p).build());
+            if (!rolPermisoRepository.existsByRolIdAndPermisoId(rol.getId(), p.getId())) {
+                rolPermisoRepository.save(new RolPermiso(null, rol, p));
             }
         });
     }

@@ -96,8 +96,7 @@ class AtencionPacienteIntegrationTest {
     Rol role;
 
     Persona person(String name) {
-        return people.saveAndFlush(Persona.builder().nombres(name).apellidos("Integración")
-                .numeroDocumento(UUID.randomUUID().toString()).tipoDocumento(TipoDocumentoEnum.DNI).build());
+        return people.saveAndFlush(new Persona(null, name, "Integración", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
     @BeforeEach
@@ -110,29 +109,26 @@ class AtencionPacienteIntegrationTest {
 
     void createFixture() {
         Persona professional = person("Profesional");
-        actor = users.saveAndFlush(Usuario.builder().nombre("integracion-" + UUID.randomUUID())
-                .correo(UUID.randomUUID() + "@test.invalid").password(encoder.encode("PruebaSegura123!"))
-                .persona(professional).build());
-        employee = employees.saveAndFlush(Empleado.builder().persona(professional).usuario(actor).build());
-        role = roles.saveAndFlush(Rol.builder().nombre("PRUEBA-" + UUID.randomUUID()).build());
+        actor = users.saveAndFlush(new Usuario(null, "integracion-" + UUID.randomUUID(), encoder.encode("PruebaSegura123!"), UUID.randomUUID() + "@test.invalid", true, professional));
+        employee = employees.saveAndFlush(new Empleado(null, professional, true, null, actor));
+        role = roles.saveAndFlush(new Rol(null, "PRUEBA-" + UUID.randomUUID()));
         for (String permission : List.of("PACIENTES_LEER", "PACIENTES_REGISTRAR", "PACIENTES_GESTIONAR",
                 "EXAMENES_REGISTRAR", "RECETAS_REGISTRAR")) {
-            rolePermissions.saveAndFlush(RolPermiso.builder().rol(role)
-                    .permiso(permissions.findByNombreIgnoreCase(permission).orElseThrow()).build());
+            rolePermissions.saveAndFlush(new RolPermiso(null, role, permissions.findByNombreIgnoreCase(permission).orElseThrow()));
         }
-        userRoles.saveAndFlush(UsuarioRol.builder().usuario(actor).rol(role).build());
+        userRoles.saveAndFlush(new UsuarioRol(null, actor, role));
     }
 
     @AfterTransaction
     void cleanup() {
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            userLogs.deleteAll(userLogs.findByUsuarioIdUsuarioOrderByFechaLogDesc(actor.getIdUsuario()));
-            userRoles.deleteByUsuarioIdUsuario(actor.getIdUsuario());
-            rolePermissions.deleteByRolIdRol(role.getIdRol());
-            employees.deleteById(employee.getIdPersona());
-            users.deleteById(actor.getIdUsuario());
-            people.deleteById(employee.getIdPersona());
-            roles.deleteById(role.getIdRol());
+            userLogs.deleteAll(userLogs.findByUsuarioIdOrderByFechaLogDesc(actor.getId()));
+            userRoles.deleteByUsuarioId(actor.getId());
+            rolePermissions.deleteByRolId(role.getId());
+            employees.deleteById(employee.getId());
+            users.deleteById(actor.getId());
+            people.deleteById(employee.getId());
+            roles.deleteById(role.getId());
         });
     }
 
@@ -150,7 +146,7 @@ class AtencionPacienteIntegrationTest {
                   "observaciones":"Material recomendado: policarbonato",
                   "ojoDerecho":{"esfera":-1.25,"cilindro":-0.50,"eje":90,"agudezaVisual":"20/20"},
                   "ojoIzquierdo":{"esfera":2.50,"eje":80,"agudezaVisual":"20/25"}}]}
-                """.formatted(patientId, employee.getIdPersona());
+                """.formatted(patientId, employee.getId());
     }
 
     @Test
@@ -162,18 +158,18 @@ class AtencionPacienteIntegrationTest {
         JsonNode patient = json.readTree(mvc.perform(post("/api/v1/pacientes").header("Authorization", bearer)
                         .contentType(MediaType.APPLICATION_JSON).content(patientJson))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
-        long patientId = patient.get("idPersona").asLong();
+        long patientId = patient.get("id").asLong();
         mvc.perform(post("/api/v1/pacientes").header("Authorization", bearer)
                 .contentType(MediaType.APPLICATION_JSON).content(patientJson)).andExpect(status().isConflict());
         JsonNode recipe = json.readTree(mvc.perform(post("/api/v1/recetas/examen-visual").header("Authorization", bearer)
                         .contentType(MediaType.APPLICATION_JSON).content(exam(patientId)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
-        long recipeId = recipe.get("idReceta").asLong();
-        var material = materials.saveAndFlush(MaterialCristal.builder().nombre("Material " + UUID.randomUUID()).build());
+        long recipeId = recipe.get("id").asLong();
+        var material = materials.saveAndFlush(new MaterialCristal(null, "Material " + UUID.randomUUID()));
         mvc.perform(get("/api/v1/catalogos-opticos/materiales-cristal").header("Authorization", bearer))
                 .andExpect(status().isOk());
         String lens = json.writeValueAsString(java.util.Map.of("idReceta", recipeId,
-                "idMaterialCristal", material.getIdMaterialCristal(), "subTotal", new BigDecimal("380.00")));
+                "idMaterialCristal", material.getId(), "subTotal", new BigDecimal("380.00")));
         mvc.perform(post("/api/v1/recetas/{id}/lentes", recipeId).header("Authorization", bearer)
                 .contentType(MediaType.APPLICATION_JSON).content(lens)).andExpect(status().isCreated());
         mvc.perform(get("/api/v1/recetas/{id}", recipeId).header("Authorization", bearer))
@@ -195,14 +191,11 @@ class AtencionPacienteIntegrationTest {
         mvc.perform(post("/api/v1/recetas/externa").header("Authorization", bearer)
                 .contentType(MediaType.APPLICATION_JSON).content(exam(patientId)))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.esExterno").value(1));
-        sales.saveAndFlush(Venta.builder().receta(prescriptions.findById(recipeId).orElseThrow())
-                .paciente(patients.findById(patientId).orElseThrow()).empleado(employee)
-                .total(new BigDecimal("380.00")).estado(EstadoVentaEnum.PENDIENTE)
-                .tipoComprobante(TipoComprobanteEnum.BOLETA).build());
+        sales.saveAndFlush(new Venta(null, null, new BigDecimal("380.00"), EstadoVentaEnum.PENDIENTE, null, TipoComprobanteEnum.BOLETA, employee, patients.findById(patientId).orElseThrow(), prescriptions.findById(recipeId).orElseThrow()));
         mvc.perform(post("/api/v1/recetas/{id}/lentes", recipeId).header("Authorization", bearer)
                 .contentType(MediaType.APPLICATION_JSON).content(lens)).andExpect(status().isConflict());
-        assertThat(patientLogs.findByPacienteIdPersonaOrderByFechaLogDesc(patientId)).hasSize(3)
-                .allSatisfy(log -> assertThat(log.getUsuario().getIdUsuario()).isEqualTo(actor.getIdUsuario()));
+        assertThat(patientLogs.findByPacienteIdOrderByFechaLogDesc(patientId)).hasSize(3)
+                .allSatisfy(log -> assertThat(log.getUsuario().getId()).isEqualTo(actor.getId()));
     }
 
     @Test
@@ -218,7 +211,7 @@ class AtencionPacienteIntegrationTest {
     void tokenValidoNoConservaPermisosRevocadosNiHabilitaUsuarioInactivo() throws Exception {
         String bearer = login();
         var read = permissions.findByNombreIgnoreCase("PACIENTES_LEER").orElseThrow();
-        var assignment = rolePermissions.findByRolIdRolAndPermisoIdPermiso(role.getIdRol(), read.getIdPermiso()).orElseThrow();
+        var assignment = rolePermissions.findByRolIdAndPermisoId(role.getId(), read.getId()).orElseThrow();
         rolePermissions.delete(assignment);
         rolePermissions.flush();
         mvc.perform(get("/api/v1/pacientes").header("Authorization", bearer)).andExpect(status().isForbidden());
@@ -243,27 +236,27 @@ class AtencionPacienteIntegrationTest {
     @Test
     void idsYEjesFraccionariosNoSeRedondeanEnSilencio() throws Exception {
         String bearer = login();
-        var patient = patients.saveAndFlush(Paciente.builder().persona(person("Paciente")).build());
-        for (String invalid : List.of(exam(patient.getIdPersona()).replace("\"idPaciente\":" + patient.getIdPersona(),
-                "\"idPaciente\":" + patient.getIdPersona() + ".5"),
-                exam(patient.getIdPersona()).replace("\"eje\":90", "\"eje\":90.5"))) {
+        var patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
+        for (String invalid : List.of(exam(patient.getId()).replace("\"idPaciente\":" + patient.getId(),
+                "\"idPaciente\":" + patient.getId() + ".5"),
+                exam(patient.getId()).replace("\"eje\":90", "\"eje\":90.5"))) {
             mvc.perform(post("/api/v1/recetas/examen-visual").header("Authorization", bearer)
                     .contentType(MediaType.APPLICATION_JSON).content(invalid)).andExpect(status().isBadRequest())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$.status").value(400))
                     .andExpect(jsonPath("$.message").value("El cuerpo JSON tiene un formato inválido o contiene valores incompatibles"));
         }
-        mvc.perform(patch("/api/v1/pacientes/{id}/estado", patient.getIdPersona()).header("Authorization", bearer)
+        mvc.perform(patch("/api/v1/pacientes/{id}/estado", patient.getId()).header("Authorization", bearer)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":0.5}")).andExpect(status().isBadRequest());
     }
 
     @Test
     void tipoMedidaNumericoNoSeInterpretaComoOrdinalJava() throws Exception {
         String bearer = login();
-        var patient = patients.saveAndFlush(Paciente.builder().persona(person("Paciente")).build());
+        var patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
         for (String numeric : List.of("1", "\"1\"")) {
             mvc.perform(post("/api/v1/recetas/examen-visual").header("Authorization", bearer)
-                    .contentType(MediaType.APPLICATION_JSON).content(exam(patient.getIdPersona())
+                    .contentType(MediaType.APPLICATION_JSON).content(exam(patient.getId())
                             .replace("\"tipoMedida\":\"LEJOS\"", "\"tipoMedida\":" + numeric)))
                     .andExpect(status().isBadRequest());
         }
@@ -275,15 +268,12 @@ class AtencionPacienteIntegrationTest {
         String document = UUID.randomUUID().toString();
         var independent = new TransactionTemplate(transactions);
         independent.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        var request = PacienteRequestDTO.builder().build();
+        var request = new PacienteRequestDTO(null, null, 1, null);
         if (existingPerson) {
-            Long id = independent.execute(status -> people.saveAndFlush(Persona.builder()
-                    .nombres("Paciente concurrente").apellidos("Prueba").numeroDocumento(document)
-                    .tipoDocumento(TipoDocumentoEnum.DNI).build()).getIdPersona());
-            request = request.toBuilder().idPersona(id).build();
+            Long id = independent.execute(status -> people.saveAndFlush(new Persona(null, "Paciente concurrente", "Prueba", null, null, null, null, document, TipoDocumentoEnum.DNI)).getId());
+            request = new PacienteRequestDTO(id, request.persona(), request.estado(), request.idUsuario());
         } else {
-            request = request.toBuilder().persona(PersonaRequestDTO.builder().nombres("Paciente concurrente").apellidos("Prueba")
-                    .numeroDocumento(document).tipoDocumento(TipoDocumentoEnum.DNI).build()).build();
+            request = new PacienteRequestDTO(request.id(), new PersonaRequestDTO("Paciente concurrente", "Prueba", null, null, null, null, TipoDocumentoEnum.DNI, document), request.estado(), request.idUsuario());
         }
         CyclicBarrier start = new CyclicBarrier(2);
         var registration = request;
@@ -302,12 +292,12 @@ class AtencionPacienteIntegrationTest {
             assertThat(List.of(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS)))
                     .containsExactlyInAnyOrder(true, false);
             var created = patients.findByPersonaNumeroDocumento(document).orElseThrow();
-            assertThat(patientLogs.findByPacienteIdPersonaOrderByFechaLogDesc(created.getIdPersona())).hasSize(1);
+            assertThat(patientLogs.findByPacienteIdOrderByFechaLogDesc(created.getId())).hasSize(1);
         } finally {
             independent.executeWithoutResult(status -> people.findByNumeroDocumento(document).ifPresent(person -> {
-                patientLogs.deleteAll(patientLogs.findByPacienteIdPersonaOrderByFechaLogDesc(person.getIdPersona()));
-                if (patients.existsById(person.getIdPersona())) patients.deleteById(person.getIdPersona());
-                people.deleteById(person.getIdPersona());
+                patientLogs.deleteAll(patientLogs.findByPacienteIdOrderByFechaLogDesc(person.getId()));
+                if (patients.existsById(person.getId())) patients.deleteById(person.getId());
+                people.deleteById(person.getId());
             }));
         }
     }

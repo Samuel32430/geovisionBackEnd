@@ -13,24 +13,24 @@ import java.util.Optional;
 @Repository
 public interface MedidaRepository extends JpaRepository<Medida, Long> {
 
-    List<Medida> findByRecetaIdReceta(Long idReceta);
+    List<Medida> findByRecetaId(Long idReceta);
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
-    List<Medida> findByRecetaIdRecetaOrderByIdMedidaAsc(Long idReceta);
+    List<Medida> findByRecetaIdOrderByIdAsc(Long idReceta);
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
-    List<Medida> findByRecetaIdRecetaInOrderByIdMedidaAsc(Collection<Long> idsReceta);
+    List<Medida> findByRecetaIdInOrderByIdAsc(Collection<Long> idsReceta);
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
-    List<Medida> findByIdMedidaInAndRecetaIdReceta(Collection<Long> idsMedida, Long idReceta);
+    List<Medida> findByIdInAndRecetaId(Collection<Long> idsMedida, Long idReceta);
 
-    List<Medida> findByRecetaIdRecetaAndTipoMedida(Long idReceta, TipoMedidaEnum tipoMedida);
+    List<Medida> findByRecetaIdAndTipoMedida(Long idReceta, TipoMedidaEnum tipoMedida);
 
-    Optional<Medida> findByEnvioLaboratorioIdEnvioLaboratorio(Long idEnvioLaboratorio);
-
-    @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
-    List<Medida> findByEnvioLaboratorioIdEnvioLaboratorioOrderByIdMedidaAsc(Long idEnvioLaboratorio);
+    Optional<Medida> findByEnvioLaboratorioId(Long idEnvioLaboratorio);
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
-    Optional<Medida> findOneWithOjosByIdMedida(Long idMedida);
+    List<Medida> findByEnvioLaboratorioIdOrderByIdAsc(Long idEnvioLaboratorio);
+
+    @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
+    Optional<Medida> findOneWithOjosById(Long idMedida);
 }

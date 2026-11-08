@@ -1,10 +1,8 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import lombok.Builder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-@Builder(toBuilder = true)
 public record CambioPasswordRequestDTO(
     @NotBlank(message = "La contraseña actual es obligatoria")
     String passwordActual,

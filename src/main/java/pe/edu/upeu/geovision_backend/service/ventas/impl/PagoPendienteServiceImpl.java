@@ -30,7 +30,6 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
 
     private final VentaRepository ventaRepository;
     private final PagoRepository pagoRepository;
-    private final PagoMapper pagoMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -59,13 +58,13 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
                     return matchComprobante || matchCliente || matchDocumento;
                 })
                 .map(v -> {
-                    BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(v.getIdVenta());
+                    BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(v.getId());
                     if (totalPagado == null) {
                         totalPagado = BigDecimal.ZERO;
                     }
                     BigDecimal saldo = v.getTotal().subtract(totalPagado);
-                    List<Pago> historial = pagoRepository.findByVentaIdVenta(v.getIdVenta());
-                    return pagoMapper.toPagoPendienteResponseDTO(v, totalPagado, saldo, historial);
+                    List<Pago> historial = pagoRepository.findByVentaId(v.getId());
+                    return PagoMapper.toPagoPendienteResponseDTO(v, totalPagado, saldo, historial);
                 })
                 .collect(Collectors.toList());
     }
@@ -82,9 +81,9 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
             totalPagado = BigDecimal.ZERO;
         }
         BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagado);
-        List<Pago> historial = pagoRepository.findByVentaIdVenta(idVenta);
+        List<Pago> historial = pagoRepository.findByVentaId(idVenta);
 
-        return pagoMapper.toPagoPendienteResponseDTO(venta, totalPagado, saldoPendiente, historial);
+        return PagoMapper.toPagoPendienteResponseDTO(venta, totalPagado, saldoPendiente, historial);
     }
 
     @Override
@@ -122,7 +121,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         }
 
         // d) Calcular saldo pendiente actual bajo el bloqueo pesimista
-        BigDecimal totalPagadoActual = pagoRepository.sumMontoPagadoByVentaId(venta.getIdVenta());
+        BigDecimal totalPagadoActual = pagoRepository.sumMontoPagadoByVentaId(venta.getId());
         if (totalPagadoActual == null) {
             totalPagadoActual = BigDecimal.ZERO;
         }
@@ -138,20 +137,20 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         }
 
         // f) Crear y guardar registro de Pago
-        Pago pago = pagoMapper.toEntity(request, venta);
+        Pago pago = PagoMapper.toEntity(request, venta);
         Pago pagoGuardado = pagoRepository.save(pago);
 
         // g) RN-VE14: Si el saldo llega a cero, actualizar automáticamente el estado a PAGADA
         BigDecimal nuevoSaldo = saldoPendiente.subtract(request.monto());
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
-            log.info("Venta ID {} liquidada al 100%. Actualizando estado a PAGADA.", venta.getIdVenta());
+            log.info("Venta ID {} liquidada al 100%. Actualizando estado a PAGADA.", venta.getId());
             venta.setEstado(EstadoVentaEnum.PAGADA);
             ventaRepository.save(venta);
         }
 
         log.info("Pago registrado exitosamente con ID: {}. Saldo restante de la venta ID {}: S/ {}",
-                pagoGuardado.getIdPago(), venta.getIdVenta(), nuevoSaldo);
+                pagoGuardado.getId(), venta.getId(), nuevoSaldo);
 
-        return pagoMapper.toDTO(pagoGuardado);
+        return PagoMapper.toDTO(pagoGuardado);
     }
 }

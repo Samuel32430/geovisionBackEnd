@@ -13,7 +13,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,19 +25,17 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Receta {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_receta")
-    private Long idReceta;
+    private Long id;
 
     @Column(name = "fecha_registro", nullable = false, columnDefinition = "DATE")
     private LocalDateTime fechaRegistro;
 
     @Column(name = "es_externo", nullable = false)
-    @Builder.Default
     private Integer esExterno = 0;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

@@ -11,10 +11,10 @@ import java.util.List;
 @Repository
 public interface ProductoVendidoRepository extends JpaRepository<ProductoVendido, Long> {
 
-    List<ProductoVendido> findByVentaIdVenta(Long idVenta);
+    List<ProductoVendido> findByVentaId(Long idVenta);
 
-    List<ProductoVendido> findByProductoIdProducto(Long idProducto);
+    List<ProductoVendido> findByProductoId(Long idProducto);
 
-    @Query("SELECT COALESCE(SUM(pv.cantidad), 0) FROM ProductoVendido pv WHERE pv.producto.idProducto = :idProducto")
+    @Query("SELECT COALESCE(SUM(pv.cantidad), 0) FROM ProductoVendido pv WHERE pv.producto.id = :idProducto")
     Long sumCantidadVendidaByProductoId(@Param("idProducto") Long idProducto);
 }

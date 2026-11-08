@@ -14,12 +14,12 @@ import java.util.Optional;
 public interface RolRepository extends JpaRepository<Rol, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT e FROM Rol e WHERE e.idRol = :id")
+    @Query("SELECT e FROM Rol e WHERE e.id = :id")
     Optional<Rol> findByIdForUpdate(@Param("id") Long id);
 
     Optional<Rol> findByNombreIgnoreCase(String nombre);
 
     boolean existsByNombreIgnoreCase(String nombre);
 
-    boolean existsByNombreIgnoreCaseAndIdRolNot(String nombre, Long idRol);
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idRol);
 }

@@ -1,14 +1,12 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
-import lombok.Builder;
 import pe.edu.upeu.geovision_backend.enums.atencion.SexoEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 
 import java.time.LocalDate;
 
-@Builder(toBuilder = true)
 public record PersonaResponseDTO(
-    Long idPersona,
+    Long id,
     String nombres,
     String apellidos,
     String nombreCompleto,

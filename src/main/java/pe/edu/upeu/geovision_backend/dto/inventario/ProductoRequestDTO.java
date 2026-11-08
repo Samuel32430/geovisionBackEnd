@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.inventario;
 
-import lombok.Builder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,9 +8,6 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-@Builder(toBuilder = true)
-@com.fasterxml.jackson.databind.annotation.JsonDeserialize(builder = ProductoRequestDTO.ProductoRequestDTOBuilder.class)
-@tools.jackson.databind.annotation.JsonDeserialize(builder = ProductoRequestDTO.ProductoRequestDTOBuilder.class)
 public record ProductoRequestDTO(
     @NotBlank(message = "El código del producto es obligatorio")
     @Size(max = 100, message = "El código del producto no debe superar los 100 caracteres")
@@ -28,17 +24,15 @@ public record ProductoRequestDTO(
     BigDecimal precio,
     @NotNull(message = "El stock es obligatorio")
     @PositiveOrZero(message = "El stock debe ser mayor o igual a cero")
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.Zero.class)
+    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.Zero.class)
     Integer stock,
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.One.class)
+    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.One.class)
     Integer estado,
     @NotNull(message = "El ID de la categoría es obligatorio")
     Long idCategoria,
     @Valid
     MonturaDTO montura
 ) {
-    @com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
-    @tools.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
-    public static class ProductoRequestDTOBuilder {
-        private Integer stock = 0;
-        private Integer estado = 1;
-    }
 }

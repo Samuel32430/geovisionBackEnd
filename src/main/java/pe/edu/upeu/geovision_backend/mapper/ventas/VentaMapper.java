@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.mapper.ventas;
 
-import org.springframework.stereotype.Component;
 import pe.edu.upeu.geovision_backend.dto.ventas.ProductoVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.ServicioVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.VentaHistorialResponseDTO;
@@ -21,16 +20,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
-public class VentaMapper {
+public final class VentaMapper {
+    private VentaMapper() {}
 
-    private final PagoMapper pagoMapper;
-
-    public VentaMapper(PagoMapper pagoMapper) {
-        this.pagoMapper = pagoMapper;
-    }
-
-    public Venta toEntity(
+    public static Venta toEntity(
             VentaRegistroRequestDTO dto,
             Empleado empleado,
             Paciente paciente,
@@ -41,19 +34,10 @@ public class VentaMapper {
             return null;
         }
 
-        return Venta.builder()
-                .total(dto.total())
-                .estado(estado)
-                .tipoComprobante(dto.tipoComprobante())
-                .numeroComprobante(dto.numeroComprobante() != null ? dto.numeroComprobante().trim() : null)
-                .empleado(empleado)
-                .paciente(paciente)
-                .receta(receta)
-                .fechaRegistro(LocalDateTime.now())
-                .build();
+        return new Venta(null, LocalDateTime.now(), dto.total(), estado, dto.numeroComprobante() != null ? dto.numeroComprobante().trim() : null, dto.tipoComprobante(), empleado, paciente, receta);
     }
 
-    public VentaResponseDTO toResponseDTO(
+    public static VentaResponseDTO toResponseDTO(
             Venta venta,
             BigDecimal totalPagado,
             BigDecimal saldoPendiente,
@@ -74,7 +58,7 @@ public class VentaMapper {
         String nombreCompletoPaciente = null;
         Long idPaciente = null;
         if (venta.getPaciente() != null) {
-            idPaciente = venta.getPaciente().getIdPersona();
+            idPaciente = venta.getPaciente().getId();
             if (venta.getPaciente().getPersona() != null) {
                 Persona p = venta.getPaciente().getPersona();
                 nombreCompletoPaciente = (p.getNombres() + " " + p.getApellidos()).trim();
@@ -83,35 +67,16 @@ public class VentaMapper {
 
         List<ProductoVendidoDTO> productoDTOs = (productos == null || productos.isEmpty())
                 ? Collections.emptyList()
-                : productos.stream().map(this::toProductoVendidoDTO).collect(Collectors.toList());
+                : productos.stream().map(VentaMapper::toProductoVendidoDTO).collect(Collectors.toList());
 
         List<ServicioVendidoDTO> servicioDTOs = (servicios == null || servicios.isEmpty())
                 ? Collections.emptyList()
-                : servicios.stream().map(this::toServicioVendidoDTO).collect(Collectors.toList());
+                : servicios.stream().map(VentaMapper::toServicioVendidoDTO).collect(Collectors.toList());
 
-        return VentaResponseDTO.builder()
-                .idVenta(venta.getIdVenta())
-                .fechaRegistro(venta.getFechaRegistro())
-                .total(venta.getTotal())
-                .totalPagado(totalPagado != null ? totalPagado : BigDecimal.ZERO)
-                .saldoPendiente(saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO)
-                .estado(venta.getEstado())
-                .estadoDescripcion(venta.getEstado() != null ? venta.getEstado().getDescripcion() : null)
-                .tipoComprobante(venta.getTipoComprobante())
-                .tipoComprobanteDescripcion(venta.getTipoComprobante() != null ? venta.getTipoComprobante().getDescripcion() : null)
-                .numeroComprobante(venta.getNumeroComprobante())
-                .idEmpleado(venta.getEmpleado() != null ? venta.getEmpleado().getIdPersona() : null)
-                .nombreCompletoEmpleado(nombreCompletoEmpleado)
-                .idPaciente(idPaciente)
-                .nombreCompletoPaciente(nombreCompletoPaciente)
-                .idReceta(venta.getReceta() != null ? venta.getReceta().getIdReceta() : null)
-                .productos(productoDTOs)
-                .servicios(servicioDTOs)
-                .pagos(pagoMapper.toDTOList(pagos))
-                .build();
+        return new VentaResponseDTO(venta.getId(), venta.getFechaRegistro(), venta.getTotal(), totalPagado != null ? totalPagado : BigDecimal.ZERO, saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO, venta.getEstado(), venta.getEstado() != null ? venta.getEstado().getDescripcion() : null, venta.getTipoComprobante(), venta.getTipoComprobante() != null ? venta.getTipoComprobante().getDescripcion() : null, venta.getNumeroComprobante(), venta.getEmpleado() != null ? venta.getEmpleado().getId() : null, nombreCompletoEmpleado, idPaciente, nombreCompletoPaciente, venta.getReceta() != null ? venta.getReceta().getId() : null, productoDTOs, servicioDTOs, PagoMapper.toDTOList(pagos));
     }
 
-    public VentaHistorialResponseDTO toHistorialResponseDTO(
+    public static VentaHistorialResponseDTO toHistorialResponseDTO(
             Venta venta,
             BigDecimal totalPagado,
             BigDecimal saldoPendiente,
@@ -135,49 +100,20 @@ public class VentaMapper {
             vendedorNombre = (p.getNombres() + " " + p.getApellidos()).trim();
         }
 
-        return VentaHistorialResponseDTO.builder()
-                .idVenta(venta.getIdVenta())
-                .fechaRegistro(venta.getFechaRegistro())
-                .numeroComprobante(venta.getNumeroComprobante())
-                .tipoComprobante(venta.getTipoComprobante())
-                .tipoComprobanteDescripcion(venta.getTipoComprobante() != null ? venta.getTipoComprobante().getDescripcion() : null)
-                .clienteNombre(clienteNombre)
-                .clienteDocumento(clienteDocumento)
-                .vendedorNombre(vendedorNombre)
-                .total(venta.getTotal())
-                .totalPagado(totalPagado != null ? totalPagado : BigDecimal.ZERO)
-                .saldoPendiente(saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO)
-                .estado(venta.getEstado())
-                .estadoDescripcion(venta.getEstado() != null ? venta.getEstado().getDescripcion() : null)
-                .tieneReceta(venta.getReceta() != null)
-                .cantidadItems(cantidadItems != null ? cantidadItems : 0)
-                .build();
+        return new VentaHistorialResponseDTO(venta.getId(), venta.getFechaRegistro(), venta.getNumeroComprobante(), venta.getTipoComprobante(), venta.getTipoComprobante() != null ? venta.getTipoComprobante().getDescripcion() : null, clienteNombre, clienteDocumento, vendedorNombre, venta.getTotal(), totalPagado != null ? totalPagado : BigDecimal.ZERO, saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO, venta.getEstado(), venta.getEstado() != null ? venta.getEstado().getDescripcion() : null, venta.getReceta() != null, cantidadItems != null ? cantidadItems : 0);
     }
 
-    public ProductoVendidoDTO toProductoVendidoDTO(ProductoVendido entity) {
+    public static ProductoVendidoDTO toProductoVendidoDTO(ProductoVendido entity) {
         if (entity == null) {
             return null;
         }
-        return ProductoVendidoDTO.builder()
-                .idProductoVendido(entity.getIdProductoVendido())
-                .idProducto(entity.getProducto() != null ? entity.getProducto().getIdProducto() : null)
-                .codigoProducto(entity.getProducto() != null ? entity.getProducto().getCodigo() : null)
-                .nombreProducto(entity.getProducto() != null ? entity.getProducto().getNombre() : null)
-                .cantidad(entity.getCantidad())
-                .precioUnit(entity.getPrecioUnit())
-                .subTotal(entity.getSubTotal())
-                .build();
+        return new ProductoVendidoDTO(entity.getId(), entity.getProducto() != null ? entity.getProducto().getId() : null, entity.getProducto() != null ? entity.getProducto().getCodigo() : null, entity.getProducto() != null ? entity.getProducto().getNombre() : null, entity.getCantidad(), entity.getPrecioUnit(), entity.getSubTotal());
     }
 
-    public ServicioVendidoDTO toServicioVendidoDTO(ServicioVendido entity) {
+    public static ServicioVendidoDTO toServicioVendidoDTO(ServicioVendido entity) {
         if (entity == null) {
             return null;
         }
-        return ServicioVendidoDTO.builder()
-                .idServicioVendido(entity.getIdServicioVendido())
-                .idServicio(entity.getServicio() != null ? entity.getServicio().getIdServicio() : null)
-                .nombreServicio(entity.getServicio() != null ? entity.getServicio().getNombre() : null)
-                .precio(entity.getPrecio())
-                .build();
+        return new ServicioVendidoDTO(entity.getId(), entity.getServicio() != null ? entity.getServicio().getId() : null, entity.getServicio() != null ? entity.getServicio().getNombre() : null, entity.getPrecio());
     }
 }

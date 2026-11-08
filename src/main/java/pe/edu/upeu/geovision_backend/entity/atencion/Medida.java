@@ -16,7 +16,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,17 +29,15 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Medida {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_medida")
-    private Long idMedida;
+    private Long id;
 
     @Convert(converter = TipoMedidaConverter.class)
     @Column(name = "tipo_medida", nullable = false, precision = 1)
-    @Builder.Default
     private TipoMedidaEnum tipoMedida = TipoMedidaEnum.LEJOS;
 
     @Column(name = "distancia_pupilar", precision = 5, scale = 2)

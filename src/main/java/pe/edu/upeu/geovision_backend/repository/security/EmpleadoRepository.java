@@ -14,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
-    Optional<Empleado> findByIdPersonaAndActivo(Long idPersona, Boolean estado);
+    Optional<Empleado> findByIdAndActivo(Long idPersona, Boolean estado);
 
-    Optional<Empleado> findByUsuarioIdUsuario(Long idUsuario);
+    Optional<Empleado> findByUsuarioId(Long idUsuario);
 
-    boolean existsByUsuarioIdUsuario(Long idUsuario);
+    boolean existsByUsuarioId(Long idUsuario);
 
     List<Empleado> findByActivo(Boolean estado);
 

@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.orden_trabajo.impl;
 
+import lombok.RequiredArgsConstructor;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ import pe.edu.upeu.geovision_backend.service.orden_trabajo.NotificacionOrdenServ
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.VentaOrdenTrabajo;
 
 @Service
+@RequiredArgsConstructor
 public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
     static final String MENSAJE="Geo Vision: tu pedido esta listo para recoger. Comunicate con nosotros para coordinar la entrega.";
     private final OrdenTrabajoRepository ordenes;
@@ -32,16 +34,16 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
     private final EnvioLaboratorioRepository envios;
     private final MedidaRepository medidas;
     private final VentaOrdenTrabajo ventasOrden;
-    private final TransactionTemplate tx;
-    public NotificacionOrdenServiceImpl(OrdenTrabajoRepository ordenes,UsuarioRepository usuarios,
-            EmpleadoRepository empleados,TextbeeClient textbee,PlatformTransactionManager manager,
-            EnvioLaboratorioRepository envios,MedidaRepository medidas,VentaOrdenTrabajo ventasOrden) {
-        this.ordenes=ordenes; this.usuarios=usuarios; this.empleados=empleados; this.textbee=textbee;
-        this.envios=envios; this.medidas=medidas; this.ventasOrden=ventasOrden;
-        this.tx=new TransactionTemplate(manager); this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    private final PlatformTransactionManager manager;
+
+    private TransactionTemplate transaccion() {
+        var tx = new TransactionTemplate(manager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return tx;
     }
+
     @Override public NotificacionOrdenResponseDTO prepararWhatsApp(Long id,String telefono,String usuario) {
-        return Objects.requireNonNull(tx.execute(s->{
+        return Objects.requireNonNull(transaccion().execute(s->{
             validarActor(usuario); var ot=listo(id); validarTelefono(ot,telefono);
             if(ot.getFechaNotificacion()!=null) return respuesta(ot,"WHATSAPP","CONFIRMADO_MANUAL",telefono,null,
                 "Ya existe una constancia manual; no se modifica su fecha.",null);
@@ -50,7 +52,7 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
         }));
     }
     @Override public NotificacionOrdenResponseDTO confirmarWhatsApp(Long id,String telefono,String usuario) {
-        return Objects.requireNonNull(tx.execute(s->{
+        return Objects.requireNonNull(transaccion().execute(s->{
             validarActor(usuario); var ot=listo(id); validarTelefono(ot,telefono);
             // La confirmacion explicita del operador es la unica constancia persistida.
             if(ot.getFechaNotificacion()==null) {
@@ -62,7 +64,7 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
     }
     @Override public NotificacionOrdenResponseDTO enviarSms(Long id,String telefono,String usuario) {
         textbee.validarConfiguracion();
-        var preparado=Objects.requireNonNull(tx.execute(s->{
+        var preparado=Objects.requireNonNull(transaccion().execute(s->{
             validarActor(usuario); var ot=listo(id); validarTelefono(ot,telefono);
             if(ot.getFechaNotificacion()!=null) throw new ReglaNegocioException("La orden ya tiene una constancia manual de notificacion");
             return respuesta(ot,"SMS","PREPARADO",telefono,null,null,null);
@@ -74,7 +76,7 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
             preparado.fechaNotificacion(),resultado.referencia(),resultado.detalle(),null);
     }
     @Override public EstadoNotificacionOrdenDTO consultarEstado(Long id) {
-        return Objects.requireNonNull(tx.execute(s->{
+        return Objects.requireNonNull(transaccion().execute(s->{
             var ot=ordenes.findById(id).orElseThrow(()->new RecursosNoEncontradosException("Orden no encontrada"));
             return new EstadoNotificacionOrdenDTO(id,ot.getFechaNotificacion());
         }));
@@ -83,12 +85,12 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
         var ot=ordenes.findByIdForUpdate(id).orElseThrow(()->new RecursosNoEncontradosException("Orden no encontrada"));
         if(ot.getEstado()!=EstadoOrdenTrabajoEnum.LISTO_ENTREGA)
             throw new ReglaNegocioException("Solo se notifican ordenes listas para entrega");
-        var envio=envios.findFirstByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDescIdEnvioLaboratorioDesc(id)
+        var envio=envios.findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(id)
             .orElseThrow(()->new ReglaNegocioException("La orden no tiene control de calidad aprobado"));
         if(envio.getFechaRecepcion()==null || envio.getFechaRevision()==null || !Integer.valueOf(1).equals(envio.getAprobado())
-            || medidas.findByEnvioLaboratorioIdEnvioLaboratorioOrderByIdMedidaAsc(envio.getIdEnvioLaboratorio()).isEmpty())
+            || medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
             throw new ReglaNegocioException("La orden requiere lensometria y control de calidad aprobado");
-        ventasOrden.bloquear(ot.getLente().getReceta().getIdReceta()); return ot;
+        ventasOrden.bloquear(ot.getLente().getReceta().getId()); return ot;
     }
     private void validarTelefono(OrdenTrabajo ot,String telefono) {
         if(telefono==null || !telefono.matches("\\+[1-9][0-9]{7,14}")) throw new ReglaNegocioException("Use telefono internacional E.164");
@@ -98,12 +100,12 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
     }
     private void validarActor(String nombre) {
         var u=usuarios.findByNombre(nombre).orElseThrow(()->new ReglaNegocioException("Usuario no disponible"));
-        var e=empleados.findByUsuarioIdUsuario(u.getIdUsuario()).orElseThrow(()->new ReglaNegocioException("La cuenta requiere empleado"));
+        var e=empleados.findByUsuarioId(u.getId()).orElseThrow(()->new ReglaNegocioException("La cuenta requiere empleado"));
         if(!Boolean.TRUE.equals(u.getActivo()) || !Boolean.TRUE.equals(e.getActivo()))
             throw new ReglaNegocioException("Se requiere usuario y empleado activos");
     }
     private NotificacionOrdenResponseDTO respuesta(OrdenTrabajo ot,String canal,String estado,String telefono,String referencia,String detalle,String enlace) {
-        return new NotificacionOrdenResponseDTO(ot.getIdOrdenTrabajo(),canal,estado,telefono,MENSAJE,
+        return new NotificacionOrdenResponseDTO(ot.getId(),canal,estado,telefono,MENSAJE,
             ot.getFechaNotificacion(),referencia,detalle,enlace);
     }
 }

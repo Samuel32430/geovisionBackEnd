@@ -17,7 +17,7 @@ public interface LaboratorioRepository extends JpaRepository<Laboratorio, Long>,
 
     boolean existsByRuc(String ruc);
 
-    boolean existsByRucAndIdLaboratorioNot(String ruc, Long idLaboratorio);
+    boolean existsByRucAndIdNot(String ruc, Long idLaboratorio);
 
     List<Laboratorio> findByActivo(Boolean estado);
 
