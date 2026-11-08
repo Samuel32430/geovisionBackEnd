@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.controller.security;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -32,13 +33,10 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/usuarios")
+@RequiredArgsConstructor
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
-
-    public UsuarioController(UsuarioService usuarioService) {
-        this.usuarioService = usuarioService;
-    }
 
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listar() {

@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.config.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,24 +18,16 @@ import java.util.List;
  * (preflight OPTIONS) del navegador se responde antes de exigir el token.
  */
 @Configuration
+@RequiredArgsConstructor
 public class CorsConfig {
 
-    private final List<String> origenesPermitidos;
-
-    public CorsConfig(
-            @Value("${app.cors.allowed-origins:"
-                    + "http://localhost:5173,"
-                    + "http://127.0.0.1:5173,"
-                    + "http://localhost:4200,"
-                    + "http://localhost:3000}")
-            String[] origenesPermitidos) {
-        this.origenesPermitidos = List.of(origenesPermitidos);
-    }
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,http://localhost:4200,http://localhost:3000}")
+    private final String[] origenesPermitidos;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(origenesPermitidos);
+        config.setAllowedOrigins(getOrigenesPermitidos());
         config.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of(
@@ -49,6 +42,6 @@ public class CorsConfig {
     }
 
     public List<String> getOrigenesPermitidos() {
-        return origenesPermitidos;
+        return List.of(origenesPermitidos);
     }
 }

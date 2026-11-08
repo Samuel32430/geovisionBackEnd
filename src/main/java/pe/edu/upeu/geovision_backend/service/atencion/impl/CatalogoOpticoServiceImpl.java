@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.atencion.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
@@ -21,32 +22,23 @@ import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
 
     private final MaterialCristalRepository materialCristalRepository;
     private final TratamientoCristalRepository tratamientoCristalRepository;
     private final MonturaRepository monturaRepository;
-    private final CatalogoOpticoMapper catalogoOpticoMapper;
-
-    public CatalogoOpticoServiceImpl(MaterialCristalRepository materialCristalRepository,
-                                     TratamientoCristalRepository tratamientoCristalRepository,
-                                     MonturaRepository monturaRepository, CatalogoOpticoMapper catalogoOpticoMapper) {
-        this.materialCristalRepository = materialCristalRepository;
-        this.tratamientoCristalRepository = tratamientoCristalRepository;
-        this.monturaRepository = monturaRepository;
-        this.catalogoOpticoMapper = catalogoOpticoMapper;
-    }
 
     @Override
     public List<MaterialCristalDTO> listarMaterialesCristal() {
         return materialCristalRepository.findAll(Sort.by("nombre", "id")).stream()
-                .map(catalogoOpticoMapper::toMaterialCristalDTO).toList();
+                .map(CatalogoOpticoMapper::toMaterialCristalDTO).toList();
     }
 
     @Override
     public List<TratamientoCristalDTO> listarTratamientosCristal() {
         return tratamientoCristalRepository.findAll(Sort.by("nombre", "id")).stream()
-                .map(catalogoOpticoMapper::toTratamientoCristalDTO).toList();
+                .map(CatalogoOpticoMapper::toTratamientoCristalDTO).toList();
     }
 
     @Override
@@ -66,6 +58,6 @@ public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
         }
         return monturaRepository.findByProductoActivoAndProductoStockGreaterThan(true, 0,
                         PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden))
-                .map(catalogoOpticoMapper::toMonturaDTO);
+                .map(CatalogoOpticoMapper::toMonturaDTO);
     }
 }

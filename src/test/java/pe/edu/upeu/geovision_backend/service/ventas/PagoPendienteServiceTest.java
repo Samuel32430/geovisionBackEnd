@@ -20,7 +20,6 @@ import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
-import pe.edu.upeu.geovision_backend.mapper.ventas.PagoMapper;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.VentaRepository;
 import pe.edu.upeu.geovision_backend.service.ventas.impl.PagoPendienteServiceImpl;
@@ -44,9 +43,6 @@ class PagoPendienteServiceTest {
 
     @Mock
     private PagoRepository pagoRepository;
-
-    @Mock
-    private PagoMapper pagoMapper;
 
     @InjectMocks
     private PagoPendienteServiceImpl pagoPendienteService;
@@ -76,8 +72,6 @@ class PagoPendienteServiceTest {
 
         PagoPendienteResponseDTO dto = new PagoPendienteResponseDTO(100L, "B001-00000100", null, null, null, null, null, new BigDecimal("300.00"), new BigDecimal("100.00"), new BigDecimal("200.00"), EstadoVentaEnum.PENDIENTE, null);
 
-        when(pagoMapper.toPagoPendienteResponseDTO(any(), any(), any(), any())).thenReturn(dto);
-
         List<PagoPendienteResponseDTO> resultado = pagoPendienteService.listarVentasConPagosPendientes("Maria");
 
         assertThat(resultado).hasSize(1);
@@ -92,8 +86,6 @@ class PagoPendienteServiceTest {
         when(pagoRepository.findByVentaId(100L)).thenReturn(Collections.emptyList());
 
         PagoPendienteResponseDTO dtoMock = new PagoPendienteResponseDTO(100L, null, null, null, null, null, null, new BigDecimal("300.00"), new BigDecimal("100.00"), new BigDecimal("200.00"), EstadoVentaEnum.PENDIENTE, null);
-
-        when(pagoMapper.toPagoPendienteResponseDTO(any(), any(), any(), any())).thenReturn(dtoMock);
 
         PagoPendienteResponseDTO resultado = pagoPendienteService.obtenerSaldoPendientePorVenta(100L);
 
@@ -111,11 +103,9 @@ class PagoPendienteServiceTest {
         when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00")); // total 300 - 100 = saldo 200
 
         Pago pagoGuardado = new Pago(50L, null, null, new BigDecimal("100.00"), null, null);
-        when(pagoMapper.toEntity(any(), any())).thenReturn(pagoGuardado);
         when(pagoRepository.save(any())).thenReturn(pagoGuardado);
 
         PagoResponseDTO responseMock = new PagoResponseDTO(50L, 100L, new BigDecimal("100.00"), MetodoPagoEnum.EFECTIVO, null, null, null);
-        when(pagoMapper.toDTO(pagoGuardado)).thenReturn(responseMock);
 
         PagoResponseDTO resultado = pagoPendienteService.registrarPagoPendiente(request);
 
@@ -134,11 +124,9 @@ class PagoPendienteServiceTest {
         when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00")); // saldo 200
 
         Pago pagoGuardado = new Pago(51L, null, null, new BigDecimal("200.00"), null, null);
-        when(pagoMapper.toEntity(any(), any())).thenReturn(pagoGuardado);
         when(pagoRepository.save(any())).thenReturn(pagoGuardado);
 
         PagoResponseDTO responseMock = new PagoResponseDTO(51L, 100L, new BigDecimal("200.00"), MetodoPagoEnum.EFECTIVO, null, null, null);
-        when(pagoMapper.toDTO(pagoGuardado)).thenReturn(responseMock);
 
         PagoResponseDTO resultado = pagoPendienteService.registrarPagoPendiente(request);
 

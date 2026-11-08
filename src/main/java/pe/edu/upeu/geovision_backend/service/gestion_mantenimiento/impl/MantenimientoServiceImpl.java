@@ -51,17 +51,17 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     private final ProductoRepository productoRepository;
     private final ServicioVendidoRepository servicioVendidoRepository;
     private final EnvioLaboratorioRepository envioLaboratorioRepository;
-    private final MantenimientoMapper mapper;
+
     private final MantenimientoLock lock;
 
     @Override
     public Page<CategoriaDTO> listarCategoria(String termino, Integer estado, Pageable pageable) {
-        return listar(categoriaRepository, termino, estado, pageable, mapper::toDTO);
+        return listar(categoriaRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
     }
 
     @Override
     public CategoriaDTO obtenerCategoria(Long id) {
-        return mapper.toDTO(obtener(categoriaRepository, id, "Categoria"));
+        return MantenimientoMapper.toDTO(obtener(categoriaRepository, id, "Categoria"));
     }
 
     @Override
@@ -70,8 +70,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         lock.bloquear(MantenimientoLock.Catalogo.CATEGORIA, false);
         validarNombre(categoriaRepository, request.nombre(), "id", null, "Categoria");
         Categoria entity = new Categoria(null, null, null, true, null);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(categoriaRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(categoriaRepository.saveAndFlush(entity));
     }
 
     @Override
@@ -81,18 +81,18 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         Categoria entity = obtener(categoriaRepository, id, "Categoria");
         validarNombre(categoriaRepository, request.nombre(), "id", id, "Categoria");
         if (Integer.valueOf(0).equals(request.estado())) validarDependenciasCategoria(id);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(categoriaRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(categoriaRepository.saveAndFlush(entity));
     }
 
     @Override
     public Page<MaterialCristalDTO> listarMaterialCristal(String termino, Pageable pageable) {
-        return listar(materialCristalRepository, termino, null, pageable, mapper::toDTO);
+        return listar(materialCristalRepository, termino, null, pageable, MantenimientoMapper::toDTO);
     }
 
     @Override
     public MaterialCristalDTO obtenerMaterialCristal(Long id) {
-        return mapper.toDTO(obtener(materialCristalRepository, id, "MaterialCristal"));
+        return MantenimientoMapper.toDTO(obtener(materialCristalRepository, id, "MaterialCristal"));
     }
 
     @Override
@@ -101,8 +101,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         lock.bloquear(MantenimientoLock.Catalogo.MATERIAL_CRISTAL, false);
         validarNombre(materialCristalRepository, request.nombre(), "id", null, "MaterialCristal");
         MaterialCristal entity = new MaterialCristal(null, null);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(materialCristalRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(materialCristalRepository.saveAndFlush(entity));
     }
 
     @Override
@@ -111,18 +111,18 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         lock.bloquear(MantenimientoLock.Catalogo.MATERIAL_CRISTAL, false);
         MaterialCristal entity = obtener(materialCristalRepository, id, "MaterialCristal");
         validarNombre(materialCristalRepository, request.nombre(), "id", id, "MaterialCristal");
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(materialCristalRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(materialCristalRepository.saveAndFlush(entity));
     }
 
     @Override
     public Page<TratamientoCristalDTO> listarTratamientoCristal(String termino, Pageable pageable) {
-        return listar(tratamientoCristalRepository, termino, null, pageable, mapper::toDTO);
+        return listar(tratamientoCristalRepository, termino, null, pageable, MantenimientoMapper::toDTO);
     }
 
     @Override
     public TratamientoCristalDTO obtenerTratamientoCristal(Long id) {
-        return mapper.toDTO(obtener(tratamientoCristalRepository, id, "TratamientoCristal"));
+        return MantenimientoMapper.toDTO(obtener(tratamientoCristalRepository, id, "TratamientoCristal"));
     }
 
     @Override
@@ -131,8 +131,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         lock.bloquear(MantenimientoLock.Catalogo.TRATAMIENTO_CRISTAL, false);
         validarNombre(tratamientoCristalRepository, request.nombre(), "id", null, "TratamientoCristal");
         TratamientoCristal entity = new TratamientoCristal(null, null);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
     }
 
     @Override
@@ -141,18 +141,18 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         lock.bloquear(MantenimientoLock.Catalogo.TRATAMIENTO_CRISTAL, false);
         TratamientoCristal entity = obtener(tratamientoCristalRepository, id, "TratamientoCristal");
         validarNombre(tratamientoCristalRepository, request.nombre(), "id", id, "TratamientoCristal");
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
     }
 
     @Override
     public Page<ServicioDTO> listarServicio(String termino, Integer estado, Pageable pageable) {
-        return listar(servicioRepository, termino, estado, pageable, mapper::toDTO);
+        return listar(servicioRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
     }
 
     @Override
     public ServicioDTO obtenerServicio(Long id) {
-        return mapper.toDTO(obtener(servicioRepository, id, "Servicio"));
+        return MantenimientoMapper.toDTO(obtener(servicioRepository, id, "Servicio"));
     }
 
     @Override
@@ -161,8 +161,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         lock.bloquear(MantenimientoLock.Catalogo.SERVICIO, false);
         validarNombre(servicioRepository, request.nombre(), "id", null, "Servicio");
         Servicio entity = new Servicio(null, null, null, null, true);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(servicioRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(servicioRepository.saveAndFlush(entity));
     }
 
     @Override
@@ -172,18 +172,18 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         Servicio entity = obtener(servicioRepository, id, "Servicio");
         validarNombre(servicioRepository, request.nombre(), "id", id, "Servicio");
         if (Integer.valueOf(0).equals(request.estado())) validarDependenciasServicio(id);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(servicioRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(servicioRepository.saveAndFlush(entity));
     }
 
     @Override
     public Page<LaboratorioDTO> listarLaboratorio(String termino, Integer estado, Pageable pageable) {
-        return listar(laboratorioRepository, termino, estado, pageable, mapper::toDTO);
+        return listar(laboratorioRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
     }
 
     @Override
     public LaboratorioDTO obtenerLaboratorio(Long id) {
-        return mapper.toDTO(obtener(laboratorioRepository, id, "Laboratorio"));
+        return MantenimientoMapper.toDTO(obtener(laboratorioRepository, id, "Laboratorio"));
     }
 
     @Override
@@ -192,8 +192,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         lock.bloquear(MantenimientoLock.Catalogo.LABORATORIO, false);
         validarNombre(laboratorioRepository, request.nombre(), "id", null, "Laboratorio");
         Laboratorio entity = new Laboratorio(null, null, null, null, null, null, true);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(laboratorioRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(laboratorioRepository.saveAndFlush(entity));
     }
 
     @Override
@@ -203,8 +203,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         Laboratorio entity = obtener(laboratorioRepository, id, "Laboratorio");
         validarNombre(laboratorioRepository, request.nombre(), "id", id, "Laboratorio");
         if (Integer.valueOf(0).equals(request.estado())) validarDependenciasLaboratorio(id);
-        mapper.actualizar(request, entity);
-        return mapper.toDTO(laboratorioRepository.saveAndFlush(entity));
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(laboratorioRepository.saveAndFlush(entity));
     }
 
     private void validarDependenciasCategoria(Long id) {

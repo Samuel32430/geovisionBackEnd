@@ -61,8 +61,6 @@ public class VentaServiceImpl implements VentaService {
     private final PacienteRepository pacienteRepository;
     private final EmpleadoRepository empleadoRepository;
     private final UsuarioRepository usuarioRepository;
-    private final VentaMapper ventaMapper;
-    private final PagoMapper pagoMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -212,7 +210,7 @@ public class VentaServiceImpl implements VentaService {
         // 12. Persistir pagos realizados
         List<Pago> pagosGuardados = new ArrayList<>();
         for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
-            Pago pago = pagoMapper.toEntity(pagoDTO, ventaGuardada);
+            Pago pago = PagoMapper.toEntity(pagoDTO, ventaGuardada);
             pagosGuardados.add(pagoRepository.save(pago));
         }
 
@@ -221,7 +219,7 @@ public class VentaServiceImpl implements VentaService {
         log.info("Venta registrada exitosamente con ID: {}, comprobante: {}, estado: {}, saldo pendiente: S/ {}",
                 ventaGuardada.getId(), numeroComprobante, estadoInicial, saldoPendiente);
 
-        return ventaMapper.toResponseDTO(
+        return VentaMapper.toResponseDTO(
                 ventaGuardada,
                 totalPagado,
                 saldoPendiente,
@@ -248,7 +246,7 @@ public class VentaServiceImpl implements VentaService {
         List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaId(idVenta);
         List<Pago> pagos = pagoRepository.findByVentaId(idVenta);
 
-        return ventaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
+        return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
     }
 
     private Empleado obtenerEmpleadoResponsable(Long idEmpleadoFallback) {

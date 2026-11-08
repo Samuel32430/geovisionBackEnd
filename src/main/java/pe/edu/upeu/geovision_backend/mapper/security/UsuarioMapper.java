@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.mapper.security;
 
-import org.springframework.stereotype.Component;
 import pe.edu.upeu.geovision_backend.dto.security.RolDTO;
 import pe.edu.upeu.geovision_backend.dto.security.UsuarioResponseDTO;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
@@ -9,14 +8,14 @@ import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import java.util.Collections;
 import java.util.Set;
 
-@Component
-public class UsuarioMapper {
+public final class UsuarioMapper {
+    private UsuarioMapper() {}
 
-    public UsuarioResponseDTO toUsuarioResponse(Usuario usuario) {
+    public static UsuarioResponseDTO toUsuarioResponse(Usuario usuario) {
         return toUsuarioResponse(usuario, Collections.emptySet());
     }
 
-    public UsuarioResponseDTO toUsuarioResponse(Usuario usuario, Set<RolDTO> roles) {
+    public static UsuarioResponseDTO toUsuarioResponse(Usuario usuario, Set<RolDTO> roles) {
         if (usuario == null) {
             return null;
         }

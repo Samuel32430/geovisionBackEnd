@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.config.security;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -23,6 +24,7 @@ import java.util.List;
  */
 @Component
 @Profile("!prod")
+@RequiredArgsConstructor
 public class SecurityDataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SecurityDataInitializer.class);
@@ -30,15 +32,6 @@ public class SecurityDataInitializer implements CommandLineRunner {
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
     private final RolPermisoRepository rolPermisoRepository;
-
-    public SecurityDataInitializer(
-            RolRepository rolRepository,
-            PermisoRepository permisoRepository,
-            RolPermisoRepository rolPermisoRepository) {
-        this.rolRepository = rolRepository;
-        this.permisoRepository = permisoRepository;
-        this.rolPermisoRepository = rolPermisoRepository;
-    }
 
     @Override
     @Transactional

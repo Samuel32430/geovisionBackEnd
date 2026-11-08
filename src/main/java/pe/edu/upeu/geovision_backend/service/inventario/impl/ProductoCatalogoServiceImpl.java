@@ -29,7 +29,6 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
     private final ProductoRepository productoRepository;
     private final MonturaRepository monturaRepository;
     private final CategoriaRepository categoriaRepository;
-    private final ProductoMapper productoMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -91,17 +90,17 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
             throw new ReglaNegocioException("No se pueden asociar productos a una categoría inactiva");
         }
 
-        Producto producto = productoMapper.toEntity(request, categoria);
+        Producto producto = ProductoMapper.toEntity(request, categoria);
         Producto productoGuardado = productoRepository.save(producto);
 
         Montura monturaGuardada = null;
         if (request.montura() != null) {
-            Montura montura = productoMapper.toMonturaEntity(request.montura(), productoGuardado);
+            Montura montura = ProductoMapper.toMonturaEntity(request.montura(), productoGuardado);
             monturaGuardada = monturaRepository.save(montura);
         }
 
         log.info("Producto registrado exitosamente con ID: {}", productoGuardado.getId());
-        return productoMapper.toResponseDTO(productoGuardado, monturaGuardada);
+        return ProductoMapper.toResponseDTO(productoGuardado, monturaGuardada);
     }
 
     @Override
@@ -154,7 +153,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
                 m.setMaterial(request.montura().material());
                 monturaFinal = monturaRepository.save(m);
             } else {
-                Montura nuevaMontura = productoMapper.toMonturaEntity(request.montura(), productoActualizado);
+                Montura nuevaMontura = ProductoMapper.toMonturaEntity(request.montura(), productoActualizado);
                 monturaFinal = monturaRepository.save(nuevaMontura);
             }
         } else {
@@ -162,7 +161,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         }
 
         log.info("Producto actualizado exitosamente con ID: {}", id);
-        return productoMapper.toResponseDTO(productoActualizado, monturaFinal);
+        return ProductoMapper.toResponseDTO(productoActualizado, monturaFinal);
     }
 
     @Override
@@ -209,6 +208,6 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
 
     private ProductoResponseDTO construirResponseDTO(Producto producto) {
         Montura montura = monturaRepository.findById(producto.getId()).orElse(null);
-        return productoMapper.toResponseDTO(producto, montura);
+        return ProductoMapper.toResponseDTO(producto, montura);
     }
 }

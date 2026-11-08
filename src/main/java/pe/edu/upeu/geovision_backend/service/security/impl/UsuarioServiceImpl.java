@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.security.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioServiceImpl.class);
@@ -57,32 +59,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final UsuarioRolRepository usuarioRolRepository;
     private final RolPermisoRepository rolPermisoRepository;
     private final PasswordEncoder passwordEncoder;
-    private final UsuarioMapper usuarioMapper;
-    private final RolMapper rolMapper;
-    private final PermisoMapper permisoMapper;
-
-    public UsuarioServiceImpl(
-            UsuarioRepository usuarioRepository,
-            PersonaRepository personaRepository,
-            EmpleadoRepository empleadoRepository,
-            RolRepository rolRepository,
-            UsuarioRolRepository usuarioRolRepository,
-            RolPermisoRepository rolPermisoRepository,
-            PasswordEncoder passwordEncoder,
-            UsuarioMapper usuarioMapper,
-            RolMapper rolMapper,
-            PermisoMapper permisoMapper) {
-        this.usuarioRepository = usuarioRepository;
-        this.personaRepository = personaRepository;
-        this.empleadoRepository = empleadoRepository;
-        this.rolRepository = rolRepository;
-        this.usuarioRolRepository = usuarioRolRepository;
-        this.rolPermisoRepository = rolPermisoRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.usuarioMapper = usuarioMapper;
-        this.rolMapper = rolMapper;
-        this.permisoMapper = permisoMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -303,13 +279,13 @@ public class UsuarioServiceImpl implements UsuarioService {
                     Rol rol = ur.getRol();
                     List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
                     Set<PermisoDTO> permisosDTO = rolPermisos.stream()
-                            .map(rp -> permisoMapper.toDTO(rp.getPermiso()))
+                            .map(rp -> PermisoMapper.toDTO(rp.getPermiso()))
                             .collect(Collectors.toSet());
-                    return rolMapper.toDTO(rol, permisosDTO);
+                    return RolMapper.toDTO(rol, permisosDTO);
                 })
                 .collect(Collectors.toSet());
 
-        return usuarioMapper.toUsuarioResponse(usuario, rolesDTO);
+        return UsuarioMapper.toUsuarioResponse(usuario, rolesDTO);
     }
 
     @Override
