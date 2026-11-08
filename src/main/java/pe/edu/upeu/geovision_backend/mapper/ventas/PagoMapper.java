@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.mapper.ventas;
 
-import org.springframework.stereotype.Component;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoPendienteResponseDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoRegistroRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoResponseDTO;
@@ -14,10 +13,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
-public class PagoMapper {
+public final class PagoMapper {
+    private PagoMapper() {}
 
-    public Pago toEntity(PagoRegistroRequestDTO dto, Venta venta) {
+    public static Pago toEntity(PagoRegistroRequestDTO dto, Venta venta) {
         if (dto == null) {
             return null;
         }
@@ -25,7 +24,7 @@ public class PagoMapper {
         return new Pago(null, LocalDateTime.now(), dto.numeroOperacion() != null ? dto.numeroOperacion().trim() : null, dto.monto(), dto.metodoPago(), venta);
     }
 
-    public PagoResponseDTO toDTO(Pago entity) {
+    public static PagoResponseDTO toDTO(Pago entity) {
         if (entity == null) {
             return null;
         }
@@ -33,16 +32,16 @@ public class PagoMapper {
         return new PagoResponseDTO(entity.getId(), entity.getVenta() != null ? entity.getVenta().getId() : null, entity.getMonto(), entity.getMetodoPago(), entity.getMetodoPago() != null ? entity.getMetodoPago().getDescripcion() : null, entity.getNumeroOperacion(), entity.getFechaRegistro());
     }
 
-    public List<PagoResponseDTO> toDTOList(List<Pago> entities) {
+    public static List<PagoResponseDTO> toDTOList(List<Pago> entities) {
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
         return entities.stream()
-                .map(this::toDTO)
+                .map(PagoMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
-    public PagoPendienteResponseDTO toPagoPendienteResponseDTO(
+    public static PagoPendienteResponseDTO toPagoPendienteResponseDTO(
             Venta venta,
             BigDecimal totalPagado,
             BigDecimal saldoPendiente,

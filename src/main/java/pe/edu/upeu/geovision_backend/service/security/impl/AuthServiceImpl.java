@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.security.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -51,6 +52,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
@@ -64,36 +66,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UsuarioLogService usuarioLogService;
     private final EmailService emailService;
-    private final UsuarioMapper usuarioMapper;
-    private final RolMapper rolMapper;
-    private final PermisoMapper permisoMapper;
-
-    public AuthServiceImpl(
-            AuthenticationManager authenticationManager,
-            JwtService jwtService,
-            UsuarioRepository usuarioRepository,
-            EmpleadoRepository empleadoRepository,
-            UsuarioRolRepository usuarioRolRepository,
-            RolPermisoRepository rolPermisoRepository,
-            PasswordEncoder passwordEncoder,
-            UsuarioLogService usuarioLogService,
-            EmailService emailService,
-            UsuarioMapper usuarioMapper,
-            RolMapper rolMapper,
-            PermisoMapper permisoMapper) {
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-        this.usuarioRepository = usuarioRepository;
-        this.empleadoRepository = empleadoRepository;
-        this.usuarioRolRepository = usuarioRolRepository;
-        this.rolPermisoRepository = rolPermisoRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.usuarioLogService = usuarioLogService;
-        this.emailService = emailService;
-        this.usuarioMapper = usuarioMapper;
-        this.rolMapper = rolMapper;
-        this.permisoMapper = permisoMapper;
-    }
 
     @Override
     @Transactional
@@ -173,13 +145,13 @@ public class AuthServiceImpl implements AuthService {
                     Rol rol = ur.getRol();
                     List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
                     Set<PermisoDTO> permisosDTO = rolPermisos.stream()
-                            .map(rp -> permisoMapper.toDTO(rp.getPermiso()))
+                            .map(rp -> PermisoMapper.toDTO(rp.getPermiso()))
                             .collect(Collectors.toSet());
-                    return rolMapper.toDTO(rol, permisosDTO);
+                    return RolMapper.toDTO(rol, permisosDTO);
                 })
                 .collect(Collectors.toSet());
 
-        return usuarioMapper.toUsuarioResponse(usuario, rolesDTO);
+        return UsuarioMapper.toUsuarioResponse(usuario, rolesDTO);
     }
 
     @Override

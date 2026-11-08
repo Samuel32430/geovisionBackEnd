@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -28,13 +29,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/pacientes")
+@RequiredArgsConstructor
 public class PacienteController {
 
     private final PacienteService pacienteService;
-
-    public PacienteController(PacienteService pacienteService) {
-        this.pacienteService = pacienteService;
-    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('PACIENTES_LEER')")

@@ -15,9 +15,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.security.Rol;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
-import pe.edu.upeu.geovision_backend.mapper.security.PermisoMapper;
-import pe.edu.upeu.geovision_backend.mapper.security.RolMapper;
-import pe.edu.upeu.geovision_backend.mapper.security.UsuarioMapper;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.security.PermisoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.PersonaRepository;
@@ -64,15 +61,6 @@ class UsuarioServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private UsuarioMapper usuarioMapper;
-
-    @Mock
-    private RolMapper rolMapper;
-
-    @Mock
-    private PermisoMapper permisoMapper;
-
     @InjectMocks
     private UsuarioServiceImpl usuarioService;
 
@@ -111,7 +99,6 @@ class UsuarioServiceTest {
         Empleado empleadoVendedor = new Empleado(2L, personaVendedor, true, null, null);
         when(empleadoRepository.findById(2L)).thenReturn(Optional.of(empleadoVendedor));
         when(usuarioRolRepository.findByUsuarioId(2L)).thenReturn(Collections.emptyList());
-        when(usuarioMapper.toUsuarioResponse(eq(vendedorUser), any())).thenReturn(new UsuarioResponseDTO(null, null, null, null, null, null, null, null));
 
         UsuarioResponseDTO response = usuarioService.crear(request);
 

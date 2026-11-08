@@ -34,7 +34,6 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
     private final PagoRepository pagoRepository;
     private final ProductoVendidoRepository productoVendidoRepository;
     private final ServicioVendidoRepository servicioVendidoRepository;
-    private final VentaMapper ventaMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -69,7 +68,7 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
             int cantidadServicios = servicioVendidoRepository.findByVentaId(venta.getId()).size();
             int cantidadItems = cantidadProductos + cantidadServicios + (venta.getReceta() != null ? 1 : 0);
 
-            return ventaMapper.toHistorialResponseDTO(venta, totalPagado, saldoPendiente, cantidadItems);
+            return VentaMapper.toHistorialResponseDTO(venta, totalPagado, saldoPendiente, cantidadItems);
         });
     }
 
@@ -90,6 +89,6 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
         List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaId(idVenta);
         List<Pago> pagos = pagoRepository.findByVentaId(idVenta);
 
-        return ventaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
+        return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
     }
 }

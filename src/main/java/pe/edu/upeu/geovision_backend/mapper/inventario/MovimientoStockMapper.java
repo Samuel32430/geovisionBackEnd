@@ -1,14 +1,13 @@
 package pe.edu.upeu.geovision_backend.mapper.inventario;
 
-import org.springframework.stereotype.Component;
 import pe.edu.upeu.geovision_backend.dto.inventario.MovimientoStockResponseDTO;
 import pe.edu.upeu.geovision_backend.entity.inventario.MovimientoStockLog;
 import pe.edu.upeu.geovision_backend.enums.inventario.MotivoMovimientoStockEnum;
 
-@Component
-public class MovimientoStockMapper {
+public final class MovimientoStockMapper {
+    private MovimientoStockMapper() {}
 
-    public MovimientoStockResponseDTO toDTO(MovimientoStockLog log) {
+    public static MovimientoStockResponseDTO toDTO(MovimientoStockLog log) {
         if (log == null) {
             return null;
         }

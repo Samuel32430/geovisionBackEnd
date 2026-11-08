@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.atencion.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -29,16 +30,11 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class RecetaPdfServiceImpl implements RecetaPdfService {
 
     private final RecetaService recetaService;
     private final ConfiguracionEmpresaRepository configuracionEmpresaRepository;
-
-    public RecetaPdfServiceImpl(RecetaService recetaService,
-                                ConfiguracionEmpresaRepository configuracionEmpresaRepository) {
-        this.recetaService = recetaService;
-        this.configuracionEmpresaRepository = configuracionEmpresaRepository;
-    }
 
     @Override
     public byte[] generarRecetaPdf(Long idReceta) {

@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.mapper.inventario;
 
-import org.springframework.stereotype.Component;
 import pe.edu.upeu.geovision_backend.dto.inventario.MonturaDTO;
 import pe.edu.upeu.geovision_backend.dto.inventario.ProductoRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.inventario.ProductoResponseDTO;
@@ -11,10 +10,10 @@ import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
 import pe.edu.upeu.geovision_backend.enums.inventario.MaterialMonturaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
 
-@Component
-public class ProductoMapper {
+public final class ProductoMapper {
+    private ProductoMapper() {}
 
-    public ProductoResponseDTO toResponseDTO(Producto producto, Montura montura) {
+    public static ProductoResponseDTO toResponseDTO(Producto producto, Montura montura) {
         if (producto == null) {
             return null;
         }
@@ -27,7 +26,7 @@ public class ProductoMapper {
         return new ProductoResponseDTO(producto.getId(), producto.getCodigo(), producto.getNombre(), producto.getMarca(), producto.getDescripcion(), producto.getPrecio(), producto.getStock(), (producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0), producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO", producto.getFechaRegistro(), producto.getCategoria() != null ? producto.getCategoria().getId() : null, producto.getCategoria() != null ? producto.getCategoria().getNombre() : null, monturaDTO, monturaDTO != null);
     }
 
-    public MonturaDTO toMonturaDTO(Montura montura, Producto producto) {
+    public static MonturaDTO toMonturaDTO(Montura montura, Producto producto) {
         if (montura == null) {
             return null;
         }
@@ -45,7 +44,7 @@ public class ProductoMapper {
         return new MonturaDTO(montura.getId(), producto != null ? producto.getCodigo() : null, producto != null ? producto.getNombre() : null, producto != null ? producto.getPrecio() : null, producto != null ? producto.getStock() : null, montura.getColor(), montura.getModelo(), modeloDesc, montura.getMaterial(), materialDesc);
     }
 
-    public ProductoStockResponseDTO toProductoStockResponseDTO(Producto producto, Integer umbralStockMinimo) {
+    public static ProductoStockResponseDTO toProductoStockResponseDTO(Producto producto, Integer umbralStockMinimo) {
         if (producto == null) {
             return null;
         }
@@ -56,7 +55,7 @@ public class ProductoMapper {
         return new ProductoStockResponseDTO(producto.getId(), producto.getCodigo(), producto.getNombre(), producto.getStock(), umbralStockMinimo != null ? umbralStockMinimo : 5, producto.getPrecio(), disponible, (producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0), producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO");
     }
 
-    public Producto toEntity(ProductoRequestDTO dto, Categoria categoria) {
+    public static Producto toEntity(ProductoRequestDTO dto, Categoria categoria) {
         if (dto == null) {
             return null;
         }
@@ -72,7 +71,7 @@ public class ProductoMapper {
         return new Producto(null, dto.codigo() != null ? dto.codigo().trim() : null, dto.nombre() != null ? dto.nombre().trim() : null, dto.marca() != null ? dto.marca().trim() : null, dto.descripcion() != null ? dto.descripcion().trim() : null, dto.precio(), dto.stock() != null ? dto.stock() : 0, estado, null, categoria);
     }
 
-    public Montura toMonturaEntity(MonturaDTO dto, Producto producto) {
+    public static Montura toMonturaEntity(MonturaDTO dto, Producto producto) {
         if (dto == null) {
             return null;
         }

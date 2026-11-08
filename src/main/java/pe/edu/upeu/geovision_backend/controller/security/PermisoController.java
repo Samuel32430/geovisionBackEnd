@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.controller.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,13 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/permisos")
+@RequiredArgsConstructor
 public class PermisoController {
 
     private final PermisoService permisoService;
-
-    public PermisoController(PermisoService permisoService) {
-        this.permisoService = permisoService;
-    }
 
     @GetMapping
     public ResponseEntity<List<PermisoDTO>> listar() {

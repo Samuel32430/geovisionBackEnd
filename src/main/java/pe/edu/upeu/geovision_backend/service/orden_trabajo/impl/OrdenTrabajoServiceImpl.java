@@ -40,7 +40,7 @@ import pe.edu.upeu.geovision_backend.repository.orden_trabajo.OrdenTrabajoReposi
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.RecetaRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.VentaRepository;
-import pe.edu.upeu.geovision_backend.mapper.orden_trabajo.OrdenTrabajoMapper;
+
 import pe.edu.upeu.geovision_backend.service.orden_trabajo.OrdenTrabajoService;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.ActorOrdenTrabajo;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.ComparadorLensometria;
@@ -50,6 +50,7 @@ import pe.edu.upeu.geovision_backend.util.orden_trabajo.VentaOrdenTrabajo;
 
 @Service @RequiredArgsConstructor @Transactional
 public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
+    private final OrdenTrabajoDetalleService detalles;
     private final OrdenTrabajoRepository ordenes;
     private final LenteRepository lentes;
     private final RecetaRepository recetas;
@@ -61,7 +62,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     private final ActorOrdenTrabajo actores;
     private final FlujoOrdenTrabajo flujo;
     private final ComparadorLensometria comparador;
-    private final OrdenTrabajoMapper mapper;
+
     private final VentaOrdenTrabajo ventasOrden;
 
     @Override @Transactional(readOnly=true)
@@ -82,11 +83,11 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             }
             return cb.and(filtros.toArray(Predicate[]::new));
         };
-        return ordenes.findAll(spec,pageable).map(mapper::orden);
+        return ordenes.findAll(spec,pageable).map(detalles::orden);
     }
     @Override @Transactional(readOnly=true)
     public OrdenTrabajoResponseDTO obtener(Long id) {
-        return mapper.orden(ordenes.findById(id).orElseThrow(()->new RecursosNoEncontradosException("Orden no encontrada")));
+        return detalles.orden(ordenes.findById(id).orElseThrow(()->new RecursosNoEncontradosException("Orden no encontrada")));
     }
     @Override
     public OrdenTrabajoResponseDTO generar(OrdenTrabajoRequestDTO request,String usuario) {
@@ -107,7 +108,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
                 throw new ReglaNegocioException("Las medidas deben pertenecer a la receta y tener tipos unicos");
         }
         var orden=new OrdenTrabajo(null, null, null, null, EstadoOrdenTrabajoEnum.PENDIENTE, ConstanciaOrdenTrabajo.agregar(request.descripcion(),"[Creacion] Usuario: "+usuario), lente);
-        return mapper.orden(ordenes.saveAndFlush(orden));
+        return detalles.orden(ordenes.saveAndFlush(orden));
     }
     private void validarVenta(Venta venta,Lente lente) {
         if(venta.getEstado()!=EstadoVentaEnum.PENDIENTE && venta.getEstado()!=EstadoVentaEnum.PAGADA)
@@ -136,7 +137,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             .orElseThrow(()->new ReglaNegocioException("Seleccione un laboratorio existente y activo"));
         var envio=new EnvioLaboratorio(null, null, request.fechaRecepcionEstimada(), null, null, null, null, ConstanciaOrdenTrabajo.agregar(request.observaciones(),"[Envio] Usuario: "+usuario), ot, laboratorio);
         envios.saveAndFlush(envio); ot.setEstado(EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO);
-        ordenes.saveAndFlush(ot); return mapper.envio(envio);
+        ordenes.saveAndFlush(ot); return detalles.envio(envio);
     }
     @Override
     public EnvioLaboratorioResponseDTO recibir(Long idEnvio,RecepcionLaboratorioRequestDTO request,String usuario) {
@@ -149,7 +150,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         envio.setObservaciones(ConstanciaOrdenTrabajo.agregar(envio.getObservaciones(),"[Recepcion] Usuario: "+usuario
             +(request==null || request.observaciones()==null?"":". "+request.observaciones())));
         ot.setEstado(EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO);
-        envios.saveAndFlush(envio); ordenes.saveAndFlush(ot); return mapper.envio(envio);
+        envios.saveAndFlush(envio); ordenes.saveAndFlush(ot); return detalles.envio(envio);
     }
     @Override
     public OrdenTrabajoResponseDTO entregar(EntregaPedidoRequestDTO request,String usuario) {
@@ -171,7 +172,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         ot.setEstado(EstadoOrdenTrabajoEnum.ENTREGADO); ot.setFechaEntrega(LocalDateTime.now().withNano(0));
         ot.setDescripcion(ConstanciaOrdenTrabajo.agregar(ot.getDescripcion(),"[Entrega] Usuario: "+usuario
             +(request.observaciones()==null?"":". "+request.observaciones())));
-        return mapper.orden(ordenes.saveAndFlush(ot));
+        return detalles.orden(ordenes.saveAndFlush(ot));
     }
     private EnvioLaboratorio ultimo(OrdenTrabajo ot) {
         return envios.findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(ot.getId())

@@ -38,8 +38,6 @@ public class InventarioStockServiceImpl implements InventarioStockService {
     private final MonturaRepository monturaRepository;
     private final MovimientoStockLogRepository movimientoStockLogRepository;
     private final UsuarioRepository usuarioRepository;
-    private final ProductoMapper productoMapper;
-    private final MovimientoStockMapper movimientoStockMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -53,7 +51,7 @@ public class InventarioStockServiceImpl implements InventarioStockService {
         Producto producto = productoRepository.findById(idProducto)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + idProducto));
 
-        return productoMapper.toProductoStockResponseDTO(producto, umbralStockMinimo);
+        return ProductoMapper.toProductoStockResponseDTO(producto, umbralStockMinimo);
     }
 
     @Override
@@ -89,7 +87,7 @@ public class InventarioStockServiceImpl implements InventarioStockService {
         log.info("Entrada de stock registrada exitosamente. Producto ID: {}, Stock Previo: {}, Nuevo Stock: {}",
                 producto.getId(), stockPrevio, nuevoStock);
 
-        return movimientoStockMapper.toDTO(movimientoGuardado);
+        return MovimientoStockMapper.toDTO(movimientoGuardado);
     }
 
     @Override
@@ -139,7 +137,7 @@ public class InventarioStockServiceImpl implements InventarioStockService {
         log.info("Ajuste de stock registrado exitosamente. Producto ID: {}, Stock Previo: {}, Nuevo Stock: {}",
                 producto.getId(), stockPrevio, nuevoStock);
 
-        return movimientoStockMapper.toDTO(movimientoGuardado);
+        return MovimientoStockMapper.toDTO(movimientoGuardado);
     }
 
     @Override
@@ -156,7 +154,7 @@ public class InventarioStockServiceImpl implements InventarioStockService {
         }
 
         return movimientoStockLogRepository.findByProductoIdOrderByFechaRegistroDesc(idProducto, pageable)
-                .map(movimientoStockMapper::toDTO);
+                .map(MovimientoStockMapper::toDTO);
     }
 
     @Override
@@ -168,7 +166,7 @@ public class InventarioStockServiceImpl implements InventarioStockService {
         return productoRepository.findProductosBajoStock(umbralCalculado).stream()
                 .map(p -> {
                     Montura montura = monturaRepository.findById(p.getId()).orElse(null);
-                    return productoMapper.toResponseDTO(p, montura);
+                    return ProductoMapper.toResponseDTO(p, montura);
                 })
                 .toList();
     }

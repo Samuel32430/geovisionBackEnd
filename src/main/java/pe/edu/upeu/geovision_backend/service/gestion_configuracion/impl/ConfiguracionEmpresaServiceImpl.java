@@ -19,13 +19,12 @@ import pe.edu.upeu.geovision_backend.service.gestion_configuracion.Configuracion
 public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaService {
     private final ConfiguracionEmpresaRepository repository;
     private final ConfiguracionEmpresaLock lock;
-    private final ConfiguracionEmpresaMapper mapper;
 
     @Override
     @Transactional(readOnly = true)
     public ConfiguracionEmpresaDTO obtener() {
         comprobarIntegridad();
-        return mapper.toDTO(empresaExistente());
+        return ConfiguracionEmpresaMapper.toDTO(empresaExistente());
     }
 
     @Override
@@ -36,8 +35,8 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
             throw new ReglaNegocioException("La empresa ya está configurada. Utilice la opción de actualización.");
         }
         ConfiguracionEmpresa empresa = new ConfiguracionEmpresa(null, null, null, null, null, null, null, null);
-        mapper.actualizar(request, empresa);
-        return mapper.toDTO(repository.saveAndFlush(empresa));
+        ConfiguracionEmpresaMapper.actualizar(request, empresa);
+        return ConfiguracionEmpresaMapper.toDTO(repository.saveAndFlush(empresa));
     }
 
     @Override
@@ -46,8 +45,8 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
         lock.bloquear();
         comprobarIntegridad();
         ConfiguracionEmpresa empresa = empresaExistente();
-        mapper.actualizar(request, empresa);
-        return mapper.toDTO(repository.saveAndFlush(empresa));
+        ConfiguracionEmpresaMapper.actualizar(request, empresa);
+        return ConfiguracionEmpresaMapper.toDTO(repository.saveAndFlush(empresa));
     }
 
     private ConfiguracionEmpresa empresaExistente() {

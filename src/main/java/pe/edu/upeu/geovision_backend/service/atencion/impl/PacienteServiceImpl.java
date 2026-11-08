@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.atencion.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,23 +30,13 @@ import java.util.Set;
 @Service
 @Validated
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class PacienteServiceImpl implements PacienteService {
 
     private final PacienteRepository pacienteRepository;
     private final PersonaRepository personaRepository;
     private final PacienteLogRepository pacienteLogRepository;
     private final UsuarioRepository usuarioRepository;
-    private final PacienteMapper pacienteMapper;
-
-    public PacienteServiceImpl(PacienteRepository pacienteRepository, PersonaRepository personaRepository,
-                               PacienteLogRepository pacienteLogRepository, UsuarioRepository usuarioRepository,
-                               PacienteMapper pacienteMapper) {
-        this.pacienteRepository = pacienteRepository;
-        this.personaRepository = personaRepository;
-        this.pacienteLogRepository = pacienteLogRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.pacienteMapper = pacienteMapper;
-    }
 
     @Override
     public Page<PacienteResponseDTO> listarPacientes(String termino, Boolean estado, Pageable pageable) {
@@ -69,12 +60,12 @@ public class PacienteServiceImpl implements PacienteService {
         }
         return pacienteRepository.buscarPacientes(busqueda, estado,
                         PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden))
-                .map(pacienteMapper::toPacienteResponse);
+                .map(PacienteMapper::toPacienteResponse);
     }
 
     @Override
     public PacienteResponseDTO obtenerPorId(Long idPaciente) {
-        return pacienteMapper.toPacienteResponse(buscarPaciente(idPaciente));
+        return PacienteMapper.toPacienteResponse(buscarPaciente(idPaciente));
     }
 
     @Override
@@ -83,7 +74,7 @@ public class PacienteServiceImpl implements PacienteService {
             throw new ReglaNegocioException("El número de documento es obligatorio");
         }
         return pacienteRepository.findByPersonaNumeroDocumento(numeroDocumento.trim())
-                .map(pacienteMapper::toPacienteResponse)
+                .map(PacienteMapper::toPacienteResponse)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado"));
     }
 
@@ -105,13 +96,13 @@ public class PacienteServiceImpl implements PacienteService {
             if (personaRepository.existsByNumeroDocumento(documento)) {
                 throw new ReglaNegocioException("El documento ya está registrado; seleccione la persona existente");
             }
-            persona = pacienteMapper.toPersona(request.persona());
+            persona = PacienteMapper.toPersona(request.persona());
             guardarPersona(persona);
         }
         Paciente paciente = new Paciente(null, persona, estado(request.estado() == null ? 1 : request.estado()), null, actor);
         pacienteRepository.saveAndFlush(paciente);
         auditar(paciente, actor);
-        return pacienteMapper.toPacienteResponse(paciente);
+        return PacienteMapper.toPacienteResponse(paciente);
     }
 
     @Override
@@ -131,11 +122,11 @@ public class PacienteServiceImpl implements PacienteService {
         if (personaRepository.existsByNumeroDocumentoAndIdNot(documento, idPaciente)) {
             throw new ReglaNegocioException("El documento ya pertenece a otra persona");
         }
-        pacienteMapper.actualizarPersona(persona, request.persona());
+        PacienteMapper.actualizarPersona(persona, request.persona());
         guardarPersona(persona);
         // El estado se gestiona exclusivamente con cambiarEstadoPaciente.
         auditar(paciente, actor);
-        return pacienteMapper.toPacienteResponse(paciente);
+        return PacienteMapper.toPacienteResponse(paciente);
     }
 
     @Override
@@ -150,7 +141,7 @@ public class PacienteServiceImpl implements PacienteService {
             pacienteRepository.saveAndFlush(paciente);
             auditar(paciente, actor);
         }
-        return pacienteMapper.toPacienteResponse(paciente);
+        return PacienteMapper.toPacienteResponse(paciente);
     }
 
     private Paciente buscarPaciente(Long id) {

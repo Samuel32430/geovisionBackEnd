@@ -22,7 +22,6 @@ import pe.edu.upeu.geovision_backend.enums.inventario.MaterialMonturaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
-import pe.edu.upeu.geovision_backend.mapper.inventario.ProductoMapper;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.CategoriaRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.MonturaRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.ProductoRepository;
@@ -52,9 +51,6 @@ class ProductoCatalogoServiceTest {
 
     @Mock
     private CategoriaRepository categoriaRepository;
-
-    @Spy
-    private ProductoMapper productoMapper = new ProductoMapper();
 
     @InjectMocks
     private ProductoCatalogoServiceImpl productoCatalogoService;

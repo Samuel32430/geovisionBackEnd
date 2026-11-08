@@ -26,8 +26,6 @@ import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
-import pe.edu.upeu.geovision_backend.mapper.ventas.PagoMapper;
-import pe.edu.upeu.geovision_backend.mapper.ventas.VentaMapper;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.PacienteRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
@@ -83,12 +81,6 @@ class VentaServiceTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
-    @Mock
-    private VentaMapper ventaMapper;
-
-    @Mock
-    private PagoMapper pagoMapper;
-
     @InjectMocks
     private VentaServiceImpl ventaService;
 
@@ -130,13 +122,9 @@ class VentaServiceTest {
             v.setId(100L);
             return v;
         });
-        when(pagoMapper.toEntity(any(), any())).thenReturn(new Pago(1L, null, null, new BigDecimal("150.00"), null, null));
         when(pagoRepository.save(any(Pago.class))).thenReturn(new Pago(1L, null, null, null, null, null));
 
         VentaResponseDTO responseMock = new VentaResponseDTO(100L, null, new BigDecimal("150.00"), new BigDecimal("150.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, null, null, null, null, null, null, null, null, null);
-
-        when(ventaMapper.toResponseDTO(any(), any(), any(), any(), any(), any()))
-                .thenReturn(responseMock);
 
         VentaResponseDTO resultado = ventaService.registrarVenta(request);
 
@@ -198,11 +186,8 @@ class VentaServiceTest {
         when(servicioRepository.findById(20L))
                 .thenReturn(Optional.of(servicioTest));
         when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(pagoMapper.toEntity(any(), any())).thenReturn(new Pago(null, null, null, null, null, null));
 
         VentaResponseDTO responseMock = new VentaResponseDTO(null, null, new BigDecimal("200.00"), new BigDecimal("60.00"), new BigDecimal("140.00"), EstadoVentaEnum.PENDIENTE, null, null, null, null, null, null, null, null, null, null, null, null);
-        when(ventaMapper.toResponseDTO(any(), any(), any(), any(), any(), any()))
-                .thenReturn(responseMock);
 
         VentaResponseDTO response = ventaService.registrarVenta(request);
 

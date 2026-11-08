@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.security.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,22 +15,17 @@ import pe.edu.upeu.geovision_backend.service.security.PermisoService;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class PermisoServiceImpl implements PermisoService {
 
     private final PermisoRepository permisoRepository;
-    private final PermisoMapper permisoMapper;
-
-    public PermisoServiceImpl(PermisoRepository permisoRepository, PermisoMapper permisoMapper) {
-        this.permisoRepository = permisoRepository;
-        this.permisoMapper = permisoMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)
     public List<PermisoDTO> listar() {
         return permisoRepository.findAll(Sort.by("modulo", "nombre"))
                 .stream()
-                .map(permisoMapper::toDTO)
+                .map(PermisoMapper::toDTO)
                 .toList();
     }
 
@@ -38,7 +34,7 @@ public class PermisoServiceImpl implements PermisoService {
     public List<PermisoDTO> listarPorModulo(ModuloEnum modulo) {
         return permisoRepository.findByModulo(modulo)
                 .stream()
-                .map(permisoMapper::toDTO)
+                .map(PermisoMapper::toDTO)
                 .toList();
     }
 
@@ -47,6 +43,6 @@ public class PermisoServiceImpl implements PermisoService {
     public PermisoDTO obtenerPorId(Long id) {
         Permiso permiso = permisoRepository.findById(id)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Permiso no encontrado con ID: " + id));
-        return permisoMapper.toDTO(permiso);
+        return PermisoMapper.toDTO(permiso);
     }
 }

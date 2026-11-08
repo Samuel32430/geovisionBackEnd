@@ -27,9 +27,6 @@ import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.security.UsuarioRol;
 import pe.edu.upeu.geovision_backend.enums.TipoLogEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
-import pe.edu.upeu.geovision_backend.mapper.security.PermisoMapper;
-import pe.edu.upeu.geovision_backend.mapper.security.RolMapper;
-import pe.edu.upeu.geovision_backend.mapper.security.UsuarioMapper;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.security.RolPermisoRepository;
 import pe.edu.upeu.geovision_backend.repository.security.UsuarioRepository;
@@ -78,15 +75,6 @@ class AuthServiceTest {
 
     @Mock
     private EmailService emailService;
-
-    @Mock
-    private UsuarioMapper usuarioMapper;
-
-    @Mock
-    private RolMapper rolMapper;
-
-    @Mock
-    private PermisoMapper permisoMapper;
 
     @InjectMocks
     private AuthServiceImpl authService;

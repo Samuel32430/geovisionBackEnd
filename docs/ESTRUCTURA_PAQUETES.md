@@ -160,6 +160,26 @@ Verificación final: `./mvnw.cmd -o test`, **245 pruebas, 0 fallos y 0 errores**
 después de eliminar los binarios antiguos con `clean`. Log:
 `target/id-treatment-tests.log`.
 
+## Inyección de dependencias y mappers estáticos
+
+Los constructores explícitos de beans se sustituyeron por
+`@RequiredArgsConstructor`, incluido el filtro JWT creado por configuración.
+Las dependencias permanecen finales. `lombok.config` copia `@Value` a los
+parámetros generados para conservar la inyección de configuración en JWT,
+CORS, Textbee y tolerancias de calidad. Se mantiene la validación de la clave
+JWT al iniciar y la propagación `REQUIRES_NEW` de las notificaciones.
+
+Los 13 mappers son clases utilitarias con métodos estáticos, sin `@Component`,
+inyección ni consultas a repositorios. `OrdenTrabajoDetalleService` reúne los
+datos que antes consultaba `OrdenTrabajoMapper`; los servicios existentes usan
+este bean y los mappers reciben los datos explícitamente. Las pruebas unitarias
+usan las transformaciones reales en lugar de mocks de mappers.
+
+Verificación: `./mvnw.cmd -o test`, **245 pruebas, 0 fallos y 0 errores**.
+Log: `target/bean-mapper-tests.log`. Revisión estática de 88 clases/interfaces
+anotadas como beans y del filtro JWT, sin constructores explícitos de inyección;
+los 13 mappers carecen de dependencias inyectadas.
+
 ## Inventario completo
 
 | Origen | Destino |

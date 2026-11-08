@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.atencion.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -53,6 +54,7 @@ import java.util.stream.Collectors;
 @Service
 @Validated
 @Transactional
+@RequiredArgsConstructor
 public class RecetaServiceImpl implements RecetaService {
 
     private final RecetaRepository recetaRepository;
@@ -62,37 +64,13 @@ public class RecetaServiceImpl implements RecetaService {
     private final PersonaRepository personaRepository;
     private final UsuarioRepository usuarioRepository;
     private final EmpleadoRepository empleadoRepository;
-    private final RecetaMapper recetaMapper;
+
     private final OpticaValidator opticaValidator;
     private final LenteRepository lenteRepository;
     private final MaterialCristalRepository materialCristalRepository;
     private final TratamientoCristalRepository tratamientoCristalRepository;
     private final MonturaRepository monturaRepository;
     private final VentaRepository ventaRepository;
-
-    public RecetaServiceImpl(RecetaRepository recetaRepository, MedidaRepository medidaRepository,
-                             MedidaOjoRepository medidaOjoRepository, PacienteRepository pacienteRepository,
-                             PersonaRepository personaRepository, UsuarioRepository usuarioRepository,
-                             EmpleadoRepository empleadoRepository, RecetaMapper recetaMapper,
-                             OpticaValidator opticaValidator, LenteRepository lenteRepository,
-                             MaterialCristalRepository materialCristalRepository,
-                             TratamientoCristalRepository tratamientoCristalRepository,
-                             MonturaRepository monturaRepository, VentaRepository ventaRepository) {
-        this.recetaRepository = recetaRepository;
-        this.medidaRepository = medidaRepository;
-        this.medidaOjoRepository = medidaOjoRepository;
-        this.pacienteRepository = pacienteRepository;
-        this.personaRepository = personaRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.empleadoRepository = empleadoRepository;
-        this.recetaMapper = recetaMapper;
-        this.opticaValidator = opticaValidator;
-        this.lenteRepository = lenteRepository;
-        this.materialCristalRepository = materialCristalRepository;
-        this.tratamientoCristalRepository = tratamientoCristalRepository;
-        this.monturaRepository = monturaRepository;
-        this.ventaRepository = ventaRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -142,13 +120,13 @@ public class RecetaServiceImpl implements RecetaService {
         Map<Long, List<LenteResponseDTO>> lentesPorReceta = new HashMap<>();
         if (!lentes.isEmpty()) {
             for (Lente lente : lentes) {
-                LenteResponseDTO detalle = recetaMapper.toLenteResponse(lente,
+                LenteResponseDTO detalle = RecetaMapper.toLenteResponse(lente,
                         new ArrayList<>(lente.getMedidas()),
                         new ArrayList<>(lente.getTratamientosCristal()));
                 lentesPorReceta.computeIfAbsent(lente.getReceta().getId(), id -> new ArrayList<>()).add(detalle);
             }
         }
-        return recetas.stream().map(receta -> recetaMapper.toRecetaResponse(receta,
+        return recetas.stream().map(receta -> RecetaMapper.toRecetaResponse(receta,
                 medidasPorReceta.getOrDefault(receta.getId(), List.of()),
                 lentesPorReceta.getOrDefault(receta.getId(), List.of()))).toList();
     }
@@ -179,7 +157,7 @@ public class RecetaServiceImpl implements RecetaService {
         List<TratamientoCristal> tratamientos = seleccionarTratamientos(request.tratamientosCristalIds());
         Lente lente = lenteRepository.saveAndFlush(new Lente(null, request.subTotal(), receta, material,
                 montura, new java.util.LinkedHashSet<>(medidas), new java.util.LinkedHashSet<>(tratamientos)));
-        return recetaMapper.toLenteResponse(lente, medidas, tratamientos);
+        return RecetaMapper.toLenteResponse(lente, medidas, tratamientos);
     }
 
     private List<Medida> seleccionarMedidas(Long idReceta, List<Long> ids) {
@@ -252,11 +230,11 @@ public class RecetaServiceImpl implements RecetaService {
         recetaRepository.saveAndFlush(receta);
         List<Medida> medidas = new ArrayList<>();
         for (MedidaRequestDTO medida : request.medidas()) {
-            MedidaOjo derecha = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.ojoDerecho()));
-            MedidaOjo izquierda = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.ojoIzquierdo()));
-            medidas.add(medidaRepository.saveAndFlush(recetaMapper.toMedida(medida, receta, derecha, izquierda)));
+            MedidaOjo derecha = medidaOjoRepository.saveAndFlush(RecetaMapper.toMedidaOjo(medida.ojoDerecho()));
+            MedidaOjo izquierda = medidaOjoRepository.saveAndFlush(RecetaMapper.toMedidaOjo(medida.ojoIzquierdo()));
+            medidas.add(medidaRepository.saveAndFlush(RecetaMapper.toMedida(medida, receta, derecha, izquierda)));
         }
-        return recetaMapper.toRecetaResponse(receta, medidas);
+        return RecetaMapper.toRecetaResponse(receta, medidas);
     }
 
     private Empleado obtenerEmpleadoActual(String username, Long idSolicitado) {

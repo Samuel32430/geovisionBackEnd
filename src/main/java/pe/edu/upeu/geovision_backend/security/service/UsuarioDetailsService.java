@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.security.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -27,23 +28,13 @@ import java.util.Set;
  * Soporta autenticación tanto por nombre de usuario como por correo electrónico.
  */
 @Service
+@RequiredArgsConstructor
 public class UsuarioDetailsService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioRolRepository usuarioRolRepository;
     private final RolPermisoRepository rolPermisoRepository;
     private final EmpleadoRepository empleadoRepository;
-
-    public UsuarioDetailsService(
-            UsuarioRepository usuarioRepository,
-            UsuarioRolRepository usuarioRolRepository,
-            RolPermisoRepository rolPermisoRepository,
-            EmpleadoRepository empleadoRepository) {
-        this.usuarioRepository = usuarioRepository;
-        this.usuarioRolRepository = usuarioRolRepository;
-        this.rolPermisoRepository = rolPermisoRepository;
-        this.empleadoRepository = empleadoRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.security.service;
 
+import lombok.RequiredArgsConstructor;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -21,16 +22,21 @@ import java.util.List;
  * El token se firma con algoritmo HMAC-SHA256/384 mediante una clave secreta Base64.
  */
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
-    private final SecretKey clave;
+    @Value("${app.jwt.secret}")
+    private final String secretoBase64;
+    @Value("${app.jwt.expiracion-minutos:480}")
     private final long expiracionMinutos;
 
-    public JwtService(
-            @Value("${app.jwt.secret}") String secretoBase64,
-            @Value("${app.jwt.expiracion-minutos:480}") long expiracionMinutos) {
-        this.clave = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretoBase64));
-        this.expiracionMinutos = expiracionMinutos;
+    @jakarta.annotation.PostConstruct
+    void validarClave() {
+        clave();
+    }
+
+    private SecretKey clave() {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretoBase64));
     }
 
     /**
@@ -50,7 +56,7 @@ public class JwtService {
                 .claim("authorities", authorities)
                 .issuedAt(Date.from(ahora))
                 .expiration(Date.from(expira))
-                .signWith(clave)
+                .signWith(clave())
                 .compact();
     }
 
@@ -70,7 +76,7 @@ public class JwtService {
      */
     public Claims leerClaims(String token) {
         return Jwts.parser()
-                .verifyWith(clave)
+                .verifyWith(clave())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -92,7 +98,7 @@ public class JwtService {
                 .claim("purpose", "PASSWORD_RESET")
                 .issuedAt(Date.from(ahora))
                 .expiration(Date.from(expira))
-                .signWith(clave)
+                .signWith(clave())
                 .compact();
     }
 

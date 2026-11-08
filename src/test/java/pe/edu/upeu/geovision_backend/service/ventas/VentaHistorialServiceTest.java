@@ -20,7 +20,6 @@ import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
-import pe.edu.upeu.geovision_backend.mapper.ventas.VentaMapper;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.ProductoVendidoRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.ServicioVendidoRepository;
@@ -54,9 +53,6 @@ class VentaHistorialServiceTest {
     @Mock
     private ServicioVendidoRepository servicioVendidoRepository;
 
-    @Mock
-    private VentaMapper ventaMapper;
-
     @InjectMocks
     private VentaHistorialServiceImpl ventaHistorialService;
 
@@ -87,8 +83,6 @@ class VentaHistorialServiceTest {
 
         VentaHistorialResponseDTO dtoMock = new VentaHistorialResponseDTO(200L, null, "B001-00000200", null, null, "Ana Torres", null, null, new BigDecimal("250.00"), new BigDecimal("250.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null);
 
-        when(ventaMapper.toHistorialResponseDTO(eq(ventaTest), any(), any(), any())).thenReturn(dtoMock);
-
         Page<VentaHistorialResponseDTO> resultado = ventaHistorialService.buscarHistorialVentas(
                 "Ana",
                 EstadoVentaEnum.PAGADA,
@@ -112,9 +106,6 @@ class VentaHistorialServiceTest {
         when(pagoRepository.findByVentaId(200L)).thenReturn(Collections.emptyList());
 
         VentaResponseDTO dtoMock = new VentaResponseDTO(200L, null, new BigDecimal("250.00"), new BigDecimal("250.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, "B001-00000200", null, null, null, null, null, null, null, null);
-
-        when(ventaMapper.toResponseDTO(eq(ventaTest), any(), any(), any(), any(), any()))
-                .thenReturn(dtoMock);
 
         VentaResponseDTO resultado = ventaHistorialService.obtenerDetalleModalVenta(200L);
 

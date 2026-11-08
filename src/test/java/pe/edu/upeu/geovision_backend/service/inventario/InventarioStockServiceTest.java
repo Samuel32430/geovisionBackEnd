@@ -23,8 +23,6 @@ import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.enums.inventario.MotivoMovimientoStockEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
-import pe.edu.upeu.geovision_backend.mapper.inventario.MovimientoStockMapper;
-import pe.edu.upeu.geovision_backend.mapper.inventario.ProductoMapper;
 import pe.edu.upeu.geovision_backend.repository.inventario.MonturaRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.MovimientoStockLogRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.ProductoRepository;
@@ -57,12 +55,6 @@ class InventarioStockServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
-
-    @Spy
-    private ProductoMapper productoMapper = new ProductoMapper();
-
-    @Spy
-    private MovimientoStockMapper movimientoStockMapper = new MovimientoStockMapper();
 
     @InjectMocks
     private InventarioStockServiceImpl inventarioStockService;

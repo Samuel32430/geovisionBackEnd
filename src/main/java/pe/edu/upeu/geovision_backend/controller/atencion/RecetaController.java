@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Min;
@@ -31,15 +32,11 @@ import pe.edu.upeu.geovision_backend.service.atencion.RecetaPdfService;
 
 @RestController
 @RequestMapping("/api/v1/recetas")
+@RequiredArgsConstructor
 public class RecetaController {
 
     private final RecetaService recetaService;
     private final RecetaPdfService recetaPdfService;
-
-    public RecetaController(RecetaService recetaService, RecetaPdfService recetaPdfService) {
-        this.recetaService = recetaService;
-        this.recetaPdfService = recetaPdfService;
-    }
 
     @GetMapping(value = "/{idReceta}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAuthority('PACIENTES_LEER')")

@@ -30,7 +30,6 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
 
     private final VentaRepository ventaRepository;
     private final PagoRepository pagoRepository;
-    private final PagoMapper pagoMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -65,7 +64,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
                     }
                     BigDecimal saldo = v.getTotal().subtract(totalPagado);
                     List<Pago> historial = pagoRepository.findByVentaId(v.getId());
-                    return pagoMapper.toPagoPendienteResponseDTO(v, totalPagado, saldo, historial);
+                    return PagoMapper.toPagoPendienteResponseDTO(v, totalPagado, saldo, historial);
                 })
                 .collect(Collectors.toList());
     }
@@ -84,7 +83,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagado);
         List<Pago> historial = pagoRepository.findByVentaId(idVenta);
 
-        return pagoMapper.toPagoPendienteResponseDTO(venta, totalPagado, saldoPendiente, historial);
+        return PagoMapper.toPagoPendienteResponseDTO(venta, totalPagado, saldoPendiente, historial);
     }
 
     @Override
@@ -138,7 +137,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         }
 
         // f) Crear y guardar registro de Pago
-        Pago pago = pagoMapper.toEntity(request, venta);
+        Pago pago = PagoMapper.toEntity(request, venta);
         Pago pagoGuardado = pagoRepository.save(pago);
 
         // g) RN-VE14: Si el saldo llega a cero, actualizar automáticamente el estado a PAGADA
@@ -152,6 +151,6 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         log.info("Pago registrado exitosamente con ID: {}. Saldo restante de la venta ID {}: S/ {}",
                 pagoGuardado.getId(), venta.getId(), nuevoSaldo);
 
-        return pagoMapper.toDTO(pagoGuardado);
+        return PagoMapper.toDTO(pagoGuardado);
     }
 }
