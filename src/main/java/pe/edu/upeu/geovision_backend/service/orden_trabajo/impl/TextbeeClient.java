@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.orden_trabajo.impl;
 
+import lombok.RequiredArgsConstructor;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -14,24 +15,21 @@ import tools.jackson.databind.ObjectMapper;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 
 @Component
+@RequiredArgsConstructor
 public class TextbeeClient {
     public record Resultado(String estado, String referencia, String detalle) {
     }
 
+    @Value("${app.textbee.enabled:false}")
     private final boolean habilitado;
-    private final String baseUrl, apiKey, deviceId;
+    @Value("${app.textbee.base-url:https://api.textbee.dev/api/v1}")
+    private final String baseUrl;
+    @Value("${app.textbee.api-key:}")
+    private final String apiKey;
+    @Value("${app.textbee.device-id:}")
+    private final String deviceId;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper json = new ObjectMapper();
-
-    public TextbeeClient(@Value("${app.textbee.enabled:false}") boolean habilitado,
-                         @Value("${app.textbee.base-url:https://api.textbee.dev/api/v1}") String baseUrl,
-                         @Value("${app.textbee.api-key:}") String apiKey,
-                         @Value("${app.textbee.device-id:}") String deviceId) {
-        this.habilitado = habilitado;
-        this.baseUrl = baseUrl.replaceAll("/+$", "");
-        this.apiKey = apiKey;
-        this.deviceId = deviceId;
-    }
 
     public void validarConfiguracion() {
         if (!habilitado || apiKey.isBlank() || deviceId.isBlank())
@@ -42,7 +40,7 @@ public class TextbeeClient {
         validarConfiguracion();
         try {
             String body = json.writeValueAsString(Map.of("recipients", List.of(telefono), "message", mensaje, "deviceId", deviceId));
-            var request = HttpRequest.newBuilder(URI.create(baseUrl + "/gateway/send-sms"))
+            var request = HttpRequest.newBuilder(URI.create(baseUrl.replaceAll("/+$", "") + "/gateway/send-sms"))
                     .timeout(Duration.ofSeconds(15)).header("x-api-key", apiKey).header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body)).build();
             var response = http.send(request, HttpResponse.BodyHandlers.ofString());

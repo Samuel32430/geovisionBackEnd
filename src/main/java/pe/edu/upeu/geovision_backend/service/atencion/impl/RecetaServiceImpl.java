@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.atencion.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,8 +22,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Paciente;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.atencion.Lente;
-import pe.edu.upeu.geovision_backend.entity.atencion.LenteMedida;
-import pe.edu.upeu.geovision_backend.entity.atencion.LenteTratamientoCristal;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.MaterialCristal;
 import pe.edu.upeu.geovision_backend.entity.inventario.Montura;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCristal;
@@ -37,8 +36,6 @@ import pe.edu.upeu.geovision_backend.repository.atencion.PersonaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.RecetaRepository;
 import pe.edu.upeu.geovision_backend.repository.security.UsuarioRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.LenteRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteMedidaRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteTratamientoCristalRepository;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.MaterialCristalRepository;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.TratamientoCristalRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.MonturaRepository;
@@ -57,6 +54,7 @@ import java.util.stream.Collectors;
 @Service
 @Validated
 @Transactional
+@RequiredArgsConstructor
 public class RecetaServiceImpl implements RecetaService {
 
     private final RecetaRepository recetaRepository;
@@ -66,43 +64,13 @@ public class RecetaServiceImpl implements RecetaService {
     private final PersonaRepository personaRepository;
     private final UsuarioRepository usuarioRepository;
     private final EmpleadoRepository empleadoRepository;
-    private final RecetaMapper recetaMapper;
+
     private final OpticaValidator opticaValidator;
     private final LenteRepository lenteRepository;
-    private final LenteMedidaRepository lenteMedidaRepository;
-    private final LenteTratamientoCristalRepository lenteTratamientoCristalRepository;
     private final MaterialCristalRepository materialCristalRepository;
     private final TratamientoCristalRepository tratamientoCristalRepository;
     private final MonturaRepository monturaRepository;
     private final VentaRepository ventaRepository;
-
-    public RecetaServiceImpl(RecetaRepository recetaRepository, MedidaRepository medidaRepository,
-                             MedidaOjoRepository medidaOjoRepository, PacienteRepository pacienteRepository,
-                             PersonaRepository personaRepository, UsuarioRepository usuarioRepository,
-                             EmpleadoRepository empleadoRepository, RecetaMapper recetaMapper,
-                             OpticaValidator opticaValidator, LenteRepository lenteRepository,
-                             LenteMedidaRepository lenteMedidaRepository,
-                             LenteTratamientoCristalRepository lenteTratamientoCristalRepository,
-                             MaterialCristalRepository materialCristalRepository,
-                             TratamientoCristalRepository tratamientoCristalRepository,
-                             MonturaRepository monturaRepository, VentaRepository ventaRepository) {
-        this.recetaRepository = recetaRepository;
-        this.medidaRepository = medidaRepository;
-        this.medidaOjoRepository = medidaOjoRepository;
-        this.pacienteRepository = pacienteRepository;
-        this.personaRepository = personaRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.empleadoRepository = empleadoRepository;
-        this.recetaMapper = recetaMapper;
-        this.opticaValidator = opticaValidator;
-        this.lenteRepository = lenteRepository;
-        this.lenteMedidaRepository = lenteMedidaRepository;
-        this.lenteTratamientoCristalRepository = lenteTratamientoCristalRepository;
-        this.materialCristalRepository = materialCristalRepository;
-        this.tratamientoCristalRepository = tratamientoCristalRepository;
-        this.monturaRepository = monturaRepository;
-        this.ventaRepository = ventaRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -116,7 +84,7 @@ public class RecetaServiceImpl implements RecetaService {
     @Transactional(readOnly = true)
     public List<RecetaResponseDTO> listarHistorialPorPaciente(Long idPaciente) {
         verificarPaciente(idPaciente);
-        return mapearRecetas(recetaRepository.findByPacienteIdPersonaOrderByFechaRegistroDescIdRecetaDesc(idPaciente));
+        return mapearRecetas(recetaRepository.findByPacienteIdOrderByFechaRegistroDescIdDesc(idPaciente));
     }
 
     @Override
@@ -129,8 +97,8 @@ public class RecetaServiceImpl implements RecetaService {
         verificarPaciente(idPaciente);
         // El orden clínico es siempre cronológico y estable, independientemente del orden recibido.
         Pageable pagina = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                Sort.by(Sort.Direction.DESC, "fechaRegistro", "idReceta"));
-        Page<Receta> recetas = recetaRepository.findByPacienteIdPersona(idPaciente, pagina);
+                Sort.by(Sort.Direction.DESC, "fechaRegistro", "id"));
+        Page<Receta> recetas = recetaRepository.findByPacienteId(idPaciente, pagina);
         return new PageImpl<>(mapearRecetas(recetas.getContent()), pagina, recetas.getTotalElements());
     }
 
@@ -144,32 +112,23 @@ public class RecetaServiceImpl implements RecetaService {
         if (recetas.isEmpty()) {
             return List.of();
         }
-        List<Long> idsReceta = recetas.stream().map(Receta::getIdReceta).toList();
+        List<Long> idsReceta = recetas.stream().map(Receta::getId).toList();
         Map<Long, List<Medida>> medidasPorReceta = medidaRepository
-                .findByRecetaIdRecetaInOrderByIdMedidaAsc(idsReceta).stream()
-                .collect(Collectors.groupingBy(medida -> medida.getReceta().getIdReceta()));
-        List<Lente> lentes = lenteRepository.findByRecetaIdRecetaInOrderByIdLenteAsc(idsReceta);
+                .findByRecetaIdInOrderByIdAsc(idsReceta).stream()
+                .collect(Collectors.groupingBy(medida -> medida.getReceta().getId()));
+        List<Lente> lentes = lenteRepository.findByRecetaIdInOrderByIdAsc(idsReceta);
         Map<Long, List<LenteResponseDTO>> lentesPorReceta = new HashMap<>();
         if (!lentes.isEmpty()) {
-            List<Long> idsLente = lentes.stream().map(Lente::getIdLente).toList();
-            Map<Long, List<Medida>> medidasPorLente = lenteMedidaRepository
-                    .findByLenteIdLenteInOrderByMedidaIdMedidaAsc(idsLente).stream()
-                    .collect(Collectors.groupingBy(vinculo -> vinculo.getLente().getIdLente(),
-                            Collectors.mapping(LenteMedida::getMedida, Collectors.toList())));
-            Map<Long, List<TratamientoCristal>> tratamientosPorLente = lenteTratamientoCristalRepository
-                    .findByLenteIdLenteInOrderByTratamientoCristalIdTratamientoCristalAsc(idsLente).stream()
-                    .collect(Collectors.groupingBy(vinculo -> vinculo.getLente().getIdLente(),
-                            Collectors.mapping(LenteTratamientoCristal::getTratamientoCristal, Collectors.toList())));
             for (Lente lente : lentes) {
-                LenteResponseDTO detalle = recetaMapper.toLenteResponse(lente,
-                        medidasPorLente.getOrDefault(lente.getIdLente(), List.of()),
-                        tratamientosPorLente.getOrDefault(lente.getIdLente(), List.of()));
-                lentesPorReceta.computeIfAbsent(lente.getReceta().getIdReceta(), id -> new ArrayList<>()).add(detalle);
+                LenteResponseDTO detalle = RecetaMapper.toLenteResponse(lente,
+                        new ArrayList<>(lente.getMedidas()),
+                        new ArrayList<>(lente.getTratamientosCristal()));
+                lentesPorReceta.computeIfAbsent(lente.getReceta().getId(), id -> new ArrayList<>()).add(detalle);
             }
         }
-        return recetas.stream().map(receta -> recetaMapper.toRecetaResponse(receta,
-                medidasPorReceta.getOrDefault(receta.getIdReceta(), List.of()),
-                lentesPorReceta.getOrDefault(receta.getIdReceta(), List.of()))).toList();
+        return recetas.stream().map(receta -> RecetaMapper.toRecetaResponse(receta,
+                medidasPorReceta.getOrDefault(receta.getId(), List.of()),
+                lentesPorReceta.getOrDefault(receta.getId(), List.of()))).toList();
     }
 
     @Override
@@ -180,7 +139,7 @@ public class RecetaServiceImpl implements RecetaService {
         Receta receta = recetaRepository.findByIdForUpdate(idReceta)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada"));
         // Ventas debe tomar este mismo bloqueo antes de asociar una venta a la receta.
-        if (ventaRepository.existsByRecetaIdReceta(idReceta)) {
+        if (ventaRepository.existsByRecetaId(idReceta)) {
             throw new ReglaNegocioException("No se puede configurar una receta que ya está vinculada a una venta");
         }
         MaterialCristal material = materialCristalRepository.findById(request.idMaterialCristal())
@@ -196,29 +155,24 @@ public class RecetaServiceImpl implements RecetaService {
         }
         List<Medida> medidas = seleccionarMedidas(idReceta, request.medidasIds());
         List<TratamientoCristal> tratamientos = seleccionarTratamientos(request.tratamientosCristalIds());
-        Lente lente = lenteRepository.saveAndFlush(Lente.builder().receta(receta).materialCristal(material)
-                .montura(montura).subTotal(request.subTotal()).build());
-        lenteMedidaRepository.saveAllAndFlush(medidas.stream()
-                .map(medida -> LenteMedida.builder().lente(lente).medida(medida).build()).toList());
-        lenteTratamientoCristalRepository.saveAllAndFlush(tratamientos.stream()
-                .map(tratamiento -> LenteTratamientoCristal.builder().lente(lente)
-                        .tratamientoCristal(tratamiento).build()).toList());
-        return recetaMapper.toLenteResponse(lente, medidas, tratamientos);
+        Lente lente = lenteRepository.saveAndFlush(new Lente(null, request.subTotal(), receta, material,
+                montura, new java.util.LinkedHashSet<>(medidas), new java.util.LinkedHashSet<>(tratamientos)));
+        return RecetaMapper.toLenteResponse(lente, medidas, tratamientos);
     }
 
     private List<Medida> seleccionarMedidas(Long idReceta, List<Long> ids) {
         List<Medida> medidas;
         if (ids == null || ids.isEmpty()) {
-            medidas = medidaRepository.findByRecetaIdRecetaOrderByIdMedidaAsc(idReceta);
+            medidas = medidaRepository.findByRecetaIdOrderByIdAsc(idReceta);
         } else {
             if (new HashSet<>(ids).size() != ids.size()) {
                 throw new ReglaNegocioException("No se deben repetir IDs de medidas");
             }
-            medidas = medidaRepository.findByIdMedidaInAndRecetaIdReceta(ids, idReceta);
+            medidas = medidaRepository.findByIdInAndRecetaId(ids, idReceta);
             if (medidas.size() != ids.size()) {
                 throw new ReglaNegocioException("Todas las medidas deben existir y pertenecer a la receta");
             }
-            medidas.sort(Comparator.comparing(Medida::getIdMedida));
+            medidas.sort(Comparator.comparing(Medida::getId));
         }
         if (medidas.isEmpty()) {
             throw new ReglaNegocioException("La receta debe tener medidas para configurar un lente");
@@ -241,7 +195,7 @@ public class RecetaServiceImpl implements RecetaService {
         if (tratamientos.size() != ids.size()) {
             throw new RecursosNoEncontradosException("Uno o más tratamientos de cristal no existen");
         }
-        tratamientos.sort(Comparator.comparing(TratamientoCristal::getIdTratamientoCristal));
+        tratamientos.sort(Comparator.comparing(TratamientoCristal::getId));
         return tratamientos;
     }
 
@@ -272,17 +226,15 @@ public class RecetaServiceImpl implements RecetaService {
             throw new ReglaNegocioException("El paciente debe estar activo para registrar una receta");
         }
 
-        Receta receta = Receta.builder().paciente(paciente).empleado(empleado).esExterno(esExterno)
-                .fechaRegistro(request.fechaRegistro() == null ? null : request.fechaRegistro().withNano(0))
-                .build();
+        Receta receta = new Receta(null, request.fechaRegistro() == null ? null : request.fechaRegistro().withNano(0), esExterno, paciente, empleado);
         recetaRepository.saveAndFlush(receta);
         List<Medida> medidas = new ArrayList<>();
         for (MedidaRequestDTO medida : request.medidas()) {
-            MedidaOjo derecha = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.ojoDerecho()));
-            MedidaOjo izquierda = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.ojoIzquierdo()));
-            medidas.add(medidaRepository.saveAndFlush(recetaMapper.toMedida(medida, receta, derecha, izquierda)));
+            MedidaOjo derecha = medidaOjoRepository.saveAndFlush(RecetaMapper.toMedidaOjo(medida.ojoDerecho()));
+            MedidaOjo izquierda = medidaOjoRepository.saveAndFlush(RecetaMapper.toMedidaOjo(medida.ojoIzquierdo()));
+            medidas.add(medidaRepository.saveAndFlush(RecetaMapper.toMedida(medida, receta, derecha, izquierda)));
         }
-        return recetaMapper.toRecetaResponse(receta, medidas);
+        return RecetaMapper.toRecetaResponse(receta, medidas);
     }
 
     private Empleado obtenerEmpleadoActual(String username, Long idSolicitado) {
@@ -292,10 +244,10 @@ public class RecetaServiceImpl implements RecetaService {
         Usuario usuario = usuarioRepository.findByNombre(username)
                 .filter(actual -> Boolean.TRUE.equals(actual.getActivo()))
                 .orElseThrow(() -> new AccessDeniedException("Usuario no habilitado"));
-        Empleado empleado = empleadoRepository.findByUsuarioIdUsuario(usuario.getIdUsuario())
+        Empleado empleado = empleadoRepository.findByUsuarioId(usuario.getId())
                 .filter(actual -> Boolean.TRUE.equals(actual.getActivo()))
                 .orElseThrow(() -> new AccessDeniedException("Se requiere un empleado activo vinculado al usuario"));
-        if (!empleado.getIdPersona().equals(idSolicitado)) {
+        if (!empleado.getId().equals(idSolicitado)) {
             throw new AccessDeniedException("El empleado debe corresponder al usuario autenticado");
         }
         return empleado;
@@ -304,8 +256,8 @@ public class RecetaServiceImpl implements RecetaService {
     private void validarDatosNuevos(List<MedidaRequestDTO> medidas) {
         for (MedidaRequestDTO medida : medidas) {
             if (medida.idReceta() != null || medida.idEnvioLaboratorio() != null
-                    || medida.ojoDerecho().idMedidaOjo() != null
-                    || medida.ojoIzquierdo().idMedidaOjo() != null) {
+                    || medida.ojoDerecho().id() != null
+                    || medida.ojoIzquierdo().id() != null) {
                 throw new ReglaNegocioException("Las medidas nuevas no deben incluir IDs de receta, ojos o envío");
             }
         }

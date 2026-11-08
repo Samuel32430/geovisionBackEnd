@@ -22,7 +22,6 @@ import pe.edu.upeu.geovision_backend.enums.inventario.MaterialMonturaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
-import pe.edu.upeu.geovision_backend.mapper.inventario.ProductoMapper;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.CategoriaRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.MonturaRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.ProductoRepository;
@@ -53,9 +52,6 @@ class ProductoCatalogoServiceTest {
     @Mock
     private CategoriaRepository categoriaRepository;
 
-    @Spy
-    private ProductoMapper productoMapper = new ProductoMapper();
-
     @InjectMocks
     private ProductoCatalogoServiceImpl productoCatalogoService;
 
@@ -65,67 +61,29 @@ class ProductoCatalogoServiceTest {
 
     @BeforeEach
     void setUp() {
-        categoriaMonturas = Categoria.builder()
-                .idCategoria(1L)
-                .nombre("MONTURAS")
-                .activo(true)
-                .build();
+        categoriaMonturas = new Categoria(1L, "MONTURAS", null, true, null);
 
-        productoBase = Producto.builder()
-                .idProducto(10L)
-                .codigo("MONT-001")
-                .nombre("Montura Ray-Ban Aviator")
-                .marca("Ray-Ban")
-                .precio(new BigDecimal("450.00"))
-                .stock(15)
-                .activo(true)
-                .fechaRegistro(LocalDateTime.now())
-                .categoria(categoriaMonturas)
-                .build();
+        productoBase = new Producto(10L, "MONT-001", "Montura Ray-Ban Aviator", "Ray-Ban", null, new BigDecimal("450.00"), 15, true, LocalDateTime.now(), categoriaMonturas);
 
-        monturaBase = Montura.builder()
-                .idProducto(10L)
-                .producto(productoBase)
-                .color("Dorado")
-                .modelo(ModeloMonturaEnum.ARO_COMPLETO)
-                .material(MaterialMonturaEnum.METAL)
-                .build();
+        monturaBase = new Montura(10L, productoBase, "Dorado", ModeloMonturaEnum.ARO_COMPLETO, MaterialMonturaEnum.METAL);
     }
 
     @Test
     @DisplayName("CU512 / RF-68, RF-69: Registrar producto simple exitosamente")
     void registrarProductoSimpleExitoso() {
-        ProductoRequestDTO request = ProductoRequestDTO.builder()
-                .codigo("ACC-001")
-                .nombre("Líquido Limpiador 60ml")
-                .marca("OptiClean")
-                .precio(new BigDecimal("25.00"))
-                .stock(50)
-                .estado(1)
-                .idCategoria(1L)
-                .build();
+        ProductoRequestDTO request = new ProductoRequestDTO("ACC-001", "Líquido Limpiador 60ml", "OptiClean", null, new BigDecimal("25.00"), 50, 1, 1L, null);
 
         when(productoRepository.existsByCodigo("ACC-001")).thenReturn(false);
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoriaMonturas));
 
-        Producto guardado = Producto.builder()
-                .idProducto(20L)
-                .codigo("ACC-001")
-                .nombre("Líquido Limpiador 60ml")
-                .marca("OptiClean")
-                .precio(new BigDecimal("25.00"))
-                .stock(50)
-                .activo(true)
-                .fechaRegistro(LocalDateTime.now())
-                .categoria(categoriaMonturas)
-                .build();
+        Producto guardado = new Producto(20L, "ACC-001", "Líquido Limpiador 60ml", "OptiClean", null, new BigDecimal("25.00"), 50, true, LocalDateTime.now(), categoriaMonturas);
 
         when(productoRepository.save(any(Producto.class))).thenReturn(guardado);
 
         ProductoResponseDTO response = productoCatalogoService.registrarProducto(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.idProducto()).isEqualTo(20L);
+        assertThat(response.id()).isEqualTo(20L);
         assertThat(response.codigo()).isEqualTo("ACC-001");
         assertThat(response.esMontura()).isFalse();
         verify(monturaRepository, never()).save(any());
@@ -134,22 +92,9 @@ class ProductoCatalogoServiceTest {
     @Test
     @DisplayName("CU512 / RF-68: Registrar montura persiste producto y montura de forma atómica")
     void registrarMonturaAtomicoExitoso() {
-        MonturaDTO monturaDTO = MonturaDTO.builder()
-                .color("Dorado")
-                .modelo(ModeloMonturaEnum.ARO_COMPLETO)
-                .material(MaterialMonturaEnum.METAL)
-                .build();
+        MonturaDTO monturaDTO = new MonturaDTO(null, null, null, null, null, "Dorado", ModeloMonturaEnum.ARO_COMPLETO, null, MaterialMonturaEnum.METAL, null);
 
-        ProductoRequestDTO request = ProductoRequestDTO.builder()
-                .codigo("MONT-001")
-                .nombre("Montura Ray-Ban Aviator")
-                .marca("Ray-Ban")
-                .precio(new BigDecimal("450.00"))
-                .stock(15)
-                .estado(1)
-                .idCategoria(1L)
-                .montura(monturaDTO)
-                .build();
+        ProductoRequestDTO request = new ProductoRequestDTO("MONT-001", "Montura Ray-Ban Aviator", "Ray-Ban", null, new BigDecimal("450.00"), 15, 1, 1L, monturaDTO);
 
         when(productoRepository.existsByCodigo("MONT-001")).thenReturn(false);
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoriaMonturas));
@@ -159,7 +104,7 @@ class ProductoCatalogoServiceTest {
         ProductoResponseDTO response = productoCatalogoService.registrarProducto(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.idProducto()).isEqualTo(10L);
+        assertThat(response.id()).isEqualTo(10L);
         assertThat(response.esMontura()).isTrue();
         assertThat(response.montura().color()).isEqualTo("Dorado");
         verify(productoRepository).save(any(Producto.class));
@@ -169,12 +114,7 @@ class ProductoCatalogoServiceTest {
     @Test
     @DisplayName("CU512 / RF-69: Rechaza registro si el código de producto ya existe")
     void registrarProductoCodigoDuplicadoRechazado() {
-        ProductoRequestDTO request = ProductoRequestDTO.builder()
-                .codigo("MONT-001")
-                .nombre("Montura Repetida")
-                .precio(new BigDecimal("200.00"))
-                .idCategoria(1L)
-                .build();
+        ProductoRequestDTO request = new ProductoRequestDTO("MONT-001", "Montura Repetida", null, null, new BigDecimal("200.00"), 0, 1, 1L, null);
 
         when(productoRepository.existsByCodigo("MONT-001")).thenReturn(true);
 
@@ -188,17 +128,10 @@ class ProductoCatalogoServiceTest {
     @Test
     @DisplayName("CU512 / RF-70: Actualizar producto exitosamente validando unicidad de código")
     void actualizarProductoExitoso() {
-        ProductoRequestDTO request = ProductoRequestDTO.builder()
-                .codigo("MONT-001-MOD")
-                .nombre("Montura Aviator Modificada")
-                .marca("Ray-Ban")
-                .precio(new BigDecimal("480.00"))
-                .idCategoria(1L)
-                .estado(1)
-                .build();
+        ProductoRequestDTO request = new ProductoRequestDTO("MONT-001-MOD", "Montura Aviator Modificada", "Ray-Ban", null, new BigDecimal("480.00"), 0, 1, 1L, null);
 
         when(productoRepository.findById(10L)).thenReturn(Optional.of(productoBase));
-        when(productoRepository.existsByCodigoAndIdProductoNot("MONT-001-MOD", 10L)).thenReturn(false);
+        when(productoRepository.existsByCodigoAndIdNot("MONT-001-MOD", 10L)).thenReturn(false);
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoriaMonturas));
         when(productoRepository.save(any(Producto.class))).thenReturn(productoBase);
         when(monturaRepository.findById(10L)).thenReturn(Optional.of(monturaBase));

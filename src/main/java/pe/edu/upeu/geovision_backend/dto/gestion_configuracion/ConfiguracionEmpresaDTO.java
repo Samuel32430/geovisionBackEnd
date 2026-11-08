@@ -1,14 +1,12 @@
 package pe.edu.upeu.geovision_backend.dto.gestion_configuracion;
 
-import lombok.Builder;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-@Builder(toBuilder = true)
 public record ConfiguracionEmpresaDTO(
-    Long idConfiguracionEmpresa,
+    Long id,
     @NotBlank(message = "El nombre legal de la empresa es obligatorio")
     @Size(max = 200, message = "El nombre legal no debe superar los 200 caracteres")
     String nombreLegal,

@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import lombok.Builder;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,9 +11,6 @@ import jakarta.validation.Valid;
 
 import java.util.Set;
 
-@Builder(toBuilder = true)
-@com.fasterxml.jackson.databind.annotation.JsonDeserialize(builder = UsuarioRequestDTO.UsuarioRequestDTOBuilder.class)
-@tools.jackson.databind.annotation.JsonDeserialize(builder = UsuarioRequestDTO.UsuarioRequestDTOBuilder.class)
 public record UsuarioRequestDTO(
     @NotBlank(message = "El nombre de usuario es obligatorio")
     @Size(min = 3, max = 100, message = "El nombre de usuario debe tener entre 3 y 100 caracteres")
@@ -27,6 +23,8 @@ public record UsuarioRequestDTO(
     String correo,
     @Min(0)
     @Max(1)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.One.class)
+    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.One.class)
     Integer estado,
     @NotNull(message = "El ID de la persona asociada es obligatorio")
     @Positive
@@ -38,11 +36,5 @@ public record UsuarioRequestDTO(
     @Override
     public String toString() {
         return "UsuarioRequestDTO[" + "nombre=" + nombre + ", " + "password=<redacted>" + ", " + "correo=" + correo + ", " + "estado=" + estado + ", " + "idPersona=" + idPersona + ", " + "rolesIds=" + rolesIds + ", " + "empleado=" + empleado + "]";
-    }
-
-    @com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
-    @tools.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
-    public static class UsuarioRequestDTOBuilder {
-        private Integer estado = 1;
     }
 }

@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.service.security.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -14,15 +15,12 @@ import pe.edu.upeu.geovision_backend.service.security.UsuarioLogService;
 import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioLogServiceImpl implements UsuarioLogService {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioLogServiceImpl.class);
 
     private final UsuarioLogRepository usuarioLogRepository;
-
-    public UsuarioLogServiceImpl(UsuarioLogRepository usuarioLogRepository) {
-        this.usuarioLogRepository = usuarioLogRepository;
-    }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -32,11 +30,7 @@ public class UsuarioLogServiceImpl implements UsuarioLogService {
         }
 
         try {
-            UsuarioLog usuarioLog = UsuarioLog.builder()
-                    .usuario(usuario)
-                    .tipoLog(tipoLog)
-                    .fechaLog(LocalDateTime.now())
-                    .build();
+            UsuarioLog usuarioLog = new UsuarioLog(null, LocalDateTime.now(), tipoLog, usuario);
             usuarioLogRepository.save(usuarioLog);
             log.debug("Evento de auditoría registrado: usuario={} evento={}", usuario.getNombre(), tipoLog.getDescripcion());
         } catch (Exception ex) {

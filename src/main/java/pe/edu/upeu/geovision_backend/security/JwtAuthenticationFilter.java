@@ -25,6 +25,7 @@ import java.io.IOException;
  * Filtro de autenticación JWT ejecutado en cada petición HTTP protegida.
  * Extrae el Bearer token, valida su firma y caducidad, y autentica al usuario en el SecurityContext.
  */
+@lombok.RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String ATRIBUTO_ERROR = "jwt.error";
@@ -33,11 +34,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
-
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
-        this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
-    }
 
     @Override
     protected void doFilterInternal(

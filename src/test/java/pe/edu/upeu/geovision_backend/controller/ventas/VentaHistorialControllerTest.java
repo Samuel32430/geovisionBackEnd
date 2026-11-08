@@ -51,15 +51,7 @@ class VentaHistorialControllerTest {
     @Test
     @DisplayName("GET /api/v1/ventas/historial: Retorna 200 OK con página de ventas")
     void buscarHistorialVentas_retorna200OK() throws Exception {
-        VentaHistorialResponseDTO dto = VentaHistorialResponseDTO.builder()
-                .idVenta(200L)
-                .numeroComprobante("B001-00000200")
-                .clienteNombre("Ana Torres")
-                .total(new BigDecimal("250.00"))
-                .totalPagado(new BigDecimal("250.00"))
-                .saldoPendiente(BigDecimal.ZERO)
-                .estado(EstadoVentaEnum.PAGADA)
-                .build();
+        VentaHistorialResponseDTO dto = new VentaHistorialResponseDTO(200L, null, "B001-00000200", null, null, "Ana Torres", null, null, new BigDecimal("250.00"), new BigDecimal("250.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null);
 
         Page<VentaHistorialResponseDTO> pagina = new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1);
 
@@ -69,28 +61,21 @@ class VentaHistorialControllerTest {
                         .param("termino", "Ana")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].idVenta").value(200L))
+                .andExpect(jsonPath("$.content[0].id").value(200L))
                 .andExpect(jsonPath("$.content[0].clienteNombre").value("Ana Torres"));
     }
 
     @Test
     @DisplayName("GET /api/v1/ventas/historial/{idVenta}/detalle: Retorna 200 OK con detalle modal")
     void obtenerDetalleModalVenta_retorna200OK() throws Exception {
-        VentaResponseDTO detalle = VentaResponseDTO.builder()
-                .idVenta(200L)
-                .numeroComprobante("B001-00000200")
-                .total(new BigDecimal("250.00"))
-                .totalPagado(new BigDecimal("250.00"))
-                .saldoPendiente(BigDecimal.ZERO)
-                .estado(EstadoVentaEnum.PAGADA)
-                .build();
+        VentaResponseDTO detalle = new VentaResponseDTO(200L, null, new BigDecimal("250.00"), new BigDecimal("250.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, "B001-00000200", null, null, null, null, null, null, null, null);
 
         when(ventaHistorialService.obtenerDetalleModalVenta(200L)).thenReturn(detalle);
 
         mockMvc.perform(get("/api/v1/ventas/historial/200/detalle")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idVenta").value(200L))
+                .andExpect(jsonPath("$.id").value(200L))
                 .andExpect(jsonPath("$.numeroComprobante").value("B001-00000200"));
     }
 }

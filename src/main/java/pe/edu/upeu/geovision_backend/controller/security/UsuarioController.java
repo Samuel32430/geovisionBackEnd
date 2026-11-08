@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.controller.security;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -32,13 +33,10 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/usuarios")
+@RequiredArgsConstructor
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
-
-    public UsuarioController(UsuarioService usuarioService) {
-        this.usuarioService = usuarioService;
-    }
 
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listar() {
@@ -103,8 +101,10 @@ public class UsuarioController {
         if ((long) page * size > Integer.MAX_VALUE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La página solicitada excede el límite permitido");
         }
-        return ResponseEntity.ok(PaginaResponseDTO.de(usuarioService.buscarPersonasParaUsuario(termino, sinUsuario,
-                PageRequest.of(page, size, Sort.by("apellidos", "nombres", "idPersona")))));
+        var resultado = usuarioService.buscarPersonasParaUsuario(termino, sinUsuario,
+                PageRequest.of(page, size, Sort.by("apellidos", "nombres", "id")));
+        return ResponseEntity.ok(new PaginaResponseDTO<>(resultado.getContent(), resultado.getNumber(), resultado.getSize(),
+                resultado.getTotalElements(), resultado.getTotalPages(), resultado.isFirst(), resultado.isLast(), resultado.isEmpty()));
     }
 
     @PostMapping("/con-persona")

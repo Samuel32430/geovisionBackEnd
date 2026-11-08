@@ -32,7 +32,7 @@ public class ComparadorLensometria {
             if (m == null || m.tipoMedida() == null || !tipos.add(m.tipoMedida()) || !referencias.containsKey(m.tipoMedida()))
                 throw new ReglaNegocioException("La lensometria contiene tipos repetidos o ajenos al lente");
             if (m.idReceta() != null || m.idEnvioLaboratorio() != null || m.ojoDerecho() == null || m.ojoIzquierdo() == null
-                    || m.ojoDerecho().idMedidaOjo() != null || m.ojoIzquierdo().idMedidaOjo() != null)
+                    || m.ojoDerecho().id() != null || m.ojoIzquierdo().id() != null)
                 throw new ReglaNegocioException("Ingrese medidas nuevas de ambos ojos sin identificadores internos");
             var original = referencias.get(m.tipoMedida());
             validarOriginal(original);

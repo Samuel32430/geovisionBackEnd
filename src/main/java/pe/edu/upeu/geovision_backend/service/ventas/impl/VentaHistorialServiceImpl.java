@@ -34,7 +34,6 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
     private final PagoRepository pagoRepository;
     private final ProductoVendidoRepository productoVendidoRepository;
     private final ServicioVendidoRepository servicioVendidoRepository;
-    private final VentaMapper ventaMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -59,17 +58,17 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
         );
 
         return paginaVentas.map(venta -> {
-            BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(venta.getIdVenta());
+            BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(venta.getId());
             if (totalPagado == null) {
                 totalPagado = BigDecimal.ZERO;
             }
             BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagado);
 
-            int cantidadProductos = productoVendidoRepository.findByVentaIdVenta(venta.getIdVenta()).size();
-            int cantidadServicios = servicioVendidoRepository.findByVentaIdVenta(venta.getIdVenta()).size();
+            int cantidadProductos = productoVendidoRepository.findByVentaId(venta.getId()).size();
+            int cantidadServicios = servicioVendidoRepository.findByVentaId(venta.getId()).size();
             int cantidadItems = cantidadProductos + cantidadServicios + (venta.getReceta() != null ? 1 : 0);
 
-            return ventaMapper.toHistorialResponseDTO(venta, totalPagado, saldoPendiente, cantidadItems);
+            return VentaMapper.toHistorialResponseDTO(venta, totalPagado, saldoPendiente, cantidadItems);
         });
     }
 
@@ -86,10 +85,10 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
         }
         BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagado);
 
-        List<ProductoVendido> productos = productoVendidoRepository.findByVentaIdVenta(idVenta);
-        List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaIdVenta(idVenta);
-        List<Pago> pagos = pagoRepository.findByVentaIdVenta(idVenta);
+        List<ProductoVendido> productos = productoVendidoRepository.findByVentaId(idVenta);
+        List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaId(idVenta);
+        List<Pago> pagos = pagoRepository.findByVentaId(idVenta);
 
-        return ventaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
+        return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
     }
 }

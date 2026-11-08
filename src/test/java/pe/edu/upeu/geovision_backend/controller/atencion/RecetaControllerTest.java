@@ -74,32 +74,23 @@ class RecetaControllerTest {
     Paciente patient;
 
     Persona person(String name) {
-        return people.saveAndFlush(Persona.builder().nombres(name).apellidos("Prueba")
-                .numeroDocumento(UUID.randomUUID().toString()).tipoDocumento(TipoDocumentoEnum.DNI).build());
+        return people.saveAndFlush(new Persona(null, name, "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
     @BeforeEach
     void fixture() {
         Persona professional = person("Profesional");
-        actor = users.saveAndFlush(Usuario.builder().nombre("optometra.prueba")
-                .correo(UUID.randomUUID() + "@test.invalid").password("hash-de-prueba").persona(professional).build());
-        employee = employees.saveAndFlush(Empleado.builder().persona(professional).usuario(actor).build());
-        patient = patients.saveAndFlush(Paciente.builder().persona(person("Paciente")).build());
+        actor = users.saveAndFlush(new Usuario(null, "optometra.prueba", "hash-de-prueba", UUID.randomUUID() + "@test.invalid", true, professional));
+        employee = employees.saveAndFlush(new Empleado(null, professional, true, null, actor));
+        patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
     }
 
     MedidaRequestDTO measure(TipoMedidaEnum type) {
-        return MedidaRequestDTO.builder().tipoMedida(type).distanciaPupilar(new BigDecimal("62.50"))
-                .prisma(new BigDecimal("0.30"))
-                .observaciones("Material recomendado: policarbonato")
-                .ojoDerecho(MedidaOjoDTO.builder().agudezaVisual("20/20").esfera(new BigDecimal("-1.25"))
-                        .cilindro(new BigDecimal("-0.50")).eje(0).adicion(new BigDecimal("1.00")).build())
-                .ojoIzquierdo(MedidaOjoDTO.builder().agudezaVisual("20/25").esfera(new BigDecimal("2.50"))
-                        .cilindro(BigDecimal.ZERO).eje(180).build()).build();
+        return new MedidaRequestDTO(type, new BigDecimal("62.50"), new BigDecimal("0.30"), "Material recomendado: policarbonato", null, new MedidaOjoDTO(null, "20/20", new BigDecimal("-1.25"), new BigDecimal("-0.50"), 0, new BigDecimal("1.00")), new MedidaOjoDTO(null, "20/25", new BigDecimal("2.50"), BigDecimal.ZERO, 180, null), null);
     }
 
     RecetaRequestDTO request() {
-        return RecetaRequestDTO.builder().idPaciente(patient.getIdPersona()).idEmpleado(employee.getIdPersona())
-                .medidas(new ArrayList<>(List.of(measure(TipoMedidaEnum.LEJOS)))).build();
+        return new RecetaRequestDTO(patient.getId(), employee.getId(), 0, null, new ArrayList<>(List.of(measure(TipoMedidaEnum.LEJOS))));
     }
 
     void expectPost(String endpoint, RecetaRequestDTO request, int status) throws Exception {
@@ -120,29 +111,29 @@ class RecetaControllerTest {
                 .andExpect(jsonPath("$.esRecetaExterna").value(false))
                 .andExpect(jsonPath("$.nombreCompletoPaciente").value("Paciente Prueba"))
                 .andExpect(jsonPath("$.nombreCompletoEmpleado").value("Profesional Prueba"))
-                .andExpect(jsonPath("$.idEmpleado").value(employee.getIdPersona()))
+                .andExpect(jsonPath("$.idEmpleado").value(employee.getId()))
                 .andExpect(jsonPath("$.medidas.length()").value(3))
                 .andExpect(jsonPath("$.medidas[0].ojoDerecho.agudezaVisual").value("20/20"))
                 .andExpect(jsonPath("$.medidas[0].ojoIzquierdo.esfera").value(2.50))
                 .andExpect(jsonPath("$.medidas[0].observaciones").value("Material recomendado: policarbonato"))
                 .andExpect(jsonPath("$.lentes").isEmpty())
                 .andReturn().getResponse().getContentAsString();
-        long id = json.readTree(response).get("idReceta").asLong();
-        var persisted = measures.findByRecetaIdRecetaOrderByIdMedidaAsc(id);
+        long id = json.readTree(response).get("id").asLong();
+        var persisted = measures.findByRecetaIdOrderByIdAsc(id);
         assertThat(persisted).extracting("tipoMedida")
                 .containsExactly(TipoMedidaEnum.LEJOS, TipoMedidaEnum.MEDIO, TipoMedidaEnum.CERCA);
         assertThat(eyes.count()).isEqualTo(beforeEyes + 6);
         assertThat(persisted).allSatisfy(measure -> {
-            assertThat(measure.getMedidaOjoDerecha().getIdMedidaOjo())
-                    .isNotEqualTo(measure.getMedidaOjoIzquierda().getIdMedidaOjo());
-            assertThat(measure.getReceta().getPaciente().getIdPersona()).isEqualTo(patient.getIdPersona());
+            assertThat(measure.getMedidaOjoDerecha().getId())
+                    .isNotEqualTo(measure.getMedidaOjoIzquierda().getId());
+            assertThat(measure.getReceta().getPaciente().getId()).isEqualTo(patient.getId());
         });
     }
 
     @Test
     void externaSeMarcaPorEndpointYConservaFechaSinFracciones() throws Exception {
         var request = request();
-        request = request.toBuilder().fechaRegistro(LocalDateTime.of(2026, 10, 30, 10, 15, 0, 123456789)).build();
+        request = new RecetaRequestDTO(request.idPaciente(), request.idEmpleado(), request.esExterno(), LocalDateTime.of(2026, 10, 30, 10, 15, 0, 123456789), request.medidas());
         mvc.perform(post("/api/v1/recetas/externa").contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(request)))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.esExterno").value(1))
@@ -158,13 +149,13 @@ class RecetaControllerTest {
             var eye = field < 3 ? request.medidas().getFirst().ojoDerecho()
                     : request.medidas().getFirst().ojoIzquierdo();
             switch (field % 3) {
-                case 0 -> eye = eye.toBuilder().esfera(new BigDecimal("1.35")).build();
-                case 1 -> eye = eye.toBuilder().cilindro(new BigDecimal("-0.30")).build();
-                case 2 -> eye = eye.toBuilder().adicion(new BigDecimal("1.01")).build();
+                case 0 -> eye = new MedidaOjoDTO(eye.id(), eye.agudezaVisual(), new BigDecimal("1.35"), eye.cilindro(), eye.eje(), eye.adicion());
+                case 1 -> eye = new MedidaOjoDTO(eye.id(), eye.agudezaVisual(), eye.esfera(), new BigDecimal("-0.30"), eye.eje(), eye.adicion());
+                case 2 -> eye = new MedidaOjoDTO(eye.id(), eye.agudezaVisual(), eye.esfera(), eye.cilindro(), eye.eje(), new BigDecimal("1.01"));
             }
             var measure = request.medidas().getFirst();
-            request.medidas().set(0, field < 3 ? measure.toBuilder().ojoDerecho(eye).build()
-                    : measure.toBuilder().ojoIzquierdo(eye).build());
+            request.medidas().set(0, field < 3 ? new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), eye, measure.ojoIzquierdo(), measure.idEnvioLaboratorio())
+                    : new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), measure.ojoDerecho(), eye, measure.idEnvioLaboratorio()));
             expectPost("examen-visual", request, 409);
         }
         assertThat(prescriptions.count()).isEqualTo(count);
@@ -173,19 +164,18 @@ class RecetaControllerTest {
     @Test
     void validaDtoAnidadoOjosDpEjePrecisionYEnum() throws Exception {
         var request = request();
-        request.medidas().set(0, request.medidas().getFirst().toBuilder().ojoDerecho(null).build());
+        request.medidas().set(0, new MedidaRequestDTO(request.medidas().getFirst().tipoMedida(), request.medidas().getFirst().distanciaPupilar(), request.medidas().getFirst().prisma(), request.medidas().getFirst().observaciones(), request.medidas().getFirst().idReceta(), null, request.medidas().getFirst().ojoIzquierdo(), request.medidas().getFirst().idEnvioLaboratorio()));
         expectPost("examen-visual", request, 400);
         request = request();
-        request.medidas().set(0, request.medidas().getFirst().toBuilder().distanciaPupilar(BigDecimal.ZERO).build());
+        request.medidas().set(0, new MedidaRequestDTO(request.medidas().getFirst().tipoMedida(), BigDecimal.ZERO, request.medidas().getFirst().prisma(), request.medidas().getFirst().observaciones(), request.medidas().getFirst().idReceta(), request.medidas().getFirst().ojoDerecho(), request.medidas().getFirst().ojoIzquierdo(), request.medidas().getFirst().idEnvioLaboratorio()));
         expectPost("examen-visual", request, 400);
         request = request();
         var measure = request.medidas().getFirst();
-        request.medidas().set(0, measure.toBuilder().ojoIzquierdo(measure.ojoIzquierdo().toBuilder().eje(181).build()).build());
+        request.medidas().set(0, new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), measure.ojoDerecho(), new MedidaOjoDTO(measure.ojoIzquierdo().id(), measure.ojoIzquierdo().agudezaVisual(), measure.ojoIzquierdo().esfera(), measure.ojoIzquierdo().cilindro(), 181, measure.ojoIzquierdo().adicion()), measure.idEnvioLaboratorio()));
         expectPost("examen-visual", request, 400);
         request = request();
         measure = request.medidas().getFirst();
-        request.medidas().set(0, measure.toBuilder().ojoDerecho(measure.ojoDerecho().toBuilder()
-                .esfera(new BigDecimal("1000.00")).build()).build());
+        request.medidas().set(0, new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), new MedidaOjoDTO(measure.ojoDerecho().id(), measure.ojoDerecho().agudezaVisual(), new BigDecimal("1000.00"), measure.ojoDerecho().cilindro(), measure.ojoDerecho().eje(), measure.ojoDerecho().adicion()), measure.ojoIzquierdo(), measure.idEnvioLaboratorio()));
         expectPost("examen-visual", request, 400);
         request = request();
         request.medidas().add(null);
@@ -204,14 +194,14 @@ class RecetaControllerTest {
         expectPost("examen-visual", request(), 409);
         expectPost("externa", request(), 409);
         var missing = request();
-        missing = missing.toBuilder().idPaciente(99999999L).build();
+        missing = new RecetaRequestDTO(99999999L, missing.idEmpleado(), missing.esExterno(), missing.fechaRegistro(), missing.medidas());
         expectPost("examen-visual", missing, 404);
     }
 
     @Test
     void noPermiteSuplantarEmpleadoNiUsarEmpleadoOUsuarioInactivo() throws Exception {
         var request = request();
-        request = request.toBuilder().idEmpleado(employee.getIdPersona() + 99999).build();
+        request = new RecetaRequestDTO(request.idPaciente(), employee.getId() + 99999, request.esExterno(), request.fechaRegistro(), request.medidas());
         expectPost("examen-visual", request, 403);
         employee.setActivo(false);
         employees.saveAndFlush(employee);
@@ -233,16 +223,16 @@ class RecetaControllerTest {
     @Test
     void rechazaIdsDeMedidasExistentesYEnviosYTipoExternoEnExamen() throws Exception {
         var request = request();
-        request = request.toBuilder().esExterno(1).build();
+        request = new RecetaRequestDTO(request.idPaciente(), request.idEmpleado(), 1, request.fechaRegistro(), request.medidas());
         expectPost("examen-visual", request, 409);
         for (int field = 0; field < 4; field++) {
             request = request();
             var measure = request.medidas().getFirst();
             switch (field) {
-                case 0 -> measure = measure.toBuilder().idReceta(1L).build();
-                case 1 -> measure = measure.toBuilder().idEnvioLaboratorio(1L).build();
-                case 2 -> measure = measure.toBuilder().ojoDerecho(measure.ojoDerecho().toBuilder().idMedidaOjo(1L).build()).build();
-                case 3 -> measure = measure.toBuilder().ojoIzquierdo(measure.ojoIzquierdo().toBuilder().idMedidaOjo(1L).build()).build();
+                case 0 -> measure = new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), 1L, measure.ojoDerecho(), measure.ojoIzquierdo(), measure.idEnvioLaboratorio());
+                case 1 -> measure = new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), measure.ojoDerecho(), measure.ojoIzquierdo(), 1L);
+                case 2 -> measure = new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), new MedidaOjoDTO(1L, measure.ojoDerecho().agudezaVisual(), measure.ojoDerecho().esfera(), measure.ojoDerecho().cilindro(), measure.ojoDerecho().eje(), measure.ojoDerecho().adicion()), measure.ojoIzquierdo(), measure.idEnvioLaboratorio());
+                case 3 -> measure = new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), measure.ojoDerecho(), new MedidaOjoDTO(1L, measure.ojoIzquierdo().agudezaVisual(), measure.ojoIzquierdo().esfera(), measure.ojoIzquierdo().cilindro(), measure.ojoIzquierdo().eje(), measure.ojoIzquierdo().adicion()), measure.idEnvioLaboratorio());
             }
             request.medidas().set(0, measure);
             expectPost("externa", request, 409);
@@ -296,11 +286,11 @@ class RecetaControllerTest {
             assertThat(measures.count()).isEqualTo(measurements);
             assertThat(eyes.count()).isEqualTo(eyeCount);
         } finally {
-            patients.deleteById(patient.getIdPersona());
-            people.deleteById(patient.getIdPersona());
-            employees.deleteById(employee.getIdPersona());
-            users.deleteById(actor.getIdUsuario());
-            people.deleteById(employee.getIdPersona());
+            patients.deleteById(patient.getId());
+            people.deleteById(patient.getId());
+            employees.deleteById(employee.getId());
+            users.deleteById(actor.getId());
+            people.deleteById(employee.getId());
         }
     }
 }

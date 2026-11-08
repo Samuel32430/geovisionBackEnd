@@ -1,12 +1,9 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import lombok.Builder;
-
 import java.util.Set;
 
-@Builder(toBuilder = true)
 public record UsuarioResponseDTO(
-    Long idUsuario,
+    Long id,
     String nombre,
     String correo,
     Integer estado,

@@ -13,9 +13,9 @@ import java.util.List;
 @Repository
 public interface UsuarioLogRepository extends JpaRepository<UsuarioLog, Long> {
 
-    List<UsuarioLog> findByUsuarioIdUsuarioOrderByFechaLogDesc(Long idUsuario);
+    List<UsuarioLog> findByUsuarioIdOrderByFechaLogDesc(Long idUsuario);
 
-    Page<UsuarioLog> findByUsuarioIdUsuarioOrderByFechaLogDesc(Long idUsuario, Pageable pageable);
+    Page<UsuarioLog> findByUsuarioIdOrderByFechaLogDesc(Long idUsuario, Pageable pageable);
 
     Page<UsuarioLog> findByTipoLogOrderByFechaLogDesc(TipoLogEnum tipoLog, Pageable pageable);
 

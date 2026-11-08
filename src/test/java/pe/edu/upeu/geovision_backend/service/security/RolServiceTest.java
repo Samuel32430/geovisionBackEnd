@@ -13,8 +13,6 @@ import pe.edu.upeu.geovision_backend.entity.security.Permiso;
 import pe.edu.upeu.geovision_backend.entity.security.Rol;
 import pe.edu.upeu.geovision_backend.enums.security.ModuloEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
-import pe.edu.upeu.geovision_backend.mapper.security.PermisoMapper;
-import pe.edu.upeu.geovision_backend.mapper.security.RolMapper;
 import pe.edu.upeu.geovision_backend.repository.security.PermisoRepository;
 import pe.edu.upeu.geovision_backend.repository.security.RolPermisoRepository;
 import pe.edu.upeu.geovision_backend.repository.security.RolRepository;
@@ -44,12 +42,6 @@ class RolServiceTest {
     @Mock
     private RolPermisoRepository rolPermisoRepository;
 
-    @Mock
-    private RolMapper rolMapper;
-
-    @Mock
-    private PermisoMapper permisoMapper;
-
     @InjectMocks
     private RolServiceImpl rolService;
 
@@ -59,22 +51,11 @@ class RolServiceTest {
 
     @BeforeEach
     void setUp() {
-        testRol = Rol.builder()
-                .idRol(1L)
-                .nombre("VENDEDOR")
-                .build();
+        testRol = new Rol(1L, "VENDEDOR");
 
-        permisoVentas = Permiso.builder()
-                .idPermiso(10L)
-                .nombre("VENTAS_REGISTRAR")
-                .modulo(ModuloEnum.VENTAS)
-                .build();
+        permisoVentas = new Permiso(10L, "VENTAS_REGISTRAR", ModuloEnum.VENTAS);
 
-        permisoPacientes = Permiso.builder()
-                .idPermiso(20L)
-                .nombre("PACIENTES_REGISTRAR")
-                .modulo(ModuloEnum.ATENCION_PACIENTES)
-                .build();
+        permisoPacientes = new Permiso(20L, "PACIENTES_REGISTRAR", ModuloEnum.ATENCION_PACIENTES);
     }
 
     @Test
@@ -84,9 +65,6 @@ class RolServiceTest {
 
         when(rolRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testRol));
         when(permisoRepository.findAllById(permisoIds)).thenReturn(List.of(permisoVentas, permisoPacientes));
-        when(permisoMapper.toDTO(permisoVentas)).thenReturn(PermisoDTO.builder().idPermiso(10L).nombre("VENTAS_REGISTRAR").build());
-        when(permisoMapper.toDTO(permisoPacientes)).thenReturn(PermisoDTO.builder().idPermiso(20L).nombre("PACIENTES_REGISTRAR").build());
-        when(rolMapper.toDTO(eq(testRol), any())).thenReturn(RolDTO.builder().idRol(1L).nombre("VENDEDOR").build());
 
         RolDTO response = rolService.asignarPermisos(1L, permisoIds);
 

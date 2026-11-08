@@ -13,5 +13,5 @@ public interface ConfiguracionEmpresaRepository extends JpaRepository<Configurac
 
     boolean existsByRuc(String ruc);
 
-    Optional<ConfiguracionEmpresa> findFirstByOrderByIdConfiguracionEmpresaAsc();
+    Optional<ConfiguracionEmpresa> findFirstByOrderByIdAsc();
 }

@@ -14,7 +14,7 @@ public class ActorOrdenTrabajo {
     public Empleado obtener(String nombre) {
         var usuario=usuarios.findByNombre(nombre).filter(u->Boolean.TRUE.equals(u.getActivo()))
             .orElseThrow(()->new AccessDeniedException("Se requiere usuario activo"));
-        return empleados.findByUsuarioIdUsuario(usuario.getIdUsuario()).filter(e->Boolean.TRUE.equals(e.getActivo()))
+        return empleados.findByUsuarioId(usuario.getId()).filter(e->Boolean.TRUE.equals(e.getActivo()))
             .orElseThrow(()->new AccessDeniedException("Se requiere un empleado activo vinculado al usuario"));
     }
 }

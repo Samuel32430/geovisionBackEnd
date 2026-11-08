@@ -1,13 +1,10 @@
 package pe.edu.upeu.geovision_backend.dto.inventario;
 
-import lombok.Builder;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Builder(toBuilder = true)
 public record ProductoResponseDTO(
-    Long idProducto,
+    Long id,
     String codigo,
     String nombre,
     String marca,

@@ -17,22 +17,22 @@ import java.util.Optional;
 @Repository
 public interface EnvioLaboratorioRepository extends JpaRepository<EnvioLaboratorio, Long>, JpaSpecificationExecutor<EnvioLaboratorio> {
 
-    @Query("SELECT e.ordenTrabajo.idOrdenTrabajo FROM EnvioLaboratorio e WHERE e.idEnvioLaboratorio = :id")
+    @Query("SELECT e.ordenTrabajo.id FROM EnvioLaboratorio e WHERE e.id = :id")
     Optional<Long> findIdOrdenByIdEnvio(@Param("id") Long id);
 
-    List<EnvioLaboratorio> findByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDesc(Long idOrdenTrabajo);
+    List<EnvioLaboratorio> findByOrdenTrabajoIdOrderByFechaEnvioDesc(Long idOrdenTrabajo);
 
-    Page<EnvioLaboratorio> findByOrdenTrabajoIdOrdenTrabajo(Long idOrdenTrabajo, Pageable pageable);
+    Page<EnvioLaboratorio> findByOrdenTrabajoId(Long idOrdenTrabajo, Pageable pageable);
 
-    Page<EnvioLaboratorio> findByLaboratorioIdLaboratorio(Long idLaboratorio, Pageable pageable);
+    Page<EnvioLaboratorio> findByLaboratorioId(Long idLaboratorio, Pageable pageable);
 
     List<EnvioLaboratorio> findByFechaRecepcionIsNull();
 
     Page<EnvioLaboratorio> findByFechaRecepcionIsNull(Pageable pageable);
 
-    Optional<EnvioLaboratorio> findFirstByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDescIdEnvioLaboratorioDesc(Long idOrdenTrabajo);
+    Optional<EnvioLaboratorio> findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(Long idOrdenTrabajo);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT e FROM EnvioLaboratorio e WHERE e.idEnvioLaboratorio = :id")
+    @Query("SELECT e FROM EnvioLaboratorio e WHERE e.id = :id")
     Optional<EnvioLaboratorio> findByIdForUpdate(@Param("id") Long id);
 }

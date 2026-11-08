@@ -1,12 +1,9 @@
 package pe.edu.upeu.geovision_backend.dto.inventario;
 
-import lombok.Builder;
-
 import java.time.LocalDateTime;
 
-@Builder(toBuilder = true)
 public record MovimientoStockResponseDTO(
-    Long idMovimiento,
+    Long id,
     Long idProducto,
     String codigoProducto,
     String nombreProducto,

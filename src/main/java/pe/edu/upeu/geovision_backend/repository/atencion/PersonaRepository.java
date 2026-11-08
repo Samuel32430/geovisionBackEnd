@@ -18,23 +18,23 @@ public interface PersonaRepository extends JpaRepository<Persona, Long> {
 
     @Query(value = """
         SELECT new pe.edu.upeu.geovision_backend.dto.security.PersonaUsuarioResumenDTO(
-            p.idPersona, p.nombres, p.apellidos, p.tipoDocumento, p.numeroDocumento,
-            u.idUsuario, u.nombre, u.activo,
-            CASE WHEN e.idPersona IS NOT NULL THEN true ELSE false END,
+            p.id, p.nombres, p.apellidos, p.tipoDocumento, p.numeroDocumento,
+            u.id, u.nombre, CASE WHEN u.activo = true THEN 1 WHEN u.activo = false THEN 0 ELSE null END,
+            CASE WHEN e.id IS NOT NULL THEN true ELSE false END,
             CASE WHEN e.activo = true THEN true ELSE false END)
         FROM Persona p
-        LEFT JOIN Usuario u ON u.persona.idPersona = p.idPersona
-        JOIN Empleado e ON e.idPersona = p.idPersona
+        LEFT JOIN Usuario u ON u.persona.id = p.id
+        JOIN Empleado e ON e.id = p.id
         WHERE e.activo = true
-          AND (:sinUsuario = false OR u.idUsuario IS NULL)
+          AND (:sinUsuario = false OR u.id IS NULL)
           AND (LOWER(CONCAT(CONCAT(p.nombres, ' '), p.apellidos)) LIKE :patron ESCAPE '!'
                OR LOWER(p.numeroDocumento) LIKE :patron ESCAPE '!')
         """, countQuery = """
         SELECT COUNT(p) FROM Persona p
-        LEFT JOIN Usuario u ON u.persona.idPersona = p.idPersona
-        JOIN Empleado e ON e.idPersona = p.idPersona
+        LEFT JOIN Usuario u ON u.persona.id = p.id
+        JOIN Empleado e ON e.id = p.id
         WHERE e.activo = true
-          AND (:sinUsuario = false OR u.idUsuario IS NULL)
+          AND (:sinUsuario = false OR u.id IS NULL)
           AND (LOWER(CONCAT(CONCAT(p.nombres, ' '), p.apellidos)) LIKE :patron ESCAPE '!'
                OR LOWER(p.numeroDocumento) LIKE :patron ESCAPE '!')
         """)
@@ -45,10 +45,10 @@ public interface PersonaRepository extends JpaRepository<Persona, Long> {
 
     boolean existsByNumeroDocumento(String numeroDocumento);
 
-    boolean existsByNumeroDocumentoAndIdPersonaNot(String numeroDocumento, Long idPersona);
+    boolean existsByNumeroDocumentoAndIdNot(String numeroDocumento, Long idPersona);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Persona p WHERE p.idPersona = :id")
+    @Query("SELECT p FROM Persona p WHERE p.id = :id")
     Optional<Persona> findByIdForUpdate(@Param("id") Long id);
 
     @Query("SELECT p FROM Persona p WHERE LOWER(p.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) " +

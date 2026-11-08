@@ -1,12 +1,10 @@
 package pe.edu.upeu.geovision_backend.dto.orden_trabajo;
 
-import lombok.Builder;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
-@Builder(toBuilder = true)
 public record EnvioLaboratorioRequestDTO(
     @NotNull(message = "El ID de la orden de trabajo es obligatorio")
     @jakarta.validation.constraints.Positive

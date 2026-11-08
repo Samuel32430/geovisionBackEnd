@@ -26,7 +26,7 @@ public class ControlCalidadController {
                                                     @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
         if ((long) page * size > Integer.MAX_VALUE)
             throw new ReglaNegocioException("La pagina excede el limite permitido");
-        return servicio.pendientes(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaRegistro", "idOrdenTrabajo")));
+        return servicio.pendientes(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaRegistro", "id")));
     }
 
     @GetMapping("/politica")

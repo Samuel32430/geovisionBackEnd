@@ -42,9 +42,6 @@ class ConfiguracionEmpresaValidationTest {
     }
 
     private ConfiguracionEmpresaDTO company(String ruc) {
-        return ConfiguracionEmpresaDTO.builder()
-                .nombreLegal("Óptica Geo Visión")
-                .ruc(ruc)
-                .build();
+        return new ConfiguracionEmpresaDTO(null, "Óptica Geo Visión", null, ruc, null, null, null, null);
     }
 }
