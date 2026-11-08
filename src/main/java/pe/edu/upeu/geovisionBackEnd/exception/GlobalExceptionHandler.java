@@ -1,6 +1,8 @@
 package pe.edu.upeu.geovisionBackEnd.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import pe.edu.upeu.geovisionBackEnd.exception.dto.ErrorResponseDTO;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,171 +28,140 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponseDTO> handleIntegrityConflict(HttpServletRequest request) {
-        log.warn("Conflicto de integridad en {}", request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(
-                new ErrorResponseDTO(LocalDateTime.now(), HttpStatus.CONFLICT.value(), "Conflict",
-                        "No se pudieron guardar los cambios por un conflicto de datos. Actualiza la información e inténtalo nuevamente.",
-                        request.getRequestURI(), null));
-    }
-
+    // >>>> ERRORS 4XX
+    // BadRequest: 400
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponseDTO> handleUnreadableBody(HttpServletRequest request) {
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                "El cuerpo JSON tiene un formato inválido o contiene valores incompatibles",
-                request.getRequestURI(), null);
-        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(error);
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleUnreadableBody(
+            HttpServletRequest request
+    ) {
+        String message = "El cuerpo JSON tiene un formato inválido o contiene valores incompatibles";
+
+        return buildResponse(request, HttpStatus.BAD_REQUEST, message, null);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponseDTO> handleInvalidParameter(
-            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleInvalidParameter(
+            HttpServletRequest request,
+            MethodArgumentTypeMismatchException ex
+    ) {
         String message = "El parámetro '" + ex.getName() + "' tiene un formato inválido";
-        if (java.time.LocalDate.class.equals(ex.getRequiredType())) {
+        if (LocalDate.class.equals(ex.getRequiredType())) {
             message += ". Use una fecha ISO yyyy-MM-dd";
         }
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                message, request.getRequestURI(), Map.of(ex.getName(), message));
-        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(error);
-    }
 
-    /*
-     * Recurso no encontrado
-     * HTTP 404
-     */
-    @ExceptionHandler(RecursosNoEncontradosException.class)
-    public ResponseEntity<ErrorResponseDTO> handleNotFound(
-            RecursosNoEncontradosException ex,
-            HttpServletRequest request) {
-
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                "Not Found",
-                ex.getMessage(),
-                request.getRequestURI(),
-                null
+        return buildResponse(request, HttpStatus.BAD_REQUEST, message,
+                Map.of(ex.getName(), message)
         );
-
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(error);
     }
 
-
-    /*
-     * Regla de negocio
-     * HTTP 409
-     */
-    @ExceptionHandler(ReglaNegocioException.class)
-    public ResponseEntity<ErrorResponseDTO> handleBusinessRule(
-            ReglaNegocioException ex,
-            HttpServletRequest request) {
-
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                LocalDateTime.now(),
-                HttpStatus.CONFLICT.value(),
-                "Conflict",
-                ex.getMessage(),
-                request.getRequestURI(),
-                null
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(error);
-    }
-
-
-    /*
-     * Errores de @Valid
-     * HTTP 400
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDTO> handleValidation(
-            MethodArgumentNotValidException ex,
-            HttpServletRequest request) {
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleValidation(
+            HttpServletRequest request,
+            MethodArgumentNotValidException ex
+    ) {
+        String message = "Existen errores de validación";
 
-        Map<String, String> validationErrors =
-                new LinkedHashMap<>();
+        Map<String, String> validationErrors = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(e -> validationErrors.put(
+                e.getField(),
+                e.getDefaultMessage()
+        ));
 
-        ex.getBindingResult()
-                .getFieldErrors()
-                .forEach(error ->
-                        validationErrors.put(
-                                error.getField(),
-                                error.getDefaultMessage()
-                        )
-                );
-
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
-                "Existen errores de validación",
-                request.getRequestURI(),
-                validationErrors
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(error);
+        return buildResponse(request, HttpStatus.BAD_REQUEST, message, validationErrors);
     }
-    /*
-     * Login fallido: usuario inexistente, contraseña incorrecta o
-     * usuario deshabilitado. Se responde SIEMPRE el mismo mensaje para
-     * no revelar cuál de los datos falló.
-     * HTTP 401
-     */
+
+    // NotFound: 404
+    @ExceptionHandler(RecursosNoEncontradosException.class)
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleNotFound(
+            HttpServletRequest request,
+            RecursosNoEncontradosException ex
+    ) {
+        return buildResponse(request, HttpStatus.NOT_FOUND, ex.getMessage(), null);
+    }
+
+    // Conflict: 409
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleIntegrityConflict(
+            HttpServletRequest request
+    ) {
+        log.warn("Conflicto de integridad en {}", request.getRequestURI());
+
+        String message = "No se pudieron guardar los cambios por un conflicto de datos. "
+                + "Actualiza la información e inténtalo nuevamente.";
+
+        return buildResponse(request, HttpStatus.CONFLICT, message, null);
+    }
+
+    @ExceptionHandler(ReglaNegocioException.class)
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleBusinessRule(
+            HttpServletRequest request,
+            ReglaNegocioException ex
+    ) {
+        return buildResponse(request, HttpStatus.CONFLICT, ex.getMessage(), null);
+    }
+
+    // >>>> AUTHORIZATION ERRORS 401-403
+    // Unauthorized: 401
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAuthentication(
-            AuthenticationException ex,
-            HttpServletRequest request) {
-        log.warn("Autenticación fallida en {} | motivo={}",
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleAuthentication(
+            HttpServletRequest request,
+            AuthenticationException ex
+    ) {
+        log.warn(
+                "Autenticación fallida en {} | motivo={}",
                 request.getRequestURI(),
-                ex.getClass().getSimpleName());
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                LocalDateTime.now(),
-                HttpStatus.UNAUTHORIZED.value(),
-                "Unauthorized",
-                "Usuario o contraseña incorrectos",
-                request.getRequestURI(),
-                null
+                ex.getClass().getSimpleName()
         );
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(error);
+
+        String message = "Usuario o contraseña incorrectos";
+
+        return buildResponse(request, HttpStatus.UNAUTHORIZED, message, null);
     }
 
-    /*
-     * @PreAuthorize rechazó la operación dentro del controlador
-     * (el usuario está autenticado, pero no tiene el permiso).
-     * Sin este manejador caería en el genérico y respondería 500.
-     * HTTP 403
-     */
+    // Forbidden: 403
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAccessDenied(
-            AccessDeniedException ex,
-            HttpServletRequest request) {
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleAccessDenied(
+            HttpServletRequest request
+    ) {
         log.warn("Acceso denegado en {}", request.getRequestURI());
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                LocalDateTime.now(),
-                HttpStatus.FORBIDDEN.value(),
-                "Forbidden",
-                "No tiene permisos para realizar esta operación",
+
+        String message = "No tiene permisos para realizar esta operación";
+
+        return buildResponse(request, HttpStatus.FORBIDDEN, message, null);
+    }
+
+    // >>>> SERVER ERRORS 5XX
+    // InternalServerError: 500
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<@NonNull ErrorResponseDTO> handleAnyException(
+            HttpServletRequest request,
+            Exception ex
+    ) {
+        log.warn("Error sin manejar en {}. {}: {}",
                 request.getRequestURI(),
-                null
+                ex.getClass().getSimpleName(),
+                ex.getMessage()
         );
+
+        return buildResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), null);
+    }
+
+    // >>>> PRIVATE METHODS
+    public static ResponseEntity<@NonNull ErrorResponseDTO> buildResponse(
+            HttpServletRequest request,
+            HttpStatus status,
+            String message,
+            Map<String, String> validationErrors
+    ) {
         return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(error);
+                .status(status)
+                .body(new ErrorResponseDTO(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        message,
+                        request.getRequestURI(),
+                        validationErrors
+                ));
     }
 }
