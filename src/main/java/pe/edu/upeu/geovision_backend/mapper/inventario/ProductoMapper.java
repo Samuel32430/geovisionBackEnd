@@ -24,22 +24,7 @@ public class ProductoMapper {
             monturaDTO = toMonturaDTO(montura, producto);
         }
 
-        return ProductoResponseDTO.builder()
-                .idProducto(producto.getIdProducto())
-                .codigo(producto.getCodigo())
-                .nombre(producto.getNombre())
-                .marca(producto.getMarca())
-                .descripcion(producto.getDescripcion())
-                .precio(producto.getPrecio())
-                .stock(producto.getStock())
-                .estado((producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0))
-                .estadoDescripcion(producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO")
-                .fechaRegistro(producto.getFechaRegistro())
-                .idCategoria(producto.getCategoria() != null ? producto.getCategoria().getIdCategoria() : null)
-                .nombreCategoria(producto.getCategoria() != null ? producto.getCategoria().getNombre() : null)
-                .montura(monturaDTO)
-                .esMontura(monturaDTO != null)
-                .build();
+        return new ProductoResponseDTO(producto.getId(), producto.getCodigo(), producto.getNombre(), producto.getMarca(), producto.getDescripcion(), producto.getPrecio(), producto.getStock(), (producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0), producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO", producto.getFechaRegistro(), producto.getCategoria() != null ? producto.getCategoria().getId() : null, producto.getCategoria() != null ? producto.getCategoria().getNombre() : null, monturaDTO, monturaDTO != null);
     }
 
     public MonturaDTO toMonturaDTO(Montura montura, Producto producto) {
@@ -57,18 +42,7 @@ public class ProductoMapper {
             materialDesc = montura.getMaterial().getDescripcion();
         }
 
-        return MonturaDTO.builder()
-                .idProducto(montura.getIdProducto())
-                .codigo(producto != null ? producto.getCodigo() : null)
-                .nombre(producto != null ? producto.getNombre() : null)
-                .precio(producto != null ? producto.getPrecio() : null)
-                .stock(producto != null ? producto.getStock() : null)
-                .color(montura.getColor())
-                .modelo(montura.getModelo())
-                .modeloDescripcion(modeloDesc)
-                .material(montura.getMaterial())
-                .materialDescripcion(materialDesc)
-                .build();
+        return new MonturaDTO(montura.getId(), producto != null ? producto.getCodigo() : null, producto != null ? producto.getNombre() : null, producto != null ? producto.getPrecio() : null, producto != null ? producto.getStock() : null, montura.getColor(), montura.getModelo(), modeloDesc, montura.getMaterial(), materialDesc);
     }
 
     public ProductoStockResponseDTO toProductoStockResponseDTO(Producto producto, Integer umbralStockMinimo) {
@@ -79,17 +53,7 @@ public class ProductoMapper {
         boolean disponible = (producto.getStock() != null && producto.getStock() > 0)
                 && (Boolean.TRUE.equals(producto.getActivo()));
 
-        return ProductoStockResponseDTO.builder()
-                .idProducto(producto.getIdProducto())
-                .codigo(producto.getCodigo())
-                .nombre(producto.getNombre())
-                .stockActual(producto.getStock())
-                .stockMinimoReferencial(umbralStockMinimo != null ? umbralStockMinimo : 5)
-                .precio(producto.getPrecio())
-                .disponible(disponible)
-                .estado((producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0))
-                .estadoDescripcion(producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO")
-                .build();
+        return new ProductoStockResponseDTO(producto.getId(), producto.getCodigo(), producto.getNombre(), producto.getStock(), umbralStockMinimo != null ? umbralStockMinimo : 5, producto.getPrecio(), disponible, (producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0), producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO");
     }
 
     public Producto toEntity(ProductoRequestDTO dto, Categoria categoria) {
@@ -105,16 +69,7 @@ public class ProductoMapper {
             estado = dto.estado() == 1;
         }
 
-        return Producto.builder()
-                .codigo(dto.codigo() != null ? dto.codigo().trim() : null)
-                .nombre(dto.nombre() != null ? dto.nombre().trim() : null)
-                .marca(dto.marca() != null ? dto.marca().trim() : null)
-                .descripcion(dto.descripcion() != null ? dto.descripcion().trim() : null)
-                .precio(dto.precio())
-                .stock(dto.stock() != null ? dto.stock() : 0)
-                .activo(estado)
-                .categoria(categoria)
-                .build();
+        return new Producto(null, dto.codigo() != null ? dto.codigo().trim() : null, dto.nombre() != null ? dto.nombre().trim() : null, dto.marca() != null ? dto.marca().trim() : null, dto.descripcion() != null ? dto.descripcion().trim() : null, dto.precio(), dto.stock() != null ? dto.stock() : 0, estado, null, categoria);
     }
 
     public Montura toMonturaEntity(MonturaDTO dto, Producto producto) {
@@ -122,12 +77,6 @@ public class ProductoMapper {
             return null;
         }
 
-        return Montura.builder()
-                .idProducto(producto != null ? producto.getIdProducto() : null)
-                .producto(producto)
-                .color(dto.color() != null ? dto.color().trim() : null)
-                .modelo(dto.modelo())
-                .material(dto.material())
-                .build();
+        return new Montura(producto != null ? producto.getId() : null, producto, dto.color() != null ? dto.color().trim() : null, dto.modelo(), dto.material());
     }
 }

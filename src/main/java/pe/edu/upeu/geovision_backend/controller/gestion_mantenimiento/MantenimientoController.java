@@ -37,7 +37,9 @@ public class MantenimientoController {
             @RequestParam(required = false) Integer estado,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return PaginaResponseDTO.de(service.listarCategoria(termino, validarEstado(estado), pagina(page, size, termino, "idCategoria")));
+        var resultado = service.listarCategoria(termino, validarEstado(estado), pagina(page, size, termino, "id"));
+        return new PaginaResponseDTO<>(resultado.getContent(), resultado.getNumber(), resultado.getSize(),
+                resultado.getTotalElements(), resultado.getTotalPages(), resultado.isFirst(), resultado.isLast(), resultado.isEmpty());
     }
 
     @GetMapping("/categorias/{id}")
@@ -48,7 +50,7 @@ public class MantenimientoController {
     @PostMapping("/categorias")
     public ResponseEntity<CategoriaDTO> registrarCategoria(@Valid @RequestBody CategoriaDTO request) {
         var response = service.registrarCategoria(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/categorias/" + response.idCategoria())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/categorias/" + response.id())).body(response);
     }
 
     @PutMapping("/categorias/{id}")
@@ -61,7 +63,9 @@ public class MantenimientoController {
             @RequestParam(required = false) String termino,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return PaginaResponseDTO.de(service.listarMaterialCristal(termino, pagina(page, size, termino, "idMaterialCristal")));
+        var resultado = service.listarMaterialCristal(termino, pagina(page, size, termino, "id"));
+        return new PaginaResponseDTO<>(resultado.getContent(), resultado.getNumber(), resultado.getSize(),
+                resultado.getTotalElements(), resultado.getTotalPages(), resultado.isFirst(), resultado.isLast(), resultado.isEmpty());
     }
 
     @GetMapping("/materiales-cristal/{id}")
@@ -72,7 +76,7 @@ public class MantenimientoController {
     @PostMapping("/materiales-cristal")
     public ResponseEntity<MaterialCristalDTO> registrarMaterialCristal(@Valid @RequestBody MaterialCristalDTO request) {
         var response = service.registrarMaterialCristal(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/materiales-cristal/" + response.idMaterialCristal())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/materiales-cristal/" + response.id())).body(response);
     }
 
     @PutMapping("/materiales-cristal/{id}")
@@ -85,7 +89,9 @@ public class MantenimientoController {
             @RequestParam(required = false) String termino,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return PaginaResponseDTO.de(service.listarTratamientoCristal(termino, pagina(page, size, termino, "idTratamientoCristal")));
+        var resultado = service.listarTratamientoCristal(termino, pagina(page, size, termino, "id"));
+        return new PaginaResponseDTO<>(resultado.getContent(), resultado.getNumber(), resultado.getSize(),
+                resultado.getTotalElements(), resultado.getTotalPages(), resultado.isFirst(), resultado.isLast(), resultado.isEmpty());
     }
 
     @GetMapping("/tratamientos-cristal/{id}")
@@ -96,7 +102,7 @@ public class MantenimientoController {
     @PostMapping("/tratamientos-cristal")
     public ResponseEntity<TratamientoCristalDTO> registrarTratamientoCristal(@Valid @RequestBody TratamientoCristalDTO request) {
         var response = service.registrarTratamientoCristal(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/tratamientos-cristal/" + response.idTratamientoCristal())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/tratamientos-cristal/" + response.id())).body(response);
     }
 
     @PutMapping("/tratamientos-cristal/{id}")
@@ -110,7 +116,9 @@ public class MantenimientoController {
             @RequestParam(required = false) Integer estado,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return PaginaResponseDTO.de(service.listarServicio(termino, validarEstado(estado), pagina(page, size, termino, "idServicio")));
+        var resultado = service.listarServicio(termino, validarEstado(estado), pagina(page, size, termino, "id"));
+        return new PaginaResponseDTO<>(resultado.getContent(), resultado.getNumber(), resultado.getSize(),
+                resultado.getTotalElements(), resultado.getTotalPages(), resultado.isFirst(), resultado.isLast(), resultado.isEmpty());
     }
 
     @GetMapping("/servicios/{id}")
@@ -121,7 +129,7 @@ public class MantenimientoController {
     @PostMapping("/servicios")
     public ResponseEntity<ServicioDTO> registrarServicio(@Valid @RequestBody ServicioDTO request) {
         var response = service.registrarServicio(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/servicios/" + response.idServicio())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/servicios/" + response.id())).body(response);
     }
 
     @PutMapping("/servicios/{id}")
@@ -135,7 +143,9 @@ public class MantenimientoController {
             @RequestParam(required = false) Integer estado,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return PaginaResponseDTO.de(service.listarLaboratorio(termino, validarEstado(estado), pagina(page, size, termino, "idLaboratorio")));
+        var resultado = service.listarLaboratorio(termino, validarEstado(estado), pagina(page, size, termino, "id"));
+        return new PaginaResponseDTO<>(resultado.getContent(), resultado.getNumber(), resultado.getSize(),
+                resultado.getTotalElements(), resultado.getTotalPages(), resultado.isFirst(), resultado.isLast(), resultado.isEmpty());
     }
 
     @GetMapping("/laboratorios/{id}")
@@ -146,7 +156,7 @@ public class MantenimientoController {
     @PostMapping("/laboratorios")
     public ResponseEntity<LaboratorioDTO> registrarLaboratorio(@Valid @RequestBody LaboratorioDTO request) {
         var response = service.registrarLaboratorio(request);
-        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/laboratorios/" + response.idLaboratorio())).body(response);
+        return ResponseEntity.created(URI.create("/api/v1/mantenimiento/laboratorios/" + response.id())).body(response);
     }
 
     @PutMapping("/laboratorios/{id}")

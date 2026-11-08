@@ -21,11 +21,7 @@ public class MantenimientoMapper {
     }
 
     public CategoriaDTO toDTO(Categoria source) {
-        return CategoriaDTO.builder().idCategoria(source.getIdCategoria())
-                .nombre(source.getNombre())
-                .descripcion(source.getDescripcion())
-                .estado((source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0))
-                .fechaRegistro(source.getFechaRegistro()).build();
+        return new CategoriaDTO(source.getId(), source.getNombre(), source.getDescripcion(), (source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0), source.getFechaRegistro());
     }
 
     public void actualizar(MaterialCristalDTO source, MaterialCristal target) {
@@ -33,8 +29,7 @@ public class MantenimientoMapper {
     }
 
     public MaterialCristalDTO toDTO(MaterialCristal source) {
-        return MaterialCristalDTO.builder().idMaterialCristal(source.getIdMaterialCristal())
-                .nombre(source.getNombre()).build();
+        return new MaterialCristalDTO(source.getId(), source.getNombre());
     }
 
     public void actualizar(TratamientoCristalDTO source, TratamientoCristal target) {
@@ -42,8 +37,7 @@ public class MantenimientoMapper {
     }
 
     public TratamientoCristalDTO toDTO(TratamientoCristal source) {
-        return TratamientoCristalDTO.builder().idTratamientoCristal(source.getIdTratamientoCristal())
-                .nombre(source.getNombre()).build();
+        return new TratamientoCristalDTO(source.getId(), source.getNombre());
     }
 
     public void actualizar(ServicioDTO source, Servicio target) {
@@ -54,11 +48,7 @@ public class MantenimientoMapper {
     }
 
     public ServicioDTO toDTO(Servicio source) {
-        return ServicioDTO.builder().idServicio(source.getIdServicio())
-                .nombre(source.getNombre())
-                .descripcion(source.getDescripcion())
-                .precio(source.getPrecio())
-                .estado((source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0)).build();
+        return new ServicioDTO(source.getId(), source.getNombre(), source.getDescripcion(), source.getPrecio(), (source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0));
     }
 
     public void actualizar(LaboratorioDTO source, Laboratorio target) {
@@ -71,13 +61,7 @@ public class MantenimientoMapper {
     }
 
     public LaboratorioDTO toDTO(Laboratorio source) {
-        return LaboratorioDTO.builder().idLaboratorio(source.getIdLaboratorio())
-                .nombre(source.getNombre())
-                .ruc(source.getRuc())
-                .telefono(source.getTelefono())
-                .direccion(source.getDireccion())
-                .correo(source.getCorreo())
-                .estado((source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0)).build();
+        return new LaboratorioDTO(source.getId(), source.getNombre(), source.getRuc(), source.getTelefono(), source.getDireccion(), source.getCorreo(), (source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0));
     }
 
     private String limpiar(String value) {

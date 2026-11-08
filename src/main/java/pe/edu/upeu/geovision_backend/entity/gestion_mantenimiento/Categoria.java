@@ -8,11 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 
 import java.time.LocalDateTime;
 
@@ -22,13 +20,12 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Categoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_categoria")
-    private Long idCategoria;
+    private Long id;
 
     @Column(name = "nombre", nullable = false, unique = true, length = 100)
     private String nombre;
@@ -37,7 +34,6 @@ public class Categoria {
     private String descripcion;
 
     @Column(name = "estado", nullable = false)
-    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "fecha_registro", nullable = false)

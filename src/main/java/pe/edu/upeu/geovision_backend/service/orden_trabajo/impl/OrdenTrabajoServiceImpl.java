@@ -34,7 +34,6 @@ import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.repository.orden_trabajo.EnvioLaboratorioRepository;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.LaboratorioRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteMedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.LenteRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.orden_trabajo.OrdenTrabajoRepository;
@@ -56,7 +55,6 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     private final RecetaRepository recetas;
     private final VentaRepository ventas;
     private final PagoRepository pagos;
-    private final LenteMedidaRepository lenteMedidas;
     private final EnvioLaboratorioRepository envios;
     private final LaboratorioRepository laboratorios;
     private final MedidaRepository medidas;
@@ -94,31 +92,30 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     public OrdenTrabajoResponseDTO generar(OrdenTrabajoRequestDTO request,String usuario) {
         flujo.validar(request); actores.obtener(usuario);
         var referencia=lentes.findById(request.idLente()).orElseThrow(()->new RecursosNoEncontradosException("Lente no encontrado"));
-        recetas.findByIdForUpdate(referencia.getReceta().getIdReceta()).orElseThrow(()->new RecursosNoEncontradosException("Receta no encontrada"));
-        var venta=ventasOrden.bloquear(referencia.getReceta().getIdReceta());
+        recetas.findByIdForUpdate(referencia.getReceta().getId()).orElseThrow(()->new RecursosNoEncontradosException("Receta no encontrada"));
+        var venta=ventasOrden.bloquear(referencia.getReceta().getId());
         var lente=lentes.findByIdForUpdate(request.idLente()).orElseThrow(()->new RecursosNoEncontradosException("Lente no encontrado"));
         validarVenta(venta,lente);
-        if(ordenes.existsByLenteIdLente(lente.getIdLente())) throw new ReglaNegocioException("El lente ya tiene una orden de trabajo");
-        var vinculos=lenteMedidas.findByLenteIdLente(lente.getIdLente());
-        if(vinculos.isEmpty()) throw new ReglaNegocioException("El lente no tiene medidas asociadas");
+        if(ordenes.existsByLenteId(lente.getId())) throw new ReglaNegocioException("El lente ya tiene una orden de trabajo");
+        var medidasLente=lente.getMedidas();
+        if(medidasLente.isEmpty()) throw new ReglaNegocioException("El lente no tiene medidas asociadas");
         var tipos=new HashSet<TipoMedidaEnum>();
-        for(var vinculo:vinculos) {
-            var m=vinculo.getMedida(); comparador.validarOriginal(m);
-            if(m.getEnvioLaboratorio()!=null || m.getReceta()==null || !m.getReceta().getIdReceta().equals(lente.getReceta().getIdReceta())
+        for(var m:medidasLente) {
+            comparador.validarOriginal(m);
+            if(m.getEnvioLaboratorio()!=null || m.getReceta()==null || !m.getReceta().getId().equals(lente.getReceta().getId())
                 || m.getTipoMedida()==null || !tipos.add(m.getTipoMedida()))
                 throw new ReglaNegocioException("Las medidas deben pertenecer a la receta y tener tipos unicos");
         }
-        var orden=OrdenTrabajo.builder().lente(lente).descripcion(ConstanciaOrdenTrabajo.agregar(request.descripcion(),"[Creacion] Usuario: "+usuario))
-            .estado(EstadoOrdenTrabajoEnum.PENDIENTE).build();
+        var orden=new OrdenTrabajo(null, null, null, null, EstadoOrdenTrabajoEnum.PENDIENTE, ConstanciaOrdenTrabajo.agregar(request.descripcion(),"[Creacion] Usuario: "+usuario), lente);
         return mapper.orden(ordenes.saveAndFlush(orden));
     }
     private void validarVenta(Venta venta,Lente lente) {
         if(venta.getEstado()!=EstadoVentaEnum.PENDIENTE && venta.getEstado()!=EstadoVentaEnum.PAGADA)
             throw new ReglaNegocioException("La venta debe estar vigente");
-        if(venta.getReceta()==null || !venta.getReceta().getIdReceta().equals(lente.getReceta().getIdReceta())
-            || venta.getPaciente()==null || !venta.getPaciente().getIdPersona().equals(lente.getReceta().getPaciente().getIdPersona()))
+        if(venta.getReceta()==null || !venta.getReceta().getId().equals(lente.getReceta().getId())
+            || venta.getPaciente()==null || !venta.getPaciente().getId().equals(lente.getReceta().getPaciente().getId()))
             throw new ReglaNegocioException("La venta, el lente y el paciente deben corresponder a la misma receta");
-        BigDecimal pagado=pagos.sumMontoPagadoByVentaId(venta.getIdVenta());
+        BigDecimal pagado=pagos.sumMontoPagadoByVentaId(venta.getId());
         if(venta.getTotal()==null || venta.getTotal().signum()<=0 || pagado==null || pagado.signum()<=0 || pagado.compareTo(venta.getTotal())>0)
             throw new ReglaNegocioException("La venta debe tener pago registrado e importes consistentes");
     }
@@ -132,14 +129,12 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             var previo=ultimo(ot);
             if(previo.getFechaRevision()==null || !Integer.valueOf(0).equals(previo.getAprobado()))
                 throw new ReglaNegocioException("El reenvio requiere un rechazo previo registrado");
-        } else if(envios.findFirstByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDescIdEnvioLaboratorioDesc(ot.getIdOrdenTrabajo()).isPresent()) {
+        } else if(envios.findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(ot.getId()).isPresent()) {
             throw new ReglaNegocioException("La orden pendiente ya registra un envio incompatible");
         }
         var laboratorio=laboratorios.findById(request.idLaboratorio()).filter(l->Boolean.TRUE.equals(l.getActivo()))
             .orElseThrow(()->new ReglaNegocioException("Seleccione un laboratorio existente y activo"));
-        var envio=EnvioLaboratorio.builder().ordenTrabajo(ot).laboratorio(laboratorio)
-            .fechaRecepcionEstimada(request.fechaRecepcionEstimada())
-            .observaciones(ConstanciaOrdenTrabajo.agregar(request.observaciones(),"[Envio] Usuario: "+usuario)).build();
+        var envio=new EnvioLaboratorio(null, null, request.fechaRecepcionEstimada(), null, null, null, null, ConstanciaOrdenTrabajo.agregar(request.observaciones(),"[Envio] Usuario: "+usuario), ot, laboratorio);
         envios.saveAndFlush(envio); ot.setEstado(EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO);
         ordenes.saveAndFlush(ot); return mapper.envio(envio);
     }
@@ -159,18 +154,18 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     @Override
     public OrdenTrabajoResponseDTO entregar(EntregaPedidoRequestDTO request,String usuario) {
         flujo.validar(request); var actor=actores.obtener(usuario); var ot=flujo.bloquear(request.idOrdenTrabajo());
-        if(request.idEmpleadoEntrega()!=null && !request.idEmpleadoEntrega().equals(actor.getIdPersona()))
+        if(request.idEmpleadoEntrega()!=null && !request.idEmpleadoEntrega().equals(actor.getId()))
             throw new AccessDeniedException("El empleado de entrega debe corresponder al usuario autenticado");
         if(ot.getEstado()!=EstadoOrdenTrabajoEnum.LISTO_ENTREGA || ot.getFechaEntrega()!=null)
             throw new ReglaNegocioException("La orden debe estar lista para entrega y no entregada previamente");
         var envio=ultimo(ot);
         if(envio.getFechaRecepcion()==null || envio.getFechaRevision()==null || !Integer.valueOf(1).equals(envio.getAprobado())
-            || medidas.findByEnvioLaboratorioIdEnvioLaboratorioOrderByIdMedidaAsc(envio.getIdEnvioLaboratorio()).isEmpty())
+            || medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
             throw new ReglaNegocioException("La entrega requiere control de calidad aprobado y lensometria registrada");
         // Sin FK nueva: receta unica y bloqueo de la venta compartido con los abonos.
-        var venta=ventasOrden.bloquear(ot.getLente().getReceta().getIdReceta());
+        var venta=ventasOrden.bloquear(ot.getLente().getReceta().getId());
         validarVenta(venta,ot.getLente());
-        BigDecimal pagado=pagos.sumMontoPagadoByVentaId(venta.getIdVenta());
+        BigDecimal pagado=pagos.sumMontoPagadoByVentaId(venta.getId());
         BigDecimal saldo=venta.getTotal().subtract(pagado);
         if(saldo.compareTo(BigDecimal.ZERO)!=0) throw new ReglaNegocioException("No se puede entregar: el saldo pendiente debe ser exactamente cero. Saldo: "+saldo);
         ot.setEstado(EstadoOrdenTrabajoEnum.ENTREGADO); ot.setFechaEntrega(LocalDateTime.now().withNano(0));
@@ -179,17 +174,15 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         return mapper.orden(ordenes.saveAndFlush(ot));
     }
     private EnvioLaboratorio ultimo(OrdenTrabajo ot) {
-        return envios.findFirstByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDescIdEnvioLaboratorioDesc(ot.getIdOrdenTrabajo())
+        return envios.findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(ot.getId())
             .orElseThrow(()->new ReglaNegocioException("La orden no tiene un envio registrado"));
     }
     private void exigirVentaVigente(OrdenTrabajo ot) {
-        ventasOrden.bloquear(ot.getLente().getReceta().getIdReceta());
+        ventasOrden.bloquear(ot.getLente().getReceta().getId());
     }
     @Override @Transactional(readOnly=true)
     public List<LaboratorioDTO> laboratorios() {
-        return laboratorios.findByActivo(true).stream().map(l->LaboratorioDTO.builder()
-            .idLaboratorio(l.getIdLaboratorio()).nombre(l.getNombre()).ruc(l.getRuc()).telefono(l.getTelefono())
-            .direccion(l.getDireccion()).correo(l.getCorreo()).estado((l.getActivo() == null ? null : Boolean.TRUE.equals(l.getActivo()) ? 1 : 0)).build()).toList();
+        return laboratorios.findByActivo(true).stream().map(l->new LaboratorioDTO(l.getId(), l.getNombre(), l.getRuc(), l.getTelefono(), l.getDireccion(), l.getCorreo(), (l.getActivo() == null ? null : Boolean.TRUE.equals(l.getActivo()) ? 1 : 0))).toList();
     }
     private String escapar(String t) { return t==null?null:t.replace("!","!!").replace("%","!%").replace("_","!_"); }
     private String limpiar(String t) { return t==null || t.isBlank()?null:t.trim(); }

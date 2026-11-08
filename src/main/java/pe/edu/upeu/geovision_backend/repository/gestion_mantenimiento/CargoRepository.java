@@ -13,5 +13,5 @@ public interface CargoRepository extends JpaRepository<Cargo, Long> {
 
     boolean existsByNombreIgnoreCase(String nombre);
 
-    boolean existsByNombreIgnoreCaseAndIdCargoNot(String nombre, Long idCargo);
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idCargo);
 }

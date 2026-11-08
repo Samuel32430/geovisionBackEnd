@@ -12,16 +12,16 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRolRepository extends JpaRepository<UsuarioRol, Long> {
 
-    List<UsuarioRol> findByUsuarioIdUsuario(Long idUsuario);
+    List<UsuarioRol> findByUsuarioId(Long idUsuario);
 
-    List<UsuarioRol> findByRolIdRol(Long idRol);
+    List<UsuarioRol> findByRolId(Long idRol);
 
-    Optional<UsuarioRol> findByUsuarioIdUsuarioAndRolIdRol(Long idUsuario, Long idRol);
+    Optional<UsuarioRol> findByUsuarioIdAndRolId(Long idUsuario, Long idRol);
 
-    boolean existsByUsuarioIdUsuarioAndRolIdRol(Long idUsuario, Long idRol);
+    boolean existsByUsuarioIdAndRolId(Long idUsuario, Long idRol);
 
-    void deleteByUsuarioIdUsuario(Long idUsuario);
+    void deleteByUsuarioId(Long idUsuario);
 
-    @Query("SELECT ur.rol.nombre FROM UsuarioRol ur WHERE ur.usuario.idUsuario = :idUsuario")
+    @Query("SELECT ur.rol.nombre FROM UsuarioRol ur WHERE ur.usuario.id = :idUsuario")
     List<String> findNombresRolesByUsuarioId(@Param("idUsuario") Long idUsuario);
 }

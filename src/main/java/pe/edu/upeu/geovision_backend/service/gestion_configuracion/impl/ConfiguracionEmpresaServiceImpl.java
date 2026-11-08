@@ -35,7 +35,7 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
         if (repository.count() > 0) {
             throw new ReglaNegocioException("La empresa ya está configurada. Utilice la opción de actualización.");
         }
-        ConfiguracionEmpresa empresa = new ConfiguracionEmpresa();
+        ConfiguracionEmpresa empresa = new ConfiguracionEmpresa(null, null, null, null, null, null, null, null);
         mapper.actualizar(request, empresa);
         return mapper.toDTO(repository.saveAndFlush(empresa));
     }
@@ -51,7 +51,7 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
     }
 
     private ConfiguracionEmpresa empresaExistente() {
-        return repository.findFirstByOrderByIdConfiguracionEmpresaAsc()
+        return repository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new RecursosNoEncontradosException("Los datos de la empresa aún no han sido configurados"));
     }
 

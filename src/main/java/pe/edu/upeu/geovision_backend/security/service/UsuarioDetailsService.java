@@ -53,17 +53,17 @@ public class UsuarioDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByNombreOrCorreo(termino, termino)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con: " + termino));
 
-        Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
+        Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioId(usuario.getId());
         boolean empleadoActivo = empleadoOpt.map(e -> Boolean.TRUE.equals(e.getActivo())).orElse(true);
         boolean cuentaHabilitada = (Boolean.TRUE.equals(usuario.getActivo())) && empleadoActivo;
 
-        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
+        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioId(usuario.getId());
         Set<GrantedAuthority> authorities = new HashSet<>();
 
         for (UsuarioRol ur : usuarioRoles) {
             if (ur.getRol() != null) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_" + ur.getRol().getNombre()));
-                List<String> permisos = rolPermisoRepository.findNombresPermisosByRolId(ur.getRol().getIdRol());
+                List<String> permisos = rolPermisoRepository.findNombresPermisosByRolId(ur.getRol().getId());
                 for (String permiso : permisos) {
                     authorities.add(new SimpleGrantedAuthority(permiso));
                 }

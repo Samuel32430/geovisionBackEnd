@@ -12,12 +12,7 @@ public class PermisoMapper {
             return null;
         }
 
-        return PermisoDTO.builder()
-                .idPermiso(permiso.getIdPermiso())
-                .nombre(permiso.getNombre())
-                .modulo(permiso.getModulo())
-                .moduloDescripcion(permiso.getModulo() != null ? permiso.getModulo().getDescripcion() : null)
-                .build();
+        return new PermisoDTO(permiso.getId(), permiso.getNombre(), permiso.getModulo(), permiso.getModulo() != null ? permiso.getModulo().getDescripcion() : null);
     }
 
     public Permiso toEntity(PermisoDTO dto) {
@@ -25,10 +20,6 @@ public class PermisoMapper {
             return null;
         }
 
-        return Permiso.builder()
-                .idPermiso(dto.idPermiso())
-                .nombre(dto.nombre())
-                .modulo(dto.modulo())
-                .build();
+        return new Permiso(dto.id(), dto.nombre(), dto.modulo());
     }
 }

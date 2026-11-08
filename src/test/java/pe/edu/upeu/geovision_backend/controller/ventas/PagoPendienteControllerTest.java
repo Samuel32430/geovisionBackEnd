@@ -56,60 +56,37 @@ class PagoPendienteControllerTest {
     @Test
     @DisplayName("GET /api/v1/ventas/pagos-pendientes: Retorna 200 OK con lista de ventas adeudadas")
     void listarVentasConSaldoPendiente_retorna200OK() throws Exception {
-        PagoPendienteResponseDTO dto = PagoPendienteResponseDTO.builder()
-                .idVenta(100L)
-                .numeroComprobante("B001-00000100")
-                .totalVenta(new BigDecimal("300.00"))
-                .totalPagado(new BigDecimal("100.00"))
-                .saldoPendiente(new BigDecimal("200.00"))
-                .estado(EstadoVentaEnum.PENDIENTE)
-                .build();
+        PagoPendienteResponseDTO dto = new PagoPendienteResponseDTO(100L, "B001-00000100", null, null, null, null, null, new BigDecimal("300.00"), new BigDecimal("100.00"), new BigDecimal("200.00"), EstadoVentaEnum.PENDIENTE, null);
 
         when(pagoPendienteService.listarVentasConPagosPendientes(null)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/v1/ventas/pagos-pendientes")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].idVenta").value(100L))
+                .andExpect(jsonPath("$[0].id").value(100L))
                 .andExpect(jsonPath("$[0].saldoPendiente").value(200.00));
     }
 
     @Test
     @DisplayName("GET /api/v1/ventas/pagos-pendientes/{idVenta}: Retorna 200 OK con detalle de deuda")
     void obtenerSaldoPendientePorVenta_retorna200OK() throws Exception {
-        PagoPendienteResponseDTO dto = PagoPendienteResponseDTO.builder()
-                .idVenta(100L)
-                .numeroComprobante("B001-00000100")
-                .totalVenta(new BigDecimal("300.00"))
-                .totalPagado(new BigDecimal("100.00"))
-                .saldoPendiente(new BigDecimal("200.00"))
-                .estado(EstadoVentaEnum.PENDIENTE)
-                .build();
+        PagoPendienteResponseDTO dto = new PagoPendienteResponseDTO(100L, "B001-00000100", null, null, null, null, null, new BigDecimal("300.00"), new BigDecimal("100.00"), new BigDecimal("200.00"), EstadoVentaEnum.PENDIENTE, null);
 
         when(pagoPendienteService.obtenerSaldoPendientePorVenta(100L)).thenReturn(dto);
 
         mockMvc.perform(get("/api/v1/ventas/pagos-pendientes/100")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idVenta").value(100L))
+                .andExpect(jsonPath("$.id").value(100L))
                 .andExpect(jsonPath("$.saldoPendiente").value(200.00));
     }
 
     @Test
     @DisplayName("POST /api/v1/ventas/pagos-pendientes: Retorna 201 Created al registrar abono válido")
     void registrarPagoPendiente_valido_retorna201Created() throws Exception {
-        PagoRegistroRequestDTO request = PagoRegistroRequestDTO.builder()
-                .idVenta(100L)
-                .monto(new BigDecimal("50.00"))
-                .metodoPago(MetodoPagoEnum.EFECTIVO)
-                .build();
+        PagoRegistroRequestDTO request = new PagoRegistroRequestDTO(100L, new BigDecimal("50.00"), MetodoPagoEnum.EFECTIVO, null);
 
-        PagoResponseDTO response = PagoResponseDTO.builder()
-                .idPago(10L)
-                .idVenta(100L)
-                .monto(new BigDecimal("50.00"))
-                .metodoPago(MetodoPagoEnum.EFECTIVO)
-                .build();
+        PagoResponseDTO response = new PagoResponseDTO(10L, 100L, new BigDecimal("50.00"), MetodoPagoEnum.EFECTIVO, null, null, null);
 
         when(pagoPendienteService.registrarPagoPendiente(any(PagoRegistroRequestDTO.class))).thenReturn(response);
 
@@ -117,18 +94,14 @@ class PagoPendienteControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.idPago").value(10L))
+                .andExpect(jsonPath("$.id").value(10L))
                 .andExpect(jsonPath("$.monto").value(50.00));
     }
 
     @Test
     @DisplayName("POST /api/v1/ventas/pagos-pendientes: Retorna 400 Bad Request cuando el monto es nulo o no positivo")
     void registrarPagoPendiente_montoInvalido_retorna400BadRequest() throws Exception {
-        PagoRegistroRequestDTO request = PagoRegistroRequestDTO.builder()
-                .idVenta(100L)
-                .monto(BigDecimal.ZERO) // No positivo
-                .metodoPago(MetodoPagoEnum.EFECTIVO)
-                .build();
+        PagoRegistroRequestDTO request = new PagoRegistroRequestDTO(100L, BigDecimal.ZERO, MetodoPagoEnum.EFECTIVO, null);
 
         mockMvc.perform(post("/api/v1/ventas/pagos-pendientes")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -43,13 +43,13 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
     @Override
     public byte[] generarRecetaPdf(Long idReceta) {
         RecetaResponseDTO receta = recetaService.obtenerRecetaPorId(idReceta);
-        ConfiguracionEmpresa empresa = configuracionEmpresaRepository.findFirstByOrderByIdConfiguracionEmpresaAsc()
+        ConfiguracionEmpresa empresa = configuracionEmpresaRepository.findFirstByOrderByIdAsc()
                 .orElse(null);
         try (PDDocument documento = new PDDocument(); ByteArrayOutputStream salida = new ByteArrayOutputStream();
              PaginaPdf pagina = new PaginaPdf(documento)) {
-            documento.getDocumentInformation().setTitle("Receta oftálmica #" + receta.idReceta());
+            documento.getDocumentInformation().setTitle("Receta oftálmica #" + receta.id());
             escribirCabecera(pagina, empresa);
-            pagina.seccion("RECETA OFTÁLMICA #" + receta.idReceta());
+            pagina.seccion("RECETA OFTÁLMICA #" + receta.id());
             pagina.parrafo("Tipo: " + (Boolean.TRUE.equals(receta.esRecetaExterna())
                     ? "Prescripción externa" : "Examen visual interno"));
             pagina.parrafo("Fecha: " + (receta.fechaRegistro() == null ? "Sin registrar"
@@ -68,16 +68,16 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
                 pagina.seccion("Lentes configurados");
                 for (LenteResponseDTO lente : receta.lentes()) {
                     pagina.espacio(100);
-                    pagina.parrafo("Lente #" + lente.idLente() + " - Material: " + texto(lente.nombreMaterialCristal()));
+                    pagina.parrafo("Lente #" + lente.id() + " - Material: " + texto(lente.nombreMaterialCristal()));
                     pagina.parrafo("Montura: " + (lente.idProductoMontura() == null ? "Propia del paciente"
                             : texto(lente.codigoMontura()) + " - " + texto(lente.nombreMontura())));
                     pagina.parrafo("Tratamientos: " + (lente.tratamientos().isEmpty() ? "Sin tratamientos"
                             : lente.tratamientos().stream().map(t -> t.nombre()).collect(Collectors.joining(", "))));
                     pagina.parrafo("Medidas asociadas: " + lente.medidas().stream()
-                            .map(m -> "#" + m.idMedida() + " (" + tipoMedida(m) + ")").collect(Collectors.joining(", ")));
+                            .map(m -> "#" + m.id() + " (" + tipoMedida(m) + ")").collect(Collectors.joining(", ")));
                 }
             }
-            pagina.terminar(receta.idReceta());
+            pagina.terminar(receta.id());
             documento.save(salida);
             return salida.toByteArray();
         } catch (IOException ex) {
@@ -107,7 +107,7 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
         int lineasObservacion = pagina.lineas("Observaciones: " + texto(medida.observaciones()), pagina.regular,
                 10, PaginaPdf.ANCHO).size();
         pagina.espacio(95 + pagina.altoFila(derecha) + pagina.altoFila(izquierda) + lineasObservacion * 14);
-        pagina.parrafo(tipoMedida(medida) + " - Medida #" + medida.idMedida());
+        pagina.parrafo(tipoMedida(medida) + " - Medida #" + medida.id());
         pagina.fila(new String[]{"Ojo", "Agudeza visual", "Esfera", "Cilindro", "Eje", "Adición"}, true);
         pagina.fila(derecha, false);
         pagina.fila(izquierda, false);

@@ -44,22 +44,21 @@ class RecetaPdfControllerTest {
     Receta recipe;
 
     Persona person(String name) {
-        return people.saveAndFlush(Persona.builder().nombres(name).apellidos("Prueba")
-                .numeroDocumento(UUID.randomUUID().toString()).tipoDocumento(TipoDocumentoEnum.DNI).build());
+        return people.saveAndFlush(new Persona(null, name, "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
     @BeforeEach
     void setup() {
-        var patient = patients.saveAndFlush(Paciente.builder().persona(person("Paciente PDF")).build());
-        var employee = employees.saveAndFlush(Empleado.builder().persona(person("Profesional PDF")).build());
-        recipe = prescriptions.saveAndFlush(Receta.builder().paciente(patient).empleado(employee).build());
+        var patient = patients.saveAndFlush(new Paciente(null, person("Paciente PDF"), true, null, null));
+        var employee = employees.saveAndFlush(new Empleado(null, person("Profesional PDF"), true, null, null));
+        recipe = prescriptions.saveAndFlush(new Receta(null, null, 0, patient, employee));
     }
 
     @Test
     void descargaPdfConNombreLongitudYCacheDeshabilitado() throws Exception {
-        var response = mvc.perform(get("/api/v1/recetas/{id}/pdf", recipe.getIdReceta()).accept(MediaType.APPLICATION_PDF))
+        var response = mvc.perform(get("/api/v1/recetas/{id}/pdf", recipe.getId()).accept(MediaType.APPLICATION_PDF))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_PDF))
-                .andExpect(header().string("Content-Disposition", "attachment; filename=\"receta-" + recipe.getIdReceta() + ".pdf\""))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"receta-" + recipe.getId() + ".pdf\""))
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andReturn().getResponse();
         byte[] bytes = response.getContentAsByteArray();
@@ -85,14 +84,14 @@ class RecetaPdfControllerTest {
     @Test
     @WithMockUser(authorities = "RECETAS_REGISTRAR")
     void permisoDeRegistroNoPermiteDescargarPdf() throws Exception {
-        mvc.perform(get("/api/v1/recetas/{id}/pdf", recipe.getIdReceta()).accept(MediaType.APPLICATION_PDF))
+        mvc.perform(get("/api/v1/recetas/{id}/pdf", recipe.getId()).accept(MediaType.APPLICATION_PDF))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithAnonymousUser
     void exigeAutenticacion() throws Exception {
-        mvc.perform(get("/api/v1/recetas/{id}/pdf", recipe.getIdReceta()).accept(MediaType.APPLICATION_PDF))
+        mvc.perform(get("/api/v1/recetas/{id}/pdf", recipe.getId()).accept(MediaType.APPLICATION_PDF))
                 .andExpect(status().isUnauthorized());
     }
 }

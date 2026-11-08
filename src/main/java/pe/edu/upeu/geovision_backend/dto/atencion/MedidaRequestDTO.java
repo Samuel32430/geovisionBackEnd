@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
-import lombok.Builder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -11,11 +10,10 @@ import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
 
 import java.math.BigDecimal;
 
-@Builder(toBuilder = true)
-@com.fasterxml.jackson.databind.annotation.JsonDeserialize(builder = MedidaRequestDTO.MedidaRequestDTOBuilder.class)
-@tools.jackson.databind.annotation.JsonDeserialize(builder = MedidaRequestDTO.MedidaRequestDTOBuilder.class)
 public record MedidaRequestDTO(
     @NotNull(message = "El tipo de medida es obligatorio")
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.Lejos.class)
+    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.Lejos.class)
     TipoMedidaEnum tipoMedida,
     @NotNull(message = "La distancia pupilar es obligatoria")
     @DecimalMin(value = "0", inclusive = false, message = "La distancia pupilar debe ser positiva")
@@ -37,9 +35,4 @@ public record MedidaRequestDTO(
     @Positive(message = "El ID del envio debe ser positivo")
     Long idEnvioLaboratorio
 ) {
-    @com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
-    @tools.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
-    public static class MedidaRequestDTOBuilder {
-        private TipoMedidaEnum tipoMedida = TipoMedidaEnum.LEJOS;
-    }
 }

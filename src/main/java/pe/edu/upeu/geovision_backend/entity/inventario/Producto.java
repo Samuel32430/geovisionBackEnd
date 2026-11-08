@@ -13,11 +13,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,13 +26,12 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Producto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_producto")
-    private Long idProducto;
+    private Long id;
 
     @Column(name = "codigo", nullable = false, unique = true, length = 100)
     private String codigo;
@@ -52,11 +49,9 @@ public class Producto {
     private BigDecimal precio;
 
     @Column(name = "stock", nullable = false)
-    @Builder.Default
     private Integer stock = 0;
 
     @Column(name = "estado", nullable = false)
-    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "fecha_registro", nullable = false)

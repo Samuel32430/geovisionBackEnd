@@ -22,7 +22,7 @@ public class UsuarioMapper {
         }
 
         Persona persona = usuario.getPersona();
-        Long idPersona = persona != null ? persona.getIdPersona() : null;
+        Long idPersona = persona != null ? persona.getId() : null;
         String nombreCompleto = null;
         if (persona != null) {
             String nombres = persona.getNombres() != null ? persona.getNombres().trim() : "";
@@ -33,15 +33,6 @@ public class UsuarioMapper {
         Integer estadoCodigo = (usuario.getActivo() == null ? null : Boolean.TRUE.equals(usuario.getActivo()) ? 1 : 0);
         String estadoDesc = (Boolean.TRUE.equals(usuario.getActivo())) ? "Activo" : "Inactivo";
 
-        return UsuarioResponseDTO.builder()
-                .idUsuario(usuario.getIdUsuario())
-                .nombre(usuario.getNombre())
-                .correo(usuario.getCorreo())
-                .estado(estadoCodigo)
-                .estadoDescripcion(estadoDesc)
-                .idPersona(idPersona)
-                .nombreCompletoPersona(nombreCompleto)
-                .roles(roles != null ? roles : Collections.emptySet())
-                .build();
+        return new UsuarioResponseDTO(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), estadoCodigo, estadoDesc, idPersona, nombreCompleto, roles != null ? roles : Collections.emptySet());
     }
 }

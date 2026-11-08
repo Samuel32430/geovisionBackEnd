@@ -58,29 +58,9 @@ class VentaControllerTest {
     @Test
     @DisplayName("POST /api/v1/ventas: Retorna 201 Created cuando el request es válido")
     void registrarVenta_valido_retorna201Created() throws Exception {
-        VentaRegistroRequestDTO request = VentaRegistroRequestDTO.builder()
-                .idEmpleado(1L)
-                .tipoComprobante(TipoComprobanteEnum.BOLETA)
-                .total(new BigDecimal("120.00"))
-                .productos(List.of(ProductoVendidoDTO.builder()
-                        .idProducto(10L)
-                        .cantidad(1)
-                        .precioUnit(new BigDecimal("120.00"))
-                        .build()))
-                .pagos(List.of(PagoRegistroRequestDTO.builder()
-                        .monto(new BigDecimal("120.00"))
-                        .metodoPago(MetodoPagoEnum.EFECTIVO)
-                        .build()))
-                .build();
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, null, null, TipoComprobanteEnum.BOLETA, null, null, List.of(new ProductoVendidoDTO(null, 10L, null, null, 1, new BigDecimal("120.00"), null)), null, List.of(new PagoRegistroRequestDTO(null, new BigDecimal("120.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("120.00"));
 
-        VentaResponseDTO response = VentaResponseDTO.builder()
-                .idVenta(1L)
-                .numeroComprobante("B001-00000001")
-                .total(new BigDecimal("120.00"))
-                .totalPagado(new BigDecimal("120.00"))
-                .saldoPendiente(BigDecimal.ZERO)
-                .estado(EstadoVentaEnum.PAGADA)
-                .build();
+        VentaResponseDTO response = new VentaResponseDTO(1L, null, new BigDecimal("120.00"), new BigDecimal("120.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, "B001-00000001", null, null, null, null, null, null, null, null);
 
         when(ventaService.registrarVenta(any(VentaRegistroRequestDTO.class))).thenReturn(response);
 
@@ -88,7 +68,7 @@ class VentaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.idVenta").value(1L))
+                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.numeroComprobante").value("B001-00000001"))
                 .andExpect(jsonPath("$.total").value(120.00))
                 .andExpect(jsonPath("$.estado").value("PAGADA"));
@@ -97,10 +77,7 @@ class VentaControllerTest {
     @Test
     @DisplayName("POST /api/v1/ventas: Retorna 400 Bad Request cuando faltan pagos o total no es positivo")
     void registrarVenta_invalido_retorna400BadRequest() throws Exception {
-        VentaRegistroRequestDTO requestInvalido = VentaRegistroRequestDTO.builder()
-                .total(BigDecimal.ZERO) // No positivo
-                .pagos(List.of()) // Pagos vacíos
-                .build();
+        VentaRegistroRequestDTO requestInvalido = new VentaRegistroRequestDTO(null, null, null, null, null, null, null, null, List.of(), BigDecimal.ZERO);
 
         mockMvc.perform(post("/api/v1/ventas")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -111,21 +88,14 @@ class VentaControllerTest {
     @Test
     @DisplayName("GET /api/v1/ventas/{id}: Retorna 200 OK con el detalle de la venta")
     void obtenerVentaPorId_existente_retorna200OK() throws Exception {
-        VentaResponseDTO response = VentaResponseDTO.builder()
-                .idVenta(1L)
-                .numeroComprobante("B001-00000001")
-                .total(new BigDecimal("120.00"))
-                .totalPagado(new BigDecimal("120.00"))
-                .saldoPendiente(BigDecimal.ZERO)
-                .estado(EstadoVentaEnum.PAGADA)
-                .build();
+        VentaResponseDTO response = new VentaResponseDTO(1L, null, new BigDecimal("120.00"), new BigDecimal("120.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, "B001-00000001", null, null, null, null, null, null, null, null);
 
         when(ventaService.obtenerVentaPorId(1L)).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/ventas/1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idVenta").value(1L))
+                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.numeroComprobante").value("B001-00000001"));
     }
 }
