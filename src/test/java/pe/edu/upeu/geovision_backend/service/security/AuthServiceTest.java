@@ -97,25 +97,11 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        testPersona = Persona.builder()
-                .idPersona(1L)
-                .nombres("Juan")
-                .apellidos("Pérez")
-                .build();
+        testPersona = new Persona(1L, "Juan", "Pérez", null, null, null, null, null, null);
 
-        testUser = Usuario.builder()
-                .idUsuario(1L)
-                .nombre("juan.perez")
-                .correo("juan@geovision.com")
-                .password("$2a$10$encodedHash")
-                .activo(true)
-                .persona(testPersona)
-                .build();
+        testUser = new Usuario(1L, "juan.perez", "$2a$10$encodedHash", "juan@geovision.com", true, testPersona);
 
-        testRol = Rol.builder()
-                .idRol(1L)
-                .nombre("VENDEDOR")
-                .build();
+        testRol = new Rol(1L, "VENDEDOR");
     }
 
     @Test
@@ -134,8 +120,8 @@ class AuthServiceTest {
         when(usuarioRepository.findByNombreOrCorreo("juan.perez", "juan.perez")).thenReturn(Optional.of(testUser));
         when(jwtService.generarToken(principal)).thenReturn("fake.jwt.token");
 
-        UsuarioRol usuarioRol = UsuarioRol.builder().usuario(testUser).rol(testRol).build();
-        when(usuarioRolRepository.findByUsuarioIdUsuario(1L)).thenReturn(List.of(usuarioRol));
+        UsuarioRol usuarioRol = new UsuarioRol(null, testUser, testRol);
+        when(usuarioRolRepository.findByUsuarioId(1L)).thenReturn(List.of(usuarioRol));
         when(rolPermisoRepository.findNombresPermisosByRolId(1L)).thenReturn(List.of("VENTAS_LEER", "VENTAS_REGISTRAR"));
 
         LoginResponseDTO response = authService.login(request);

@@ -1,13 +1,10 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
-import lombok.Builder;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Builder(toBuilder = true)
 public record RecetaResponseDTO(
-    Long idReceta,
+    Long id,
     LocalDateTime fechaRegistro,
     Integer esExterno,
     Boolean esRecetaExterna,

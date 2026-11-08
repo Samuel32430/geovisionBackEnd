@@ -56,14 +56,14 @@ class ConfiguracionEmpresaControllerTest {
                 .andExpect(jsonPath("$.direccion").value("Lima"))
                 .andExpect(jsonPath("$.telefono").value("999123456"))
                 .andExpect(jsonPath("$.logo").value("/imagenes/logo.png"));
-        Long id = repository.findAll().getFirst().getIdConfiguracionEmpresa();
+        Long id = repository.findAll().getFirst().getId();
         assertThat(id).isNotEqualTo(999L);
         mvc.perform(get(URL)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.idConfiguracionEmpresa").value(id));
+                .andExpect(jsonPath("$.id").value(id));
         mvc.perform(put(URL).contentType(MediaType.APPLICATION_JSON)
                         .content(BODY.replace("20123456789", "20987654321")
                                 .replace("contacto@example.com", "nuevo@example.com")))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.idConfiguracionEmpresa").value(id))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.ruc").value("20987654321"))
                 .andExpect(jsonPath("$.correo").value("nuevo@example.com"));
         assertThat(repository.count()).isEqualTo(1);
@@ -104,8 +104,7 @@ class ConfiguracionEmpresaControllerTest {
 
     @Test
     void validaTambienInvocacionesDirectasDelServicio() {
-        assertThatThrownBy(() -> service.registrar(ConfiguracionEmpresaDTO.builder()
-                .nombreLegal("Empresa").ruc("123").build()))
+        assertThatThrownBy(() -> service.registrar(new ConfiguracionEmpresaDTO(null, "Empresa", null, "123", null, null, null, null)))
                 .isInstanceOf(jakarta.validation.ConstraintViolationException.class);
         verifyNoInteractions(lock);
     }
@@ -124,8 +123,8 @@ class ConfiguracionEmpresaControllerTest {
 
     @Test
     void detectaDatosPreexistentesConMultiplesEmpresas() throws Exception {
-        repository.saveAndFlush(ConfiguracionEmpresa.builder().nombreLegal("Uno").ruc("20123456789").build());
-        repository.saveAndFlush(ConfiguracionEmpresa.builder().nombreLegal("Dos").ruc("20987654321").build());
+        repository.saveAndFlush(new ConfiguracionEmpresa(null, "Uno", null, "20123456789", null, null, null, null));
+        repository.saveAndFlush(new ConfiguracionEmpresa(null, "Dos", null, "20987654321", null, null, null, null));
         mvc.perform(get(URL)).andExpect(status().isConflict());
         mvc.perform(put(URL).contentType(MediaType.APPLICATION_JSON).content(BODY)).andExpect(status().isConflict());
         assertThat(repository.count()).isEqualTo(2);

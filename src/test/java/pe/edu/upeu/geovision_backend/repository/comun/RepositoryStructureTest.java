@@ -1,8 +1,6 @@
 package pe.edu.upeu.geovision_backend.repository.comun;
 
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteMedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.LenteRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteTratamientoCristalRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaOjoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.PacienteLogRepository;
@@ -73,8 +71,6 @@ class RepositoryStructureTest {
             RecetaRepository.class,
             MedidaRepository.class,
             LenteRepository.class,
-            LenteMedidaRepository.class,
-            LenteTratamientoCristalRepository.class,
             VentaRepository.class,
             PagoRepository.class,
             ProductoVendidoRepository.class,
@@ -84,9 +80,9 @@ class RepositoryStructureTest {
     );
 
     @Test
-    @DisplayName("Debe contener exactamente 33 repositorios")
+    @DisplayName("Debe contener exactamente 31 repositorios")
     void testTotalRepositoriesCount() {
-        assertEquals(33, repositories.size(), "Deben existir exactamente 33 repositorios");
+        assertEquals(31, repositories.size(), "Deben existir exactamente 31 repositorios");
     }
 
     @Test

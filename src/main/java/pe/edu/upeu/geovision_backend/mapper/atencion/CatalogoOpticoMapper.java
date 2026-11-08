@@ -12,27 +12,14 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCri
 public class CatalogoOpticoMapper {
 
     public MaterialCristalDTO toMaterialCristalDTO(MaterialCristal material) {
-        return MaterialCristalDTO.builder().idMaterialCristal(material.getIdMaterialCristal())
-                .nombre(material.getNombre()).build();
+        return new MaterialCristalDTO(material.getId(), material.getNombre());
     }
 
     public TratamientoCristalDTO toTratamientoCristalDTO(TratamientoCristal tratamiento) {
-        return TratamientoCristalDTO.builder().idTratamientoCristal(tratamiento.getIdTratamientoCristal())
-                .nombre(tratamiento.getNombre()).build();
+        return new TratamientoCristalDTO(tratamiento.getId(), tratamiento.getNombre());
     }
 
     public MonturaDTO toMonturaDTO(Montura montura) {
-        return MonturaDTO.builder()
-                .idProducto(montura.getIdProducto())
-                .codigo(montura.getProducto().getCodigo())
-                .nombre(montura.getProducto().getNombre())
-                .precio(montura.getProducto().getPrecio())
-                .stock(montura.getProducto().getStock())
-                .color(montura.getColor())
-                .modelo(montura.getModelo())
-                .modeloDescripcion(montura.getModelo() == null ? null : montura.getModelo().getDescripcion())
-                .material(montura.getMaterial())
-                .materialDescripcion(montura.getMaterial() == null ? null : montura.getMaterial().getDescripcion())
-                .build();
+        return new MonturaDTO(montura.getId(), montura.getProducto().getCodigo(), montura.getProducto().getNombre(), montura.getProducto().getPrecio(), montura.getProducto().getStock(), montura.getColor(), montura.getModelo(), montura.getModelo() == null ? null : montura.getModelo().getDescripcion(), montura.getMaterial(), montura.getMaterial() == null ? null : montura.getMaterial().getDescripcion());
     }
 }

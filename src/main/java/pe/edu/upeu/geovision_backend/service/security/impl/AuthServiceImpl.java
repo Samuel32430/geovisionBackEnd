@@ -120,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ReglaNegocioException("La cuenta de usuario está inactiva");
         }
 
-        Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
+        Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioId(usuario.getId());
         if (empleadoOpt.isPresent() && !Boolean.TRUE.equals(empleadoOpt.get().getActivo())) {
             throw new ReglaNegocioException("El empleado asociado a esta cuenta se encuentra inactivo");
         }
@@ -128,37 +128,27 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtService.generarToken(principal);
         usuarioLogService.registrar(usuario, TipoLogEnum.LOGIN);
 
-        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
+        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioId(usuario.getId());
         List<String> roles = new ArrayList<>();
         Set<String> permisos = new TreeSet<>();
 
         for (UsuarioRol ur : usuarioRoles) {
             if (ur.getRol() != null) {
                 roles.add(ur.getRol().getNombre());
-                List<String> perms = rolPermisoRepository.findNombresPermisosByRolId(ur.getRol().getIdRol());
+                List<String> perms = rolPermisoRepository.findNombresPermisosByRolId(ur.getRol().getId());
                 permisos.addAll(perms);
             }
         }
 
         Persona persona = usuario.getPersona();
-        Long idPersona = persona != null ? persona.getIdPersona() : null;
+        Long idPersona = persona != null ? persona.getId() : null;
         String nombreCompleto = (persona != null)
                 ? (persona.getNombres() + " " + persona.getApellidos()).trim()
                 : usuario.getNombre();
 
         log.info("Autenticación exitosa: usuario={} roles={}", usuario.getNombre(), roles);
 
-        return LoginResponseDTO.builder()
-                .token(token)
-                .tipoToken("Bearer")
-                .idUsuario(usuario.getIdUsuario())
-                .username(usuario.getNombre())
-                .correo(usuario.getCorreo())
-                .idPersona(idPersona)
-                .nombreCompleto(nombreCompleto)
-                .roles(roles)
-                .permisos(new ArrayList<>(permisos))
-                .build();
+        return new LoginResponseDTO(token, "Bearer", usuario.getId(), usuario.getNombre(), usuario.getCorreo(), idPersona, nombreCompleto, roles, new ArrayList<>(permisos));
     }
 
     @Override
@@ -168,11 +158,7 @@ public class AuthServiceImpl implements AuthService {
         usuarioRepository.findByNombreOrCorreo(username, username)
                 .ifPresent(u -> usuarioLogService.registrar(u, TipoLogEnum.LOGOUT));
 
-        return LogoutResponseDTO.builder()
-                .mensaje("Sesión cerrada exitosamente")
-                .exitoso(true)
-                .fecha(LocalDateTime.now())
-                .build();
+        return new LogoutResponseDTO("Sesión cerrada exitosamente", true, LocalDateTime.now());
     }
 
     @Override
@@ -181,11 +167,11 @@ public class AuthServiceImpl implements AuthService {
         Usuario usuario = usuarioRepository.findByNombreOrCorreo(username, username)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado con: " + username));
 
-        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
+        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioId(usuario.getId());
         Set<RolDTO> rolesDTO = usuarioRoles.stream()
                 .map(ur -> {
                     Rol rol = ur.getRol();
-                    List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolIdRol(rol.getIdRol());
+                    List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
                     Set<PermisoDTO> permisosDTO = rolPermisos.stream()
                             .map(rp -> permisoMapper.toDTO(rp.getPermiso()))
                             .collect(Collectors.toSet());

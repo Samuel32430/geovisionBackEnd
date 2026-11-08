@@ -82,21 +82,12 @@ public class InventarioStockServiceImpl implements InventarioStockService {
                 ? request.motivo()
                 : MotivoMovimientoStockEnum.ENTRADA_POR_COMPRA.getCodigo();
 
-        MovimientoStockLog movimiento = MovimientoStockLog.builder()
-                .producto(producto)
-                .usuario(usuario)
-                .fechaRegistro(LocalDateTime.now())
-                .cantidad(request.cantidad())
-                .stockPrevio(stockPrevio)
-                .stockPosterior(nuevoStock)
-                .motivo(motivoCodigo)
-                .observaciones(request.observaciones() != null ? request.observaciones().trim() : null)
-                .build();
+        MovimientoStockLog movimiento = new MovimientoStockLog(null, LocalDateTime.now(), request.cantidad(), stockPrevio, nuevoStock, motivoCodigo, request.observaciones() != null ? request.observaciones().trim() : null, producto, usuario);
 
         MovimientoStockLog movimientoGuardado = movimientoStockLogRepository.save(movimiento);
 
         log.info("Entrada de stock registrada exitosamente. Producto ID: {}, Stock Previo: {}, Nuevo Stock: {}",
-                producto.getIdProducto(), stockPrevio, nuevoStock);
+                producto.getId(), stockPrevio, nuevoStock);
 
         return movimientoStockMapper.toDTO(movimientoGuardado);
     }
@@ -141,21 +132,12 @@ public class InventarioStockServiceImpl implements InventarioStockService {
         producto.setStock(nuevoStock);
         productoRepository.save(producto);
 
-        MovimientoStockLog movimiento = MovimientoStockLog.builder()
-                .producto(producto)
-                .usuario(usuario)
-                .fechaRegistro(LocalDateTime.now())
-                .cantidad(request.cantidad())
-                .stockPrevio(stockPrevio)
-                .stockPosterior(nuevoStock)
-                .motivo(request.motivo())
-                .observaciones(request.observaciones().trim())
-                .build();
+        MovimientoStockLog movimiento = new MovimientoStockLog(null, LocalDateTime.now(), request.cantidad(), stockPrevio, nuevoStock, request.motivo(), request.observaciones().trim(), producto, usuario);
 
         MovimientoStockLog movimientoGuardado = movimientoStockLogRepository.save(movimiento);
 
         log.info("Ajuste de stock registrado exitosamente. Producto ID: {}, Stock Previo: {}, Nuevo Stock: {}",
-                producto.getIdProducto(), stockPrevio, nuevoStock);
+                producto.getId(), stockPrevio, nuevoStock);
 
         return movimientoStockMapper.toDTO(movimientoGuardado);
     }
@@ -173,7 +155,7 @@ public class InventarioStockServiceImpl implements InventarioStockService {
             throw new RecursosNoEncontradosException("Producto no encontrado con ID: " + idProducto);
         }
 
-        return movimientoStockLogRepository.findByProductoIdProductoOrderByFechaRegistroDesc(idProducto, pageable)
+        return movimientoStockLogRepository.findByProductoIdOrderByFechaRegistroDesc(idProducto, pageable)
                 .map(movimientoStockMapper::toDTO);
     }
 
@@ -185,7 +167,7 @@ public class InventarioStockServiceImpl implements InventarioStockService {
 
         return productoRepository.findProductosBajoStock(umbralCalculado).stream()
                 .map(p -> {
-                    Montura montura = monturaRepository.findById(p.getIdProducto()).orElse(null);
+                    Montura montura = monturaRepository.findById(p.getId()).orElse(null);
                     return productoMapper.toResponseDTO(p, montura);
                 })
                 .toList();

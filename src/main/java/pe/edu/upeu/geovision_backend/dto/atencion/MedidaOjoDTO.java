@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
-import lombok.Builder;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Positive;
@@ -9,10 +8,9 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-@Builder(toBuilder = true)
 public record MedidaOjoDTO(
     @Positive(message = "El ID de la medida del ojo debe ser positivo")
-    Long idMedidaOjo,
+    Long id,
     @Size(max = 50, message = "La agudeza visual no debe superar los 50 caracteres")
     String agudezaVisual,
     @Digits(integer = 3, fraction = 2, message = "La esfera admite hasta 3 enteros y 2 decimales")

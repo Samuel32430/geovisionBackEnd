@@ -59,12 +59,12 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
                     return matchComprobante || matchCliente || matchDocumento;
                 })
                 .map(v -> {
-                    BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(v.getIdVenta());
+                    BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(v.getId());
                     if (totalPagado == null) {
                         totalPagado = BigDecimal.ZERO;
                     }
                     BigDecimal saldo = v.getTotal().subtract(totalPagado);
-                    List<Pago> historial = pagoRepository.findByVentaIdVenta(v.getIdVenta());
+                    List<Pago> historial = pagoRepository.findByVentaId(v.getId());
                     return pagoMapper.toPagoPendienteResponseDTO(v, totalPagado, saldo, historial);
                 })
                 .collect(Collectors.toList());
@@ -82,7 +82,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
             totalPagado = BigDecimal.ZERO;
         }
         BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagado);
-        List<Pago> historial = pagoRepository.findByVentaIdVenta(idVenta);
+        List<Pago> historial = pagoRepository.findByVentaId(idVenta);
 
         return pagoMapper.toPagoPendienteResponseDTO(venta, totalPagado, saldoPendiente, historial);
     }
@@ -122,7 +122,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         }
 
         // d) Calcular saldo pendiente actual bajo el bloqueo pesimista
-        BigDecimal totalPagadoActual = pagoRepository.sumMontoPagadoByVentaId(venta.getIdVenta());
+        BigDecimal totalPagadoActual = pagoRepository.sumMontoPagadoByVentaId(venta.getId());
         if (totalPagadoActual == null) {
             totalPagadoActual = BigDecimal.ZERO;
         }
@@ -144,13 +144,13 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         // g) RN-VE14: Si el saldo llega a cero, actualizar automáticamente el estado a PAGADA
         BigDecimal nuevoSaldo = saldoPendiente.subtract(request.monto());
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
-            log.info("Venta ID {} liquidada al 100%. Actualizando estado a PAGADA.", venta.getIdVenta());
+            log.info("Venta ID {} liquidada al 100%. Actualizando estado a PAGADA.", venta.getId());
             venta.setEstado(EstadoVentaEnum.PAGADA);
             ventaRepository.save(venta);
         }
 
         log.info("Pago registrado exitosamente con ID: {}. Saldo restante de la venta ID {}: S/ {}",
-                pagoGuardado.getIdPago(), venta.getIdVenta(), nuevoSaldo);
+                pagoGuardado.getId(), venta.getId(), nuevoSaldo);
 
         return pagoMapper.toDTO(pagoGuardado);
     }

@@ -12,7 +12,6 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,12 +24,11 @@ import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Montura {
 
     @Id
     @Column(name = "id_producto")
-    private Long idProducto;
+    private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

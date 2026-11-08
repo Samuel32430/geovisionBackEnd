@@ -53,14 +53,11 @@ class PacienteControllerTest {
 
     @BeforeEach
     void crearActor() {
-        actor = users.saveAndFlush(Usuario.builder().nombre("operador.pacientes")
-                .correo(UUID.randomUUID() + "@test.invalid").password("hash-de-prueba").build());
+        actor = users.saveAndFlush(new Usuario(null, "operador.pacientes", "hash-de-prueba", UUID.randomUUID() + "@test.invalid", true, null));
     }
 
     PacienteRequestDTO request(String document) {
-        return PacienteRequestDTO.builder().persona(PersonaRequestDTO.builder()
-                .nombres(" Ana ").apellidos(" Pérez ").telefono(" 999123456 ")
-                .numeroDocumento(document).tipoDocumento(TipoDocumentoEnum.DNI).build()).build();
+        return new PacienteRequestDTO(null, new PersonaRequestDTO(" Ana ", " Pérez ", " 999123456 ", null, null, null, TipoDocumentoEnum.DNI, document), 1, null);
     }
 
     @Test
@@ -72,17 +69,17 @@ class PacienteControllerTest {
                 .andExpect(jsonPath("$.persona.nombres").value("Ana"))
                 .andExpect(jsonPath("$.persona.nombreCompleto").value("Ana Pérez"))
                 .andExpect(jsonPath("$.estado").value(1))
-                .andExpect(jsonPath("$.idUsuario").value(actor.getIdUsuario()))
+                .andExpect(jsonPath("$.idUsuario").value(actor.getId()))
                 .andReturn().getResponse().getContentAsString();
-        long id = json.readTree(response).get("idPersona").asLong();
+        long id = json.readTree(response).get("id").asLong();
         var registered = patients.findById(id).orElseThrow().getFechaRegistro();
         mvc.perform(get("/api/v1/pacientes/{id}", id)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.persona.numeroDocumento").value(document));
         mvc.perform(get("/api/v1/pacientes/documento/{document}", document)).andExpect(status().isOk());
         mvc.perform(get("/api/v1/pacientes").param("termino", "ana pérez"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].idPersona").value(id));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(id));
         var update = request(document);
-        update = update.toBuilder().persona(update.persona().toBuilder().telefono("988765432").build()).build();
+        update = new PacienteRequestDTO(update.id(), new PersonaRequestDTO(update.persona().nombres(), update.persona().apellidos(), "988765432", update.persona().fechaNacimiento(), update.persona().sexo(), update.persona().direccion(), update.persona().tipoDocumento(), update.persona().numeroDocumento()), update.estado(), update.idUsuario());
         mvc.perform(put("/api/v1/pacientes/{id}", id).contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(update)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.persona.telefono").value("988765432"));
@@ -95,9 +92,9 @@ class PacienteControllerTest {
         assertThat(patients.findById(id).orElseThrow().getActivo()).isEqualTo(false);
         assertThat(people.existsById(id)).isTrue();
         assertThat(patients.findById(id).orElseThrow().getFechaRegistro()).isEqualTo(registered);
-        assertThat(logs.findByPacienteIdPersonaOrderByFechaLogDesc(id)).hasSize(3)
+        assertThat(logs.findByPacienteIdOrderByFechaLogDesc(id)).hasSize(3)
                 .allSatisfy(log -> {
-                    assertThat(log.getUsuario().getIdUsuario()).isEqualTo(actor.getIdUsuario());
+                    assertThat(log.getUsuario().getId()).isEqualTo(actor.getId());
                     assertThat(log.getFechaLog()).isNotNull();
                 });
         mvc.perform(get("/api/v1/pacientes").param("termino", document))
@@ -110,16 +107,15 @@ class PacienteControllerTest {
     @Test
     void rechazaDuplicadosYPermiteRegistrarPersonaExistenteSinModificarla() throws Exception {
         String document = UUID.randomUUID().toString();
-        Persona person = people.saveAndFlush(Persona.builder().nombres("Existente").apellidos("Prueba")
-                .numeroDocumento(document).tipoDocumento(TipoDocumentoEnum.DNI).build());
+        Persona person = people.saveAndFlush(new Persona(null, "Existente", "Prueba", null, null, null, null, document, TipoDocumentoEnum.DNI));
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(request(document)))).andExpect(status().isConflict());
-        String existing = "{\"idPersona\":" + person.getIdPersona() + "}";
+        String existing = "{\"id\":" + person.getId() + "}";
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON).content(existing))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.persona.nombres").value("Existente"));
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON).content(existing))
                 .andExpect(status().isConflict());
-        assertThat(logs.findByPacienteIdPersonaOrderByFechaLogDesc(person.getIdPersona())).hasSize(1);
+        assertThat(logs.findByPacienteIdOrderByFechaLogDesc(person.getId())).hasSize(1);
     }
 
     @Test
@@ -127,11 +123,11 @@ class PacienteControllerTest {
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isConflict());
         var ambiguous = request(UUID.randomUUID().toString());
-        ambiguous = ambiguous.toBuilder().idPersona(999999L).build();
+        ambiguous = new PacienteRequestDTO(999999L, ambiguous.persona(), ambiguous.estado(), ambiguous.idUsuario());
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(ambiguous))).andExpect(status().isConflict());
         var created = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
-        mvc.perform(put("/api/v1/pacientes/{id}", created.idPersona()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put("/api/v1/pacientes/{id}", created.id()).contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(ambiguous))).andExpect(status().isConflict());
     }
 
@@ -139,23 +135,23 @@ class PacienteControllerTest {
     void documentoDuplicadoEnActualizacionNoModificaDatos() throws Exception {
         var first = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
         var second = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
-        mvc.perform(put("/api/v1/pacientes/{id}", second.idPersona()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(put("/api/v1/pacientes/{id}", second.id()).contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(request(first.persona().numeroDocumento()))))
                 .andExpect(status().isConflict());
-        assertThat(service.obtenerPorId(second.idPersona()).persona().numeroDocumento())
+        assertThat(service.obtenerPorId(second.id()).persona().numeroDocumento())
                 .isEqualTo(second.persona().numeroDocumento());
-        assertThat(logs.findByPacienteIdPersonaOrderByFechaLogDesc(second.idPersona())).hasSize(1);
+        assertThat(logs.findByPacienteIdOrderByFechaLogDesc(second.id())).hasSize(1);
     }
 
     @Test
     void rechazaSuplantacionDeAuditoriaYActorInactivo() throws Exception {
         var request = request(UUID.randomUUID().toString());
-        request = request.toBuilder().idUsuario(actor.getIdUsuario() + 9999).build();
+        request = new PacienteRequestDTO(request.id(), request.persona(), request.estado(), actor.getId() + 9999);
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(request))).andExpect(status().isForbidden());
         actor.setActivo(false);
         users.saveAndFlush(actor);
-        request = request.toBuilder().idUsuario(null).build();
+        request = new PacienteRequestDTO(request.id(), request.persona(), request.estado(), null);
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(request))).andExpect(status().isForbidden());
     }
@@ -185,22 +181,22 @@ class PacienteControllerTest {
     void busquedaEscapaComodines() {
         String document = UUID.randomUUID().toString();
         var request = request(document);
-        request = request.toBuilder().persona(request.persona().toBuilder().nombres("Porcentaje%_!").build()).build();
+        request = new PacienteRequestDTO(request.id(), new PersonaRequestDTO("Porcentaje%_!", request.persona().apellidos(), request.persona().telefono(), request.persona().fechaNacimiento(), request.persona().sexo(), request.persona().direccion(), request.persona().tipoDocumento(), request.persona().numeroDocumento()), request.estado(), request.idUsuario());
         var created = service.registrarPaciente(request, actor.getNombre());
         var page = service.listarPacientes("%_!", true,
                 org.springframework.data.domain.PageRequest.of(0, 10));
-        assertThat(page.getContent()).extracting("idPersona").containsExactly(created.idPersona());
+        assertThat(page.getContent()).extracting("id").containsExactly(created.id());
     }
 
     @Test
     void actualizacionDeContactoNoReactivaPacienteNiCambiaCreador() {
         var created = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
-        service.cambiarEstadoPaciente(created.idPersona(), 0, actor.getNombre());
-        var updated = service.actualizarPaciente(created.idPersona(),
+        service.cambiarEstadoPaciente(created.id(), 0, actor.getNombre());
+        var updated = service.actualizarPaciente(created.id(),
                 request(created.persona().numeroDocumento()), actor.getNombre());
         assertThat(updated.estado()).isZero();
-        assertThat(updated.idPersona()).isEqualTo(created.idPersona());
-        assertThat(updated.idUsuario()).isEqualTo(actor.getIdUsuario());
+        assertThat(updated.id()).isEqualTo(created.id());
+        assertThat(updated.idUsuario()).isEqualTo(actor.getId());
     }
 
     @Test
@@ -247,18 +243,18 @@ class PacienteControllerTest {
             assertThat(people.findByNumeroDocumento(document)).isEmpty();
             assertThat(patients.findByPersonaNumeroDocumento(document)).isEmpty();
             var update = request(existing.persona().numeroDocumento());
-            var invalidUpdate = update.toBuilder().persona(update.persona().toBuilder().nombres("Cambio que debe revertirse").build()).build();
-            assertThatThrownBy(() -> service.actualizarPaciente(existing.idPersona(), invalidUpdate, actor.getNombre()))
+            var invalidUpdate = new PacienteRequestDTO(update.id(), new PersonaRequestDTO("Cambio que debe revertirse", update.persona().apellidos(), update.persona().telefono(), update.persona().fechaNacimiento(), update.persona().sexo(), update.persona().direccion(), update.persona().tipoDocumento(), update.persona().numeroDocumento()), update.estado(), update.idUsuario());
+            assertThatThrownBy(() -> service.actualizarPaciente(existing.id(), invalidUpdate, actor.getNombre()))
                     .isInstanceOf(org.springframework.dao.DataAccessException.class);
-            assertThat(service.obtenerPorId(existing.idPersona()).persona().nombres()).isEqualTo("Ana");
-            assertThatThrownBy(() -> service.cambiarEstadoPaciente(existing.idPersona(), 0, actor.getNombre()))
+            assertThat(service.obtenerPorId(existing.id()).persona().nombres()).isEqualTo("Ana");
+            assertThatThrownBy(() -> service.cambiarEstadoPaciente(existing.id(), 0, actor.getNombre()))
                     .isInstanceOf(org.springframework.dao.DataAccessException.class);
-            assertThat(service.obtenerPorId(existing.idPersona()).estado()).isEqualTo(1);
+            assertThat(service.obtenerPorId(existing.id()).estado()).isEqualTo(1);
         } finally {
-            logs.deleteAll(logs.findByPacienteIdPersonaOrderByFechaLogDesc(existing.idPersona()));
-            patients.deleteById(existing.idPersona());
-            people.deleteById(existing.idPersona());
-            users.deleteById(actor.getIdUsuario());
+            logs.deleteAll(logs.findByPacienteIdOrderByFechaLogDesc(existing.id()));
+            patients.deleteById(existing.id());
+            people.deleteById(existing.id());
+            users.deleteById(actor.getId());
         }
     }
 }

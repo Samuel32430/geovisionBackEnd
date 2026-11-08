@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.orden_trabajo;
 
-import lombok.Builder;
 import pe.edu.upeu.geovision_backend.dto.atencion.LenteResponseDTO;
 
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
@@ -8,9 +7,8 @@ import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Builder(toBuilder = true)
 public record OrdenTrabajoResponseDTO(
-    Long idOrdenTrabajo,
+    Long id,
     LocalDateTime fechaRegistro,
     LocalDateTime fechaEntrega,
     Long idVenta,

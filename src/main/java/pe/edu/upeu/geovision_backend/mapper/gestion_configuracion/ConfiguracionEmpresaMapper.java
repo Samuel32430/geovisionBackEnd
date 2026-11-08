@@ -18,11 +18,7 @@ public class ConfiguracionEmpresaMapper {
     }
 
     public ConfiguracionEmpresaDTO toDTO(ConfiguracionEmpresa source) {
-        return ConfiguracionEmpresaDTO.builder()
-                .idConfiguracionEmpresa(source.getIdConfiguracionEmpresa())
-                .nombreLegal(source.getNombreLegal()).nombreComercial(source.getNombreComercial())
-                .ruc(source.getRuc()).direccion(source.getDireccion()).telefono(source.getTelefono())
-                .correo(source.getCorreo()).logo(source.getLogo()).build();
+        return new ConfiguracionEmpresaDTO(source.getId(), source.getNombreLegal(), source.getNombreComercial(), source.getRuc(), source.getDireccion(), source.getTelefono(), source.getCorreo(), source.getLogo());
     }
 
     private String limpiar(String value) {

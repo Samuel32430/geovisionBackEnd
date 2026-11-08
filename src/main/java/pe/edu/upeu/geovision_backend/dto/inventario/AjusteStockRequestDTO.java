@@ -1,13 +1,11 @@
 package pe.edu.upeu.geovision_backend.dto.inventario;
 
-import lombok.Builder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-@Builder(toBuilder = true)
 public record AjusteStockRequestDTO(
     @NotNull(message = "El ID del producto es obligatorio")
     Long idProducto,

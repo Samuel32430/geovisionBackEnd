@@ -16,9 +16,9 @@ import java.util.Optional;
 @Repository
 public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSpecificationExecutor<Paciente> {
 
-    Optional<Paciente> findByIdPersonaAndActivo(Long idPersona, Boolean estado);
+    Optional<Paciente> findByIdAndActivo(Long idPersona, Boolean estado);
 
-    Optional<Paciente> findByUsuarioIdUsuario(Long idUsuario);
+    Optional<Paciente> findByUsuarioId(Long idUsuario);
 
     List<Paciente> findByActivo(Boolean estado);
 
@@ -26,7 +26,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSp
     Optional<Paciente> findByPersonaNumeroDocumento(String numeroDocumento);
 
     @EntityGraph(attributePaths = {"persona", "usuario"})
-    @Query("SELECT p FROM Paciente p WHERE p.idPersona = :id")
+    @Query("SELECT p FROM Paciente p WHERE p.id = :id")
     Optional<Paciente> findByIdWithDetails(@Param("id") Long id);
 
     @EntityGraph(attributePaths = "persona")

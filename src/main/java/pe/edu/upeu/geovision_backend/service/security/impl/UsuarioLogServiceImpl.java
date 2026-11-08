@@ -32,11 +32,7 @@ public class UsuarioLogServiceImpl implements UsuarioLogService {
         }
 
         try {
-            UsuarioLog usuarioLog = UsuarioLog.builder()
-                    .usuario(usuario)
-                    .tipoLog(tipoLog)
-                    .fechaLog(LocalDateTime.now())
-                    .build();
+            UsuarioLog usuarioLog = new UsuarioLog(null, LocalDateTime.now(), tipoLog, usuario);
             usuarioLogRepository.save(usuarioLog);
             log.debug("Evento de auditoría registrado: usuario={} evento={}", usuario.getNombre(), tipoLog.getDescripcion());
         } catch (Exception ex) {

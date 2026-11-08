@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
-import lombok.Builder;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Positive;
@@ -9,7 +8,6 @@ import jakarta.validation.constraints.Digits;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Builder(toBuilder = true)
 public record LenteRequestDTO(
         @NotNull(message = "El ID de la receta es obligatorio")
         @Positive(message = "El ID de la receta debe ser positivo")

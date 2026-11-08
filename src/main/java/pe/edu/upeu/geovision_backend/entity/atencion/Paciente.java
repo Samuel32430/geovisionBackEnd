@@ -13,11 +13,9 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 
 import java.time.LocalDateTime;
 
@@ -27,12 +25,11 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Paciente {
 
     @Id
     @Column(name = "id_persona")
-    private Long idPersona;
+    private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId
@@ -40,7 +37,6 @@ public class Paciente {
     private Persona persona;
 
     @Column(name = "estado", nullable = false)
-    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "fecha_registro", nullable = false, columnDefinition = "DATE")

@@ -75,12 +75,10 @@ public class RolServiceImpl implements RolService {
             throw new ReglaNegocioException("Ya existe un rol con el nombre: " + nombre);
         }
 
-        Rol rol = Rol.builder()
-                .nombre(nombre)
-                .build();
+        Rol rol = new Rol(null, nombre);
         Rol guardado = rolRepository.save(rol);
 
-        log.info("Rol creado: id={} nombre={}", guardado.getIdRol(), guardado.getNombre());
+        log.info("Rol creado: id={} nombre={}", guardado.getId(), guardado.getNombre());
         return rolMapper.toDTO(guardado, Collections.emptySet());
     }
 
@@ -94,21 +92,18 @@ public class RolServiceImpl implements RolService {
 
         List<Permiso> permisos = permisoRepository.findAllById(ids);
         if (permisos.size() != ids.size()) {
-            Set<Long> encontrados = permisos.stream().map(Permiso::getIdPermiso).collect(Collectors.toSet());
+            Set<Long> encontrados = permisos.stream().map(Permiso::getId).collect(Collectors.toSet());
             Set<Long> faltantes = new HashSet<>(ids);
             faltantes.removeAll(encontrados);
             throw new RecursosNoEncontradosException("Permisos no encontrados con IDs: " + faltantes);
         }
 
-        List<RolPermiso> actuales = rolPermisoRepository.findByRolIdRol(idRol);
-        Set<Long> existentes = actuales.stream().map(rp -> rp.getPermiso().getIdPermiso()).collect(Collectors.toSet());
-        rolPermisoRepository.deleteAll(actuales.stream().filter(rp -> !ids.contains(rp.getPermiso().getIdPermiso())).toList());
+        List<RolPermiso> actuales = rolPermisoRepository.findByRolId(idRol);
+        Set<Long> existentes = actuales.stream().map(rp -> rp.getPermiso().getId()).collect(Collectors.toSet());
+        rolPermisoRepository.deleteAll(actuales.stream().filter(rp -> !ids.contains(rp.getPermiso().getId())).toList());
 
-        List<RolPermiso> nuevosRolPermisos = permisos.stream().filter(p -> !existentes.contains(p.getIdPermiso()))
-                .map(permiso -> RolPermiso.builder()
-                        .rol(rol)
-                        .permiso(permiso)
-                        .build())
+        List<RolPermiso> nuevosRolPermisos = permisos.stream().filter(p -> !existentes.contains(p.getId()))
+                .map(permiso -> new RolPermiso(null, rol, permiso))
                 .toList();
         rolPermisoRepository.saveAllAndFlush(nuevosRolPermisos);
 
@@ -122,7 +117,7 @@ public class RolServiceImpl implements RolService {
     }
 
     private RolDTO cargarRolConPermisos(Rol rol) {
-        List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolIdRol(rol.getIdRol());
+        List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
         Set<PermisoDTO> permisos = rolPermisos.stream()
                 .map(rp -> permisoMapper.toDTO(rp.getPermiso()))
                 .collect(Collectors.toSet());

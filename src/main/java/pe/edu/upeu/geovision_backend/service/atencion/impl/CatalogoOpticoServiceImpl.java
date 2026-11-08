@@ -39,13 +39,13 @@ public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
 
     @Override
     public List<MaterialCristalDTO> listarMaterialesCristal() {
-        return materialCristalRepository.findAll(Sort.by("nombre", "idMaterialCristal")).stream()
+        return materialCristalRepository.findAll(Sort.by("nombre", "id")).stream()
                 .map(catalogoOpticoMapper::toMaterialCristalDTO).toList();
     }
 
     @Override
     public List<TratamientoCristalDTO> listarTratamientosCristal() {
-        return tratamientoCristalRepository.findAll(Sort.by("nombre", "idTratamientoCristal")).stream()
+        return tratamientoCristalRepository.findAll(Sort.by("nombre", "id")).stream()
                 .map(catalogoOpticoMapper::toTratamientoCristalDTO).toList();
     }
 
@@ -57,12 +57,12 @@ public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
         }
         Sort orden = pageable.getSort();
         for (Sort.Order campo : orden) {
-            if (!Set.of("idProducto", "producto.nombre", "producto.precio").contains(campo.getProperty())) {
+            if (!Set.of("id", "producto.nombre", "producto.precio").contains(campo.getProperty())) {
                 throw new ReglaNegocioException("Campo de ordenamiento no permitido");
             }
         }
-        if (orden.getOrderFor("idProducto") == null) {
-            orden = orden.and(Sort.by("idProducto"));
+        if (orden.getOrderFor("id") == null) {
+            orden = orden.and(Sort.by("id"));
         }
         return monturaRepository.findByProductoActivoAndProductoStockGreaterThan(true, 0,
                         PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden))

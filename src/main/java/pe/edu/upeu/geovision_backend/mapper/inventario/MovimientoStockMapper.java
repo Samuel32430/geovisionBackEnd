@@ -27,19 +27,6 @@ public class MovimientoStockMapper {
             nombreUsuario = log.getUsuario().getNombre();
         }
 
-        return MovimientoStockResponseDTO.builder()
-                .idMovimiento(log.getIdMovimiento())
-                .idProducto(log.getProducto() != null ? log.getProducto().getIdProducto() : null)
-                .codigoProducto(log.getProducto() != null ? log.getProducto().getCodigo() : null)
-                .nombreProducto(log.getProducto() != null ? log.getProducto().getNombre() : null)
-                .cantidad(log.getCantidad())
-                .stockPrevio(log.getStockPrevio())
-                .stockPosterior(log.getStockPosterior())
-                .motivo(log.getMotivo())
-                .motivoDescripcion(motivoDesc)
-                .observaciones(log.getObservaciones())
-                .nombreUsuario(nombreUsuario)
-                .fechaRegistro(log.getFechaRegistro())
-                .build();
+        return new MovimientoStockResponseDTO(log.getId(), log.getProducto() != null ? log.getProducto().getId() : null, log.getProducto() != null ? log.getProducto().getCodigo() : null, log.getProducto() != null ? log.getProducto().getNombre() : null, log.getCantidad(), log.getStockPrevio(), log.getStockPosterior(), log.getMotivo(), motivoDesc, log.getObservaciones(), nombreUsuario, log.getFechaRegistro());
     }
 }

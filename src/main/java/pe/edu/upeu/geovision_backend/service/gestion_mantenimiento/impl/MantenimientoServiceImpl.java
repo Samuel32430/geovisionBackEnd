@@ -68,8 +68,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     @Transactional
     public CategoriaDTO registrarCategoria(CategoriaDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.CATEGORIA, false);
-        validarNombre(categoriaRepository, request.nombre(), "idCategoria", null, "Categoria");
-        Categoria entity = new Categoria();
+        validarNombre(categoriaRepository, request.nombre(), "id", null, "Categoria");
+        Categoria entity = new Categoria(null, null, null, true, null);
         mapper.actualizar(request, entity);
         return mapper.toDTO(categoriaRepository.saveAndFlush(entity));
     }
@@ -79,7 +79,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     public CategoriaDTO actualizarCategoria(Long id, CategoriaDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.CATEGORIA, Integer.valueOf(0).equals(request.estado()));
         Categoria entity = obtener(categoriaRepository, id, "Categoria");
-        validarNombre(categoriaRepository, request.nombre(), "idCategoria", id, "Categoria");
+        validarNombre(categoriaRepository, request.nombre(), "id", id, "Categoria");
         if (Integer.valueOf(0).equals(request.estado())) validarDependenciasCategoria(id);
         mapper.actualizar(request, entity);
         return mapper.toDTO(categoriaRepository.saveAndFlush(entity));
@@ -99,8 +99,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     @Transactional
     public MaterialCristalDTO registrarMaterialCristal(MaterialCristalDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.MATERIAL_CRISTAL, false);
-        validarNombre(materialCristalRepository, request.nombre(), "idMaterialCristal", null, "MaterialCristal");
-        MaterialCristal entity = new MaterialCristal();
+        validarNombre(materialCristalRepository, request.nombre(), "id", null, "MaterialCristal");
+        MaterialCristal entity = new MaterialCristal(null, null);
         mapper.actualizar(request, entity);
         return mapper.toDTO(materialCristalRepository.saveAndFlush(entity));
     }
@@ -110,7 +110,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     public MaterialCristalDTO actualizarMaterialCristal(Long id, MaterialCristalDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.MATERIAL_CRISTAL, false);
         MaterialCristal entity = obtener(materialCristalRepository, id, "MaterialCristal");
-        validarNombre(materialCristalRepository, request.nombre(), "idMaterialCristal", id, "MaterialCristal");
+        validarNombre(materialCristalRepository, request.nombre(), "id", id, "MaterialCristal");
         mapper.actualizar(request, entity);
         return mapper.toDTO(materialCristalRepository.saveAndFlush(entity));
     }
@@ -129,8 +129,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     @Transactional
     public TratamientoCristalDTO registrarTratamientoCristal(TratamientoCristalDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.TRATAMIENTO_CRISTAL, false);
-        validarNombre(tratamientoCristalRepository, request.nombre(), "idTratamientoCristal", null, "TratamientoCristal");
-        TratamientoCristal entity = new TratamientoCristal();
+        validarNombre(tratamientoCristalRepository, request.nombre(), "id", null, "TratamientoCristal");
+        TratamientoCristal entity = new TratamientoCristal(null, null);
         mapper.actualizar(request, entity);
         return mapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
     }
@@ -140,7 +140,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     public TratamientoCristalDTO actualizarTratamientoCristal(Long id, TratamientoCristalDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.TRATAMIENTO_CRISTAL, false);
         TratamientoCristal entity = obtener(tratamientoCristalRepository, id, "TratamientoCristal");
-        validarNombre(tratamientoCristalRepository, request.nombre(), "idTratamientoCristal", id, "TratamientoCristal");
+        validarNombre(tratamientoCristalRepository, request.nombre(), "id", id, "TratamientoCristal");
         mapper.actualizar(request, entity);
         return mapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
     }
@@ -159,8 +159,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     @Transactional
     public ServicioDTO registrarServicio(ServicioDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.SERVICIO, false);
-        validarNombre(servicioRepository, request.nombre(), "idServicio", null, "Servicio");
-        Servicio entity = new Servicio();
+        validarNombre(servicioRepository, request.nombre(), "id", null, "Servicio");
+        Servicio entity = new Servicio(null, null, null, null, true);
         mapper.actualizar(request, entity);
         return mapper.toDTO(servicioRepository.saveAndFlush(entity));
     }
@@ -170,7 +170,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     public ServicioDTO actualizarServicio(Long id, ServicioDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.SERVICIO, Integer.valueOf(0).equals(request.estado()));
         Servicio entity = obtener(servicioRepository, id, "Servicio");
-        validarNombre(servicioRepository, request.nombre(), "idServicio", id, "Servicio");
+        validarNombre(servicioRepository, request.nombre(), "id", id, "Servicio");
         if (Integer.valueOf(0).equals(request.estado())) validarDependenciasServicio(id);
         mapper.actualizar(request, entity);
         return mapper.toDTO(servicioRepository.saveAndFlush(entity));
@@ -190,8 +190,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     @Transactional
     public LaboratorioDTO registrarLaboratorio(LaboratorioDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.LABORATORIO, false);
-        validarNombre(laboratorioRepository, request.nombre(), "idLaboratorio", null, "Laboratorio");
-        Laboratorio entity = new Laboratorio();
+        validarNombre(laboratorioRepository, request.nombre(), "id", null, "Laboratorio");
+        Laboratorio entity = new Laboratorio(null, null, null, null, null, null, true);
         mapper.actualizar(request, entity);
         return mapper.toDTO(laboratorioRepository.saveAndFlush(entity));
     }
@@ -201,27 +201,27 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     public LaboratorioDTO actualizarLaboratorio(Long id, LaboratorioDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.LABORATORIO, Integer.valueOf(0).equals(request.estado()));
         Laboratorio entity = obtener(laboratorioRepository, id, "Laboratorio");
-        validarNombre(laboratorioRepository, request.nombre(), "idLaboratorio", id, "Laboratorio");
+        validarNombre(laboratorioRepository, request.nombre(), "id", id, "Laboratorio");
         if (Integer.valueOf(0).equals(request.estado())) validarDependenciasLaboratorio(id);
         mapper.actualizar(request, entity);
         return mapper.toDTO(laboratorioRepository.saveAndFlush(entity));
     }
 
     private void validarDependenciasCategoria(Long id) {
-        if (productoRepository.existsByCategoriaIdCategoriaAndActivo(id, true)) {
+        if (productoRepository.existsByCategoriaIdAndActivo(id, true)) {
             throw new ReglaNegocioException("No se puede desactivar la categoría: tiene productos activos.");
         }
     }
 
     private void validarDependenciasServicio(Long id) {
-        if (servicioVendidoRepository.existsByServicioIdServicioAndVentaEstado(id, EstadoVentaEnum.PENDIENTE)) {
+        if (servicioVendidoRepository.existsByServicioIdAndVentaEstado(id, EstadoVentaEnum.PENDIENTE)) {
             throw new ReglaNegocioException("No se puede desactivar el servicio: está asociado a ventas pendientes.");
         }
     }
 
     private void validarDependenciasLaboratorio(Long id) {
         Specification<EnvioLaboratorio> pendientes = (root, query, cb) -> cb.and(
-                cb.equal(root.get("laboratorio").get("idLaboratorio"), id),
+                cb.equal(root.get("laboratorio").get("id"), id),
                 cb.or(cb.isNull(root.get("fechaRecepcion")), cb.isNull(root.get("fechaRevision"))));
         if (envioLaboratorioRepository.exists(pendientes)) {
             throw new ReglaNegocioException("No se puede desactivar el laboratorio: tiene envíos pendientes de recepción o revisión.");

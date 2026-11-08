@@ -85,58 +85,33 @@ class UsuarioServiceTest {
 
     @BeforeEach
     void setUp() {
-        personaAdmin = Persona.builder().idPersona(1L).nombres("Admin").apellidos("General").build();
-        personaVendedor = Persona.builder().idPersona(2L).nombres("Carlos").apellidos("Ventas").build();
+        personaAdmin = new Persona(1L, "Admin", "General", null, null, null, null, null, null);
+        personaVendedor = new Persona(2L, "Carlos", "Ventas", null, null, null, null, null, null);
 
-        rolAdmin = Rol.builder().idRol(1L).nombre("ADMINISTRADOR").build();
-        rolVendedor = Rol.builder().idRol(2L).nombre("VENDEDOR").build();
+        rolAdmin = new Rol(1L, "ADMINISTRADOR");
+        rolVendedor = new Rol(2L, "VENDEDOR");
 
-        adminUser = Usuario.builder()
-                .idUsuario(1L)
-                .nombre("admin")
-                .correo("admin@geovision.com")
-                .password("$2a$10$hash")
-                .activo(true)
-                .persona(personaAdmin)
-                .build();
+        adminUser = new Usuario(1L, "admin", "$2a$10$hash", "admin@geovision.com", true, personaAdmin);
 
-        vendedorUser = Usuario.builder()
-                .idUsuario(2L)
-                .nombre("carlos.vendedor")
-                .correo("carlos@geovision.com")
-                .password("$2a$10$hash")
-                .activo(true)
-                .persona(personaVendedor)
-                .build();
+        vendedorUser = new Usuario(2L, "carlos.vendedor", "$2a$10$hash", "carlos@geovision.com", true, personaVendedor);
     }
 
     @Test
     @DisplayName("CUS17: Registro de nuevo usuario exitoso (RF-86)")
     void crearUsuarioExitoso() {
-        UsuarioRequestDTO request = UsuarioRequestDTO.builder()
-                .nombre("nuevo.usuario")
-                .correo("nuevo@geovision.com")
-                .password("password123")
-                .estado(1)
-                .idPersona(2L)
-                .rolesIds(Set.of(2L))
-                .build();
+        UsuarioRequestDTO request = new UsuarioRequestDTO("nuevo.usuario", "password123", "nuevo@geovision.com", 1, 2L, Set.of(2L), null);
 
         when(usuarioRepository.existsByNombre("nuevo.usuario")).thenReturn(false);
         when(usuarioRepository.existsByCorreo("nuevo@geovision.com")).thenReturn(false);
         when(personaRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(personaVendedor));
-        when(usuarioRepository.findByPersonaIdPersona(2L)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByPersonaId(2L)).thenReturn(Optional.empty());
         when(rolRepository.findAllById(Set.of(2L))).thenReturn(List.of(rolVendedor));
         when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
         when(usuarioRepository.saveAndFlush(any(Usuario.class))).thenReturn(vendedorUser);
-        Empleado empleadoVendedor = Empleado.builder()
-                .idPersona(2L)
-                .activo(true)
-                .persona(personaVendedor)
-                .build();
+        Empleado empleadoVendedor = new Empleado(2L, personaVendedor, true, null, null);
         when(empleadoRepository.findById(2L)).thenReturn(Optional.of(empleadoVendedor));
-        when(usuarioRolRepository.findByUsuarioIdUsuario(2L)).thenReturn(Collections.emptyList());
-        when(usuarioMapper.toUsuarioResponse(eq(vendedorUser), any())).thenReturn(UsuarioResponseDTO.builder().build());
+        when(usuarioRolRepository.findByUsuarioId(2L)).thenReturn(Collections.emptyList());
+        when(usuarioMapper.toUsuarioResponse(eq(vendedorUser), any())).thenReturn(new UsuarioResponseDTO(null, null, null, null, null, null, null, null));
 
         UsuarioResponseDTO response = usuarioService.crear(request);
 

@@ -16,8 +16,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.geovision_backend.entity.security.Empleado;
 import pe.edu.upeu.geovision_backend.entity.atencion.Lente;
-import pe.edu.upeu.geovision_backend.entity.atencion.LenteMedida;
-import pe.edu.upeu.geovision_backend.entity.atencion.LenteTratamientoCristal;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.MaterialCristal;
 import pe.edu.upeu.geovision_backend.entity.atencion.Medida;
 import pe.edu.upeu.geovision_backend.entity.atencion.MedidaOjo;
@@ -52,28 +50,24 @@ class PatientFoundationRepositoryTest {
     @Autowired MonturaRepository frames;
     @Autowired VentaRepository sales;
     @Autowired LenteRepository lenses;
-    @Autowired LenteMedidaRepository lensMeasures;
-    @Autowired LenteTratamientoCristalRepository lensTreatments;
 
     Persona person(String names) {
-        var p = Persona.builder().nombres(names).apellidos("Prueba").telefono("999123456")
-                .numeroDocumento(UUID.randomUUID().toString()).tipoDocumento(TipoDocumentoEnum.DNI).build();
+        var p = new Persona(null, names, "Prueba", "999123456", null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI);
         em.persist(p);
         return p;
     }
     Paciente patient() {
-        var p = Paciente.builder().persona(person("Paciente")).build();
+        var p = new Paciente(null, person("Paciente"), true, null, null);
         em.persist(p);
         return p;
     }
     Empleado employee() {
-        var e = Empleado.builder().persona(person("Profesional")).build();
+        var e = new Empleado(null, person("Profesional"), true, null, null);
         em.persist(e);
         return e;
     }
     Receta prescription(Paciente p, Empleado e) {
-        var r = Receta.builder().paciente(p).empleado(e)
-                .fechaRegistro(LocalDateTime.of(2026, 11, 1, 12, 0)).build();
+        var r = new Receta(null, LocalDateTime.of(2026, 11, 1, 12, 0), 0, p, e);
         em.persist(r);
         return r;
     }
@@ -81,7 +75,7 @@ class PatientFoundationRepositoryTest {
     @Test void booleanActivoRoundTripsThroughTheExistingNumericEstadoColumn() {
         var patient = patient();
         em.flush();
-        Long id = patient.getIdPersona();
+        Long id = patient.getId();
         assertEquals(1, jdbc.queryForObject("select estado from PACIENTE where id_persona = ?", Integer.class, id));
 
         patient.setActivo(false);
@@ -94,40 +88,40 @@ class PatientFoundationRepositoryTest {
         em.clear();
         assertEquals(Boolean.TRUE, patients.findById(id).orElseThrow().getActivo());
 
-        var unspecified = Paciente.builder().persona(person("Predeterminado")).activo(null).build();
+        var unspecified = new Paciente(null, person("Predeterminado"), null, null, null);
         em.persist(unspecified);
         em.flush();
         assertEquals(Boolean.TRUE, unspecified.getActivo());
         assertEquals(1, jdbc.queryForObject("select estado from PACIENTE where id_persona = ?",
-                Integer.class, unspecified.getIdPersona()));
+                Integer.class, unspecified.getId()));
     }
 
     @Test void explicitMeasurementCodesPersistAndDefaultToLejos() {
         for (var type : TipoMedidaEnum.values()) {
-            var measure = Medida.builder().tipoMedida(type).build();
+            var measure = new Medida(null, type, null, null, null, null, null, null, null);
             em.persist(measure);
             em.flush();
             assertEquals(type.getCodigo(), jdbc.queryForObject(
-                    "select tipo_medida from MEDIDA where id_medida = ?", Integer.class, measure.getIdMedida()));
+                    "select tipo_medida from MEDIDA where id_medida = ?", Integer.class, measure.getId()));
             em.clear();
-            assertEquals(type, measures.findById(measure.getIdMedida()).orElseThrow().getTipoMedida());
+            assertEquals(type, measures.findById(measure.getId()).orElseThrow().getTipoMedida());
         }
-        var defaultMeasure = new Medida();
+        var defaultMeasure = new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, null, null, null, null);
         defaultMeasure.setTipoMedida(null);
         em.persist(defaultMeasure);
         em.flush();
         assertEquals(1, jdbc.queryForObject("select tipo_medida from MEDIDA where id_medida = ?",
-                Integer.class, defaultMeasure.getIdMedida()));
+                Integer.class, defaultMeasure.getId()));
     }
 
     @Test void retrievesPatientByDocumentAndSearchFetchesPerson() {
         var patient = patient();
-        var id = patient.getIdPersona();
+        var id = patient.getId();
         var document = patient.getPersona().getNumeroDocumento();
         em.flush();
         em.clear();
         var found = patients.findByPersonaNumeroDocumento(document).orElseThrow();
-        assertEquals(id, found.getIdPersona());
+        assertEquals(id, found.getId());
         assertTrue(Hibernate.isInitialized(found.getPersona()));
         em.clear();
         var page = patients.buscarPacientes(document, true, PageRequest.of(0, 10));
@@ -135,11 +129,11 @@ class PatientFoundationRepositoryTest {
         assertTrue(Hibernate.isInitialized(page.getContent().getFirst().getPersona()));
         assertFalse(patients.buscarPacientes(document, false, PageRequest.of(0, 10)).hasContent());
         assertTrue(patients.buscarPacientes("paciente prueba", null, PageRequest.of(0, 10))
-                .stream().anyMatch(p -> p.getIdPersona().equals(id)));
+                .stream().anyMatch(p -> p.getId().equals(id)));
         assertTrue(patients.buscarPacientes("999123456", null, PageRequest.of(0, 10))
-                .stream().anyMatch(p -> p.getIdPersona().equals(id)));
+                .stream().anyMatch(p -> p.getId().equals(id)));
         assertTrue(patients.buscarPacientes(null, true, PageRequest.of(0, 10))
-                .stream().anyMatch(p -> p.getIdPersona().equals(id)));
+                .stream().anyMatch(p -> p.getId().equals(id)));
     }
 
     @Test void prescriptionHistoryHasStableOrderAndReadyToMapNames() {
@@ -147,18 +141,18 @@ class PatientFoundationRepositoryTest {
         var employee = employee();
         var first = prescription(patient, employee);
         var second = prescription(patient, employee);
-        var id = patient.getIdPersona();
-        Long firstId = first.getIdReceta(), secondId = second.getIdReceta();
+        var id = patient.getId();
+        Long firstId = first.getId(), secondId = second.getId();
         em.flush();
         em.clear();
-        var history = prescriptions.findByPacienteIdPersonaOrderByFechaRegistroDescIdRecetaDesc(id);
-        assertEquals(List.of(secondId, firstId), history.stream().map(Receta::getIdReceta).toList());
+        var history = prescriptions.findByPacienteIdOrderByFechaRegistroDescIdDesc(id);
+        assertEquals(List.of(secondId, firstId), history.stream().map(Receta::getId).toList());
         assertTrue(Hibernate.isInitialized(history.getFirst().getPaciente().getPersona()));
         assertTrue(Hibernate.isInitialized(history.getFirst().getEmpleado().getPersona()));
-        var page = prescriptions.findByPacienteIdPersona(id,
-                PageRequest.of(0, 1, Sort.by(Sort.Order.desc("fechaRegistro"), Sort.Order.desc("idReceta"))));
+        var page = prescriptions.findByPacienteId(id,
+                PageRequest.of(0, 1, Sort.by(Sort.Order.desc("fechaRegistro"), Sort.Order.desc("id"))));
         assertEquals(2, page.getTotalElements());
-        assertEquals(secondId, page.getContent().getFirst().getIdReceta());
+        assertEquals(secondId, page.getContent().getFirst().getId());
     }
 
     @Test void selectingLensMeasurementsCannotReturnAnotherPrescriptionsRows() {
@@ -166,31 +160,29 @@ class PatientFoundationRepositoryTest {
         var employee = employee();
         var recipe = prescription(patient, employee);
         var other = prescription(patient, employee);
-        var right = MedidaOjo.builder().agudezaVisual("20/20").esfera(new BigDecimal("-1.25")).eje(90).build();
-        var left = MedidaOjo.builder().agudezaVisual("20/25").esfera(new BigDecimal("-1.50")).eje(85).build();
+        var right = new MedidaOjo(null, "20/20", new BigDecimal("-1.25"), null, 90, null);
+        var left = new MedidaOjo(null, "20/25", new BigDecimal("-1.50"), null, 85, null);
         em.persist(right);
         em.persist(left);
-        var own = Medida.builder().receta(recipe).tipoMedida(TipoMedidaEnum.MEDIO)
-                .medidaOjoDerecha(right).medidaOjoIzquierda(left).build();
-        var foreign = Medida.builder().receta(other).build();
+        var own = new Medida(null, TipoMedidaEnum.MEDIO, null, null, null, recipe, right, left, null);
+        var foreign = new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, other, null, null, null);
         em.persist(own);
         em.persist(foreign);
-        Long recipeId = recipe.getIdReceta(), ownId = own.getIdMedida(), foreignId = foreign.getIdMedida();
+        Long recipeId = recipe.getId(), ownId = own.getId(), foreignId = foreign.getId();
         em.flush();
         em.clear();
-        var selected = measures.findByIdMedidaInAndRecetaIdReceta(List.of(ownId, foreignId), recipeId);
-        assertEquals(List.of(ownId), selected.stream().map(Medida::getIdMedida).toList());
+        var selected = measures.findByIdInAndRecetaId(List.of(ownId, foreignId), recipeId);
+        assertEquals(List.of(ownId), selected.stream().map(Medida::getId).toList());
         assertTrue(Hibernate.isInitialized(selected.getFirst().getMedidaOjoDerecha()));
         assertTrue(Hibernate.isInitialized(selected.getFirst().getMedidaOjoIzquierda()));
-        assertEquals(1, measures.findByRecetaIdRecetaAndTipoMedida(recipeId, TipoMedidaEnum.MEDIO).size());
-        assertEquals(1, measures.findByRecetaIdRecetaOrderByIdMedidaAsc(recipeId).size());
+        assertEquals(1, measures.findByRecetaIdAndTipoMedida(recipeId, TipoMedidaEnum.MEDIO).size());
+        assertEquals(1, measures.findByRecetaIdOrderByIdAsc(recipeId).size());
     }
 
     Montura frame(Boolean state, int stock) {
-        var product = Producto.builder().codigo(UUID.randomUUID().toString()).nombre("Montura")
-                .precio(new BigDecimal("100")).stock(stock).activo(state).build();
+        var product = new Producto(null, UUID.randomUUID().toString(), "Montura", null, null, new BigDecimal("100"), stock, state, null, null);
         em.persist(product);
-        var frame = Montura.builder().producto(product).build();
+        var frame = new Montura(null, product, null, null, null);
         em.persist(frame);
         return frame;
     }
@@ -199,12 +191,12 @@ class PatientFoundationRepositoryTest {
         var available = frame(true, 3);
         frame(true, 0);
         frame(false, 3);
-        Long id = available.getIdProducto();
+        Long id = available.getId();
         em.flush();
         em.clear();
         var page = frames.findByProductoActivoAndProductoStockGreaterThan(
                 true, 0, PageRequest.of(0, 10));
-        assertEquals(List.of(id), page.getContent().stream().map(Montura::getIdProducto).toList());
+        assertEquals(List.of(id), page.getContent().stream().map(Montura::getId).toList());
         assertTrue(Hibernate.isInitialized(page.getContent().getFirst().getProducto()));
     }
 
@@ -212,45 +204,112 @@ class PatientFoundationRepositoryTest {
         var patient = patient();
         var employee = employee();
         var recipe = prescription(patient, employee);
-        assertFalse(sales.existsByRecetaIdReceta(recipe.getIdReceta()));
-        var sale = Venta.builder().paciente(patient).empleado(employee).receta(recipe)
-                .total(BigDecimal.ZERO).estado(EstadoVentaEnum.PENDIENTE)
-                .tipoComprobante(TipoComprobanteEnum.BOLETA).build();
+        assertFalse(sales.existsByRecetaId(recipe.getId()));
+        var sale = new Venta(null, null, BigDecimal.ZERO, EstadoVentaEnum.PENDIENTE, null, TipoComprobanteEnum.BOLETA, employee, patient, recipe);
         em.persist(sale);
         em.flush();
-        assertTrue(sales.existsByRecetaIdReceta(recipe.getIdReceta()));
+        assertTrue(sales.existsByRecetaId(recipe.getId()));
     }
 
     @Test void lensDetailsSupportOwnFramesAndFetchTreatmentsAndEyes() {
         var recipe = prescription(patient(), employee());
-        var material = MaterialCristal.builder().nombre("Resina de prueba").build();
-        var treatment = TratamientoCristal.builder().nombre("Filtro de prueba").build();
+        var material = new MaterialCristal(null, "Resina de prueba");
+        var treatment = new TratamientoCristal(null, "Filtro de prueba");
         em.persist(material);
         em.persist(treatment);
-        var lens = Lente.builder().receta(recipe).materialCristal(material).subTotal(BigDecimal.ZERO).build();
+        var lens = new Lente(null, BigDecimal.ZERO, recipe, material, null, new java.util.LinkedHashSet<>(), new java.util.LinkedHashSet<>());
         em.persist(lens);
-        var eye = MedidaOjo.builder().agudezaVisual("20/20").build();
+        var eye = new MedidaOjo(null, "20/20", null, null, null, null);
         em.persist(eye);
-        var measure = Medida.builder().receta(recipe).medidaOjoDerecha(eye).build();
+        var measure = new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, recipe, eye, null, null);
         em.persist(measure);
-        em.persist(LenteMedida.builder().lente(lens).medida(measure).build());
-        em.persist(LenteTratamientoCristal.builder().lente(lens).tratamientoCristal(treatment).build());
-        Long recipeId = recipe.getIdReceta(), lensId = lens.getIdLente();
+        lens.getMedidas().add(measure);
+        lens.getTratamientosCristal().add(treatment);
+        Long recipeId = recipe.getId(), lensId = lens.getId();
         em.flush();
         em.clear();
-        var detail = lenses.findByRecetaIdRecetaOrderByIdLenteAsc(recipeId).getFirst();
+        var detail = lenses.findByRecetaIdOrderByIdAsc(recipeId).getFirst();
         assertNull(detail.getMontura());
         assertTrue(Hibernate.isInitialized(detail.getMaterialCristal()));
-        var links = lensMeasures.findByLenteIdLente(lensId);
-        assertTrue(Hibernate.isInitialized(links.getFirst().getMedida().getMedidaOjoDerecha()));
-        assertTrue(Hibernate.isInitialized(lensTreatments.findByLenteIdLente(lensId)
-                .getFirst().getTratamientoCristal()));
+        assertEquals(1, detail.getMedidas().size());
+        assertTrue(Hibernate.isInitialized(detail.getMedidas().iterator().next().getMedidaOjoDerecha()));
+        assertTrue(Hibernate.isInitialized(detail.getTratamientosCristal().iterator().next()));
+    }
+
+    @Test void manyToManyLinksAreUniqueOrderedAndNeverDeleteSharedClinicalMeasurements() {
+        var recipe = prescription(patient(), employee());
+        var material = new MaterialCristal(null, "Material de relación compartida");
+        em.persist(material);
+        var far = new Medida(null, TipoMedidaEnum.LEJOS, null, null, null, recipe, null, null, null);
+        var near = new Medida(null, TipoMedidaEnum.CERCA, null, null, null, recipe, null, null, null);
+        em.persist(far);
+        em.persist(near);
+        var first = new Lente(null, BigDecimal.ZERO, recipe, material, null,
+                new java.util.LinkedHashSet<>(List.of(near, far)), new java.util.LinkedHashSet<>());
+        var second = new Lente(null, BigDecimal.ZERO, recipe, material, null,
+                new java.util.LinkedHashSet<>(List.of(far)), new java.util.LinkedHashSet<>());
+        em.persist(first);
+        em.persist(second);
+        em.flush();
+        Long firstId = first.getId(), secondId = second.getId();
+        Long farId = far.getId(), nearId = near.getId();
+        assertEquals(3, jdbc.queryForObject("SELECT COUNT(*) FROM LENTE_MEDIDA", Integer.class));
+        em.clear();
+
+        var lazy = lenses.findById(firstId).orElseThrow();
+        assertFalse(Hibernate.isInitialized(lazy.getMedidas()));
+        var detail = lenses.findByIdWithDetails(firstId).orElseThrow();
+        assertEquals(List.of(farId, nearId), detail.getMedidas().stream().map(Medida::getId).toList());
+        assertFalse(detail.getMedidas().add(em.getReference(Medida.class, farId)));
+        em.flush();
+        assertEquals(3, jdbc.queryForObject("SELECT COUNT(*) FROM LENTE_MEDIDA", Integer.class));
+
+        detail.getMedidas().clear();
+        em.flush();
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM LENTE_MEDIDA", Integer.class));
+        em.remove(lenses.findById(secondId).orElseThrow());
+        em.flush();
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM LENTE_MEDIDA", Integer.class));
+        assertTrue(measures.existsById(farId));
+        assertTrue(measures.existsById(nearId));
+    }
+
+    @Test void treatmentLinksAreUniqueOrderedLazyAndPreserveSharedTreatments() {
+        var recipe = prescription(patient(), employee());
+        var material = new MaterialCristal(null, "Material de tratamientos compartidos");
+        var firstTreatment = new TratamientoCristal(null, "Tratamiento primero");
+        var secondTreatment = new TratamientoCristal(null, "Tratamiento segundo");
+        em.persist(material);
+        em.persist(firstTreatment);
+        em.persist(secondTreatment);
+        var first = new Lente(null, BigDecimal.ZERO, recipe, material, null,
+                new java.util.LinkedHashSet<>(),
+                new java.util.LinkedHashSet<>(List.of(secondTreatment, firstTreatment)));
+        var second = new Lente(null, BigDecimal.ZERO, recipe, material, null,
+                new java.util.LinkedHashSet<>(), new java.util.LinkedHashSet<>(List.of(firstTreatment)));
+        em.persist(first);
+        em.persist(second);
+        em.flush();
+        Long firstId = first.getId(), secondId = second.getId();
+        Long treatmentId = firstTreatment.getId(), otherId = secondTreatment.getId();
+        em.clear();
+        assertFalse(Hibernate.isInitialized(lenses.findById(firstId).orElseThrow().getTratamientosCristal()));
+        var detail = lenses.findByIdWithDetails(firstId).orElseThrow();
+        assertEquals(List.of(treatmentId, otherId), detail.getTratamientosCristal().stream()
+                .map(TratamientoCristal::getId).toList());
+        assertFalse(detail.getTratamientosCristal().add(em.getReference(TratamientoCristal.class, treatmentId)));
+        detail.getTratamientosCristal().clear();
+        em.remove(lenses.findById(secondId).orElseThrow());
+        em.flush();
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM LENTE_TRATAMIENTO_CRISTAL", Integer.class));
+        assertNotNull(em.find(TratamientoCristal.class, treatmentId));
+        assertNotNull(em.find(TratamientoCristal.class, otherId));
     }
 
     @Test void patientCareDefaultDatesHaveSecondPrecision() {
         var patient = patient();
-        var recipe = Receta.builder().paciente(patient).empleado(employee()).build();
-        var log = PacienteLog.builder().paciente(patient).build();
+        var recipe = new Receta(null, null, 0, patient, employee());
+        var log = new PacienteLog(null, null, null, patient);
         em.persist(recipe);
         em.persist(log);
         em.flush();

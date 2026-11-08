@@ -61,22 +61,9 @@ class ProductoCatalogoControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
-        MonturaDTO monturaDTO = MonturaDTO.builder()
-                .color("Negro")
-                .modelo(ModeloMonturaEnum.ARO_COMPLETO)
-                .material(MaterialMonturaEnum.ACETATO)
-                .build();
+        MonturaDTO monturaDTO = new MonturaDTO(null, null, null, null, null, "Negro", ModeloMonturaEnum.ARO_COMPLETO, null, MaterialMonturaEnum.ACETATO, null);
 
-        responseDTO = ProductoResponseDTO.builder()
-                .idProducto(1L)
-                .codigo("MONT-001")
-                .nombre("Montura Ray-Ban")
-                .precio(new BigDecimal("350.00"))
-                .stock(10)
-                .estado(1)
-                .montura(monturaDTO)
-                .esMontura(true)
-                .build();
+        responseDTO = new ProductoResponseDTO(1L, "MONT-001", "Montura Ray-Ban", null, null, new BigDecimal("350.00"), 10, 1, null, null, null, null, monturaDTO, true);
     }
 
     @Test
@@ -100,7 +87,7 @@ class ProductoCatalogoControllerTest {
         mockMvc.perform(get("/api/v1/productos/1")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idProducto").value(1L))
+                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.nombre").value("Montura Ray-Ban"));
     }
 
@@ -125,7 +112,7 @@ class ProductoCatalogoControllerTest {
                         .param("cantidad", "5")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idProducto").value(1L))
+                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.cantidadSolicitada").value(5))
                 .andExpect(jsonPath("$.disponible").value(true));
     }
@@ -133,14 +120,7 @@ class ProductoCatalogoControllerTest {
     @Test
     @DisplayName("POST /api/v1/productos: Retorna 201 Created al registrar producto")
     void registrarProducto_retorna201() throws Exception {
-        ProductoRequestDTO request = ProductoRequestDTO.builder()
-                .codigo("MONT-001")
-                .nombre("Montura Ray-Ban")
-                .precio(new BigDecimal("350.00"))
-                .stock(10)
-                .estado(1)
-                .idCategoria(1L)
-                .build();
+        ProductoRequestDTO request = new ProductoRequestDTO("MONT-001", "Montura Ray-Ban", null, null, new BigDecimal("350.00"), 10, 1, 1L, null);
 
         when(productoCatalogoService.registrarProducto(any(ProductoRequestDTO.class))).thenReturn(responseDTO);
 
@@ -154,14 +134,7 @@ class ProductoCatalogoControllerTest {
     @Test
     @DisplayName("PUT /api/v1/productos/{id}: Retorna 200 OK al actualizar producto")
     void actualizarProducto_retorna200() throws Exception {
-        ProductoRequestDTO request = ProductoRequestDTO.builder()
-                .codigo("MONT-001")
-                .nombre("Montura Ray-Ban Actualizada")
-                .precio(new BigDecimal("360.00"))
-                .stock(10)
-                .estado(1)
-                .idCategoria(1L)
-                .build();
+        ProductoRequestDTO request = new ProductoRequestDTO("MONT-001", "Montura Ray-Ban Actualizada", null, null, new BigDecimal("360.00"), 10, 1, 1L, null);
 
         when(productoCatalogoService.actualizarProducto(eq(1L), any(ProductoRequestDTO.class))).thenReturn(responseDTO);
 
@@ -169,7 +142,7 @@ class ProductoCatalogoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idProducto").value(1L));
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test

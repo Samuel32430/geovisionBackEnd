@@ -8,11 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 
 import java.math.BigDecimal;
 
@@ -22,13 +20,12 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Servicio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_servicio")
-    private Long idServicio;
+    private Long id;
 
     @Column(name = "nombre", nullable = false, length = 200)
     private String nombre;
@@ -40,7 +37,6 @@ public class Servicio {
     private BigDecimal precio;
 
     @Column(name = "estado", nullable = false)
-    @Builder.Default
     private Boolean activo = true;
 
     @PrePersist

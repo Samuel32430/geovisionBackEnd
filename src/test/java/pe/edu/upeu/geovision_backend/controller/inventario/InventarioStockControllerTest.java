@@ -65,31 +65,9 @@ class InventarioStockControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
-        movimientoResponse = MovimientoStockResponseDTO.builder()
-                .idMovimiento(100L)
-                .idProducto(1L)
-                .codigoProducto("MONT-001")
-                .nombreProducto("Montura Ray-Ban")
-                .cantidad(10)
-                .stockPrevio(5)
-                .stockPosterior(15)
-                .motivo(1)
-                .motivoDescripcion("Entrada por compra")
-                .observaciones("Factura F001-9988")
-                .nombreUsuario("admin")
-                .fechaRegistro(LocalDateTime.now())
-                .build();
+        movimientoResponse = new MovimientoStockResponseDTO(100L, 1L, "MONT-001", "Montura Ray-Ban", 10, 5, 15, 1, "Entrada por compra", "Factura F001-9988", "admin", LocalDateTime.now());
 
-        stockResponse = ProductoStockResponseDTO.builder()
-                .idProducto(1L)
-                .codigo("MONT-001")
-                .nombre("Montura Ray-Ban")
-                .stockActual(15)
-                .stockMinimoReferencial(5)
-                .precio(new BigDecimal("350.00"))
-                .disponible(true)
-                .estado(1)
-                .build();
+        stockResponse = new ProductoStockResponseDTO(1L, "MONT-001", "Montura Ray-Ban", 15, 5, new BigDecimal("350.00"), true, 1, null);
     }
 
     @Test
@@ -101,7 +79,7 @@ class InventarioStockControllerTest {
                         .param("umbralStockMinimo", "5")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idProducto").value(1L))
+                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.stockActual").value(15))
                 .andExpect(jsonPath("$.disponible").value(true));
     }
@@ -109,12 +87,7 @@ class InventarioStockControllerTest {
     @Test
     @DisplayName("POST /api/v1/inventario/entradas: Retorna 201 Created al registrar entrada")
     void registrarEntradaStock_retorna201() throws Exception {
-        EntradaStockRequestDTO request = EntradaStockRequestDTO.builder()
-                .idProducto(1L)
-                .cantidad(10)
-                .motivo(1)
-                .observaciones("Factura F001-9988")
-                .build();
+        EntradaStockRequestDTO request = new EntradaStockRequestDTO(1L, 10, 1, "Factura F001-9988");
 
         when(inventarioStockService.registrarEntradaStock(any(EntradaStockRequestDTO.class), anyString()))
                 .thenReturn(movimientoResponse);
@@ -123,31 +96,16 @@ class InventarioStockControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.idMovimiento").value(100L))
+                .andExpect(jsonPath("$.id").value(100L))
                 .andExpect(jsonPath("$.stockPosterior").value(15));
     }
 
     @Test
     @DisplayName("POST /api/v1/inventario/ajustes: Retorna 201 Created al registrar ajuste")
     void registrarAjusteStock_retorna201() throws Exception {
-        AjusteStockRequestDTO request = AjusteStockRequestDTO.builder()
-                .idProducto(1L)
-                .cantidad(2)
-                .tipoAjuste("DECREMENTO")
-                .motivo(3)
-                .observaciones("Lente astillado en exhibidor")
-                .build();
+        AjusteStockRequestDTO request = new AjusteStockRequestDTO(1L, 2, "DECREMENTO", 3, "Lente astillado en exhibidor");
 
-        MovimientoStockResponseDTO ajusteResponse = MovimientoStockResponseDTO.builder()
-                .idMovimiento(101L)
-                .idProducto(1L)
-                .cantidad(2)
-                .stockPrevio(15)
-                .stockPosterior(13)
-                .motivo(3)
-                .motivoDescripcion("Daño / Deterioro")
-                .observaciones("Lente astillado en exhibidor")
-                .build();
+        MovimientoStockResponseDTO ajusteResponse = new MovimientoStockResponseDTO(101L, 1L, null, null, 2, 15, 13, 3, "Daño / Deterioro", "Lente astillado en exhibidor", null, null);
 
         when(inventarioStockService.registrarAjusteStock(any(AjusteStockRequestDTO.class), anyString()))
                 .thenReturn(ajusteResponse);
@@ -156,19 +114,14 @@ class InventarioStockControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.idMovimiento").value(101L))
+                .andExpect(jsonPath("$.id").value(101L))
                 .andExpect(jsonPath("$.stockPosterior").value(13));
     }
 
     @Test
     @DisplayName("GET /api/v1/inventario/alertas/bajo-stock: Retorna 200 OK con lista de alertas")
     void listarAlertasBajoStock_retorna200() throws Exception {
-        ProductoResponseDTO alerta = ProductoResponseDTO.builder()
-                .idProducto(2L)
-                .codigo("MONT-002")
-                .nombre("Montura Agotada")
-                .stock(1)
-                .build();
+        ProductoResponseDTO alerta = new ProductoResponseDTO(2L, "MONT-002", "Montura Agotada", null, null, null, 1, null, null, null, null, null, null, null);
 
         when(inventarioStockService.listarAlertasBajoStock(5)).thenReturn(List.of(alerta));
 

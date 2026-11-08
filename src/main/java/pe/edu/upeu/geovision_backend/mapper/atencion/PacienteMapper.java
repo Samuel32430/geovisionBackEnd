@@ -11,9 +11,9 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 public class PacienteMapper {
 
     public Persona toPersona(PersonaRequestDTO request) {
-        Persona persona = new Persona();
-        actualizarPersona(persona, request);
-        return persona;
+        return new Persona(null, request.nombres().trim(), request.apellidos().trim(), limpiar(request.telefono()),
+                request.fechaNacimiento(), request.sexo(), limpiar(request.direccion()),
+                request.numeroDocumento().trim(), request.tipoDocumento());
     }
 
     public void actualizarPersona(Persona persona, PersonaRequestDTO request) {
@@ -29,27 +29,11 @@ public class PacienteMapper {
 
     public PacienteResponseDTO toPacienteResponse(Paciente paciente) {
         Persona persona = paciente.getPersona();
-        PersonaResponseDTO datos = PersonaResponseDTO.builder()
-                .idPersona(persona.getIdPersona())
-                .nombres(persona.getNombres())
-                .apellidos(persona.getApellidos())
-                .telefono(persona.getTelefono())
-                .direccion(persona.getDireccion())
-                .fechaNacimiento(persona.getFechaNacimiento())
-                .sexo(persona.getSexo())
-                .sexoDescripcion(persona.getSexo() == null ? null : persona.getSexo().getDescripcion())
-                .tipoDocumento(persona.getTipoDocumento())
-                .tipoDocumentoDescripcion(persona.getTipoDocumento().getDescripcion())
-                .numeroDocumento(persona.getNumeroDocumento())
-                .build();
-        return PacienteResponseDTO.builder()
-                .idPersona(paciente.getIdPersona())
-                .persona(datos)
-                .estado((paciente.getActivo() == null ? null : Boolean.TRUE.equals(paciente.getActivo()) ? 1 : 0))
-                .estadoDescripcion(Boolean.TRUE.equals(paciente.getActivo()) ? "Activo" : "Inactivo")
-                .fechaRegistro(paciente.getFechaRegistro())
-                .idUsuario(paciente.getUsuario() == null ? null : paciente.getUsuario().getIdUsuario())
-                .build();
+        PersonaResponseDTO datos = new PersonaResponseDTO(persona.getId(), persona.getNombres(),
+                persona.getApellidos(), null, persona.getTelefono(), persona.getFechaNacimiento(), persona.getSexo(),
+                persona.getSexo() == null ? null : persona.getSexo().getDescripcion(), persona.getDireccion(),
+                persona.getTipoDocumento(), persona.getTipoDocumento().getDescripcion(), persona.getNumeroDocumento());
+        return new PacienteResponseDTO(paciente.getId(), datos, (paciente.getActivo() == null ? null : Boolean.TRUE.equals(paciente.getActivo()) ? 1 : 0), Boolean.TRUE.equals(paciente.getActivo()) ? "Activo" : "Inactivo", paciente.getFechaRegistro(), paciente.getUsuario() == null ? null : paciente.getUsuario().getId());
     }
 
     private String limpiar(String valor) {

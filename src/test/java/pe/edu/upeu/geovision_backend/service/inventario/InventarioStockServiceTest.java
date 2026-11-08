@@ -72,36 +72,17 @@ class InventarioStockServiceTest {
 
     @BeforeEach
     void setUp() {
-        Categoria categoria = Categoria.builder().idCategoria(1L).nombre("MONTURAS").build();
+        Categoria categoria = new Categoria(1L, "MONTURAS", null, true, null);
 
-        producto = Producto.builder()
-                .idProducto(10L)
-                .codigo("MONT-001")
-                .nombre("Montura Aviator")
-                .precio(new BigDecimal("350.00"))
-                .stock(20)
-                .activo(true)
-                .categoria(categoria)
-                .fechaRegistro(LocalDateTime.now())
-                .build();
+        producto = new Producto(10L, "MONT-001", "Montura Aviator", null, null, new BigDecimal("350.00"), 20, true, LocalDateTime.now(), categoria);
 
-        usuario = Usuario.builder()
-                .idUsuario(1L)
-                .nombre("admin")
-                .correo("admin@geovision.com")
-                .activo(true)
-                .build();
+        usuario = new Usuario(1L, "admin", null, "admin@geovision.com", true, null);
     }
 
     @Test
     @DisplayName("CU513 / RF-74, RF-79: Registrar entrada de stock incrementa stock y crea Kardex con bloqueo pesimista")
     void registrarEntradaStockExitoso() {
-        EntradaStockRequestDTO request = EntradaStockRequestDTO.builder()
-                .idProducto(10L)
-                .cantidad(10)
-                .motivo(1)
-                .observaciones("Llegada de pedido proveedor N° 402")
-                .build();
+        EntradaStockRequestDTO request = new EntradaStockRequestDTO(10L, 10, 1, "Llegada de pedido proveedor N° 402");
 
         when(usuarioRepository.findByNombreOrCorreo("admin", "admin")).thenReturn(Optional.of(usuario));
         when(productoRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(producto));
@@ -109,14 +90,14 @@ class InventarioStockServiceTest {
 
         when(movimientoStockLogRepository.save(any(MovimientoStockLog.class))).thenAnswer(invocation -> {
             MovimientoStockLog log = invocation.getArgument(0);
-            log.setIdMovimiento(100L);
+            log.setId(100L);
             return log;
         });
 
         MovimientoStockResponseDTO response = inventarioStockService.registrarEntradaStock(request, "admin");
 
         assertThat(response).isNotNull();
-        assertThat(response.idMovimiento()).isEqualTo(100L);
+        assertThat(response.id()).isEqualTo(100L);
         assertThat(response.stockPrevio()).isEqualTo(20);
         assertThat(response.stockPosterior()).isEqualTo(30);
         assertThat(producto.getStock()).isEqualTo(30);
@@ -129,10 +110,7 @@ class InventarioStockServiceTest {
     @Test
     @DisplayName("CU513 / RF-76: Registrar entrada con cantidad <= 0 es rechazada")
     void registrarEntradaCantidadInvalidaRechazada() {
-        EntradaStockRequestDTO request = EntradaStockRequestDTO.builder()
-                .idProducto(10L)
-                .cantidad(0)
-                .build();
+        EntradaStockRequestDTO request = new EntradaStockRequestDTO(10L, 0, 1, null);
 
         assertThatThrownBy(() -> inventarioStockService.registrarEntradaStock(request, "admin"))
                 .isInstanceOf(ReglaNegocioException.class)
@@ -144,13 +122,8 @@ class InventarioStockServiceTest {
     @Test
     @DisplayName("CU513 / RF-75, RF-78: Ajuste de stock por incremento suma unidades y genera Kardex")
     void registrarAjusteIncrementoExitoso() {
-        AjusteStockRequestDTO request = AjusteStockRequestDTO.builder()
-                .idProducto(10L)
-                .cantidad(5)
-                .tipoAjuste("INCREMENTO")
-                .motivo(MotivoMovimientoStockEnum.AJUSTE_POR_DIFERENCIA.getCodigo())
-                .observaciones("Conteo físico anual arrojó 5 unidades adicionales")
-                .build();
+        AjusteStockRequestDTO request = new AjusteStockRequestDTO(10L, 5, "INCREMENTO",
+                MotivoMovimientoStockEnum.AJUSTE_POR_DIFERENCIA.getCodigo(), "Conteo físico anual arrojó 5 unidades adicionales");
 
         when(usuarioRepository.findByNombreOrCorreo("admin", "admin")).thenReturn(Optional.of(usuario));
         when(productoRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(producto));
@@ -158,7 +131,7 @@ class InventarioStockServiceTest {
 
         when(movimientoStockLogRepository.save(any(MovimientoStockLog.class))).thenAnswer(invocation -> {
             MovimientoStockLog log = invocation.getArgument(0);
-            log.setIdMovimiento(101L);
+            log.setId(101L);
             return log;
         });
 
@@ -173,13 +146,9 @@ class InventarioStockServiceTest {
     @Test
     @DisplayName("CU513 / RF-77: Impedir que un ajuste de salida deje stock negativo (Prevención estricta)")
     void registrarAjusteSalidaExcesivaRechazado() {
-        AjusteStockRequestDTO request = AjusteStockRequestDTO.builder()
-                .idProducto(10L)
-                .cantidad(25) // Stock actual es 20 -> dejaría -5
-                .tipoAjuste("DECREMENTO")
-                .motivo(MotivoMovimientoStockEnum.DANIO_DETERIORO.getCodigo())
-                .observaciones("Deterioro en exhibidor")
-                .build();
+        // Stock actual es 20; retirar 25 dejaría -5.
+        AjusteStockRequestDTO request = new AjusteStockRequestDTO(10L, 25, "DECREMENTO",
+                MotivoMovimientoStockEnum.DANIO_DETERIORO.getCodigo(), "Deterioro en exhibidor");
 
         when(usuarioRepository.findByNombreOrCorreo("admin", "admin")).thenReturn(Optional.of(usuario));
         when(productoRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(producto));
@@ -195,13 +164,7 @@ class InventarioStockServiceTest {
     @Test
     @DisplayName("CU513 / RF-75: Ajuste sin observaciones o justificación es rechazado")
     void registrarAjusteSinJustificacionRechazado() {
-        AjusteStockRequestDTO request = AjusteStockRequestDTO.builder()
-                .idProducto(10L)
-                .cantidad(2)
-                .tipoAjuste("DECREMENTO")
-                .motivo(3)
-                .observaciones("   ") // Vacía
-                .build();
+        AjusteStockRequestDTO request = new AjusteStockRequestDTO(10L, 2, "DECREMENTO", 3, "   ");
 
         assertThatThrownBy(() -> inventarioStockService.registrarAjusteStock(request, "admin"))
                 .isInstanceOf(ReglaNegocioException.class)
@@ -218,7 +181,7 @@ class InventarioStockServiceTest {
         ProductoStockResponseDTO response = inventarioStockService.consultarStockActual(10L, 5);
 
         assertThat(response).isNotNull();
-        assertThat(response.idProducto()).isEqualTo(10L);
+        assertThat(response.id()).isEqualTo(10L);
         assertThat(response.stockActual()).isEqualTo(20);
         assertThat(response.disponible()).isTrue();
         assertThat(response.stockMinimoReferencial()).isEqualTo(5);
@@ -227,14 +190,7 @@ class InventarioStockServiceTest {
     @Test
     @DisplayName("CU514 / RF-82: Consultar productos con stock bajo o agotado")
     void listarAlertasBajoStock() {
-        Producto productoBajo = Producto.builder()
-                .idProducto(11L)
-                .codigo("MONT-002")
-                .nombre("Montura Estuche")
-                .stock(2)
-                .precio(new BigDecimal("100.00"))
-                .activo(true)
-                .build();
+        Producto productoBajo = new Producto(11L, "MONT-002", "Montura Estuche", null, null, new BigDecimal("100.00"), 2, true, null, null);
 
         when(productoRepository.findProductosBajoStock(5)).thenReturn(List.of(productoBajo));
         when(monturaRepository.findById(11L)).thenReturn(Optional.empty());
@@ -242,7 +198,7 @@ class InventarioStockServiceTest {
         List<ProductoResponseDTO> alertas = inventarioStockService.listarAlertasBajoStock(5);
 
         assertThat(alertas).hasSize(1);
-        assertThat(alertas.get(0).idProducto()).isEqualTo(11L);
+        assertThat(alertas.get(0).id()).isEqualTo(11L);
         assertThat(alertas.get(0).stock()).isEqualTo(2);
     }
 
@@ -250,19 +206,10 @@ class InventarioStockServiceTest {
     @DisplayName("CU514 / RF-83: Consultar historial de movimientos (Kardex) de un producto")
     void listarMovimientosKardex() {
         Pageable pageable = PageRequest.of(0, 10);
-        MovimientoStockLog log = MovimientoStockLog.builder()
-                .idMovimiento(1L)
-                .producto(producto)
-                .usuario(usuario)
-                .cantidad(5)
-                .stockPrevio(15)
-                .stockPosterior(20)
-                .motivo(1)
-                .fechaRegistro(LocalDateTime.now())
-                .build();
+        MovimientoStockLog log = new MovimientoStockLog(1L, LocalDateTime.now(), 5, 15, 20, 1, null, producto, usuario);
 
         when(productoRepository.existsById(10L)).thenReturn(true);
-        when(movimientoStockLogRepository.findByProductoIdProductoOrderByFechaRegistroDesc(10L, pageable))
+        when(movimientoStockLogRepository.findByProductoIdOrderByFechaRegistroDesc(10L, pageable))
                 .thenReturn(new PageImpl<>(List.of(log), pageable, 1));
 
         Page<MovimientoStockResponseDTO> kardex = inventarioStockService.listarMovimientosKardex(10L, pageable);

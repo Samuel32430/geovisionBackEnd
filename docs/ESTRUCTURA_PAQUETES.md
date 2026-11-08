@@ -100,10 +100,12 @@ Los 62 tipos DTO son records: se convirtieron las 55 clases restantes y se
 conservaron los siete records existentes, incluido el DTO genérico de paginación.
 El DTO de errores también es un record. Los consumidores usan accesores como
 `request.nombre()`; las actualizaciones de fixtures construyen nuevas instancias.
-Los builders y `toBuilder()` facilitan la construcción de los DTO con muchos campos.
+Los DTO se instancian únicamente mediante el constructor canónico implícito del
+record, sin builders, `toBuilder()` ni constructores adicionales.
 
 Las restricciones Jakarta Validation permanecen en los componentes. Los DTO con
-valores predeterminados se deserializan mediante sus builders para conservar la
+valores predeterminados usan deserializadores externos en `DtoDefaultsJackson2`
+y `DtoDefaultsJackson3` para conservar la
 diferencia entre campo omitido y `null` explícito, con soporte para Jackson 2 y 3.
 Se mantienen los campos JSON calculados, la proyección de selección de empleados
 y la exclusión de contraseñas de `UsuarioRequestDTO.toString()`.
@@ -111,6 +113,52 @@ y la exclusión de contraseñas de `UsuarioRequestDTO.toString()`.
 `./mvnw.cmd -o clean test`: **241 pruebas correctas, 0 fallos y 0 errores**.
 Incluye siete pruebas de compatibilidad JSON, defaults, propiedades calculadas y
 redacción de contraseñas. Log: `target/dto-record-final-tests.log`.
+
+## Constructores y relación lente–medida
+
+Se evaluaron antes del cambio los riesgos de argumentos posicionales, defaults
+JSON, requisitos de JPA e integridad de medidas clínicas compartidas. Los 33
+entities conservan `@NoArgsConstructor` para JPA y `@AllArgsConstructor`; los
+consumidores usan el constructor completo. Se retiraron todos los builders de
+DTO y entities, actualizando servicios, mappers, controladores y fixtures.
+
+`Lente.medidas` es una relación `@ManyToMany` lazy, sin cascada de eliminación,
+con un conjunto ordenado por `id`. Se eliminaron `LenteMedida` y su
+repositorio; consultas e historiales usan la colección. La tabla Oracle
+`LENTE_MEDIDA` y su columna identity existente permanecen sin cambios de DDL.
+No se ejecutó ninguna migración ni se verificó una conexión Oracle real.
+
+Verificación: `./mvnw.cmd -o clean test`, **242 pruebas, 0 fallos y 0 errores**.
+Las pruebas H2 verifican vínculos únicos, orden, carga lazy y conservación de
+medidas compartidas al desvincularlas o eliminar un lente. Se mantienen las
+pruebas de rollback y los contratos JSON con ambos Jackson.
+Log: `target/constructor-manytomany-final.log`.
+
+## Identificadores uniformes y tratamientos del lente
+
+Los 32 entities restantes usan `id` como atributo de clave primaria y
+`getId()`/`setId()` como accesores. Los nombres físicos de columnas Oracle se
+conservan mediante `@Column`; las relaciones con `@MapsId` mantienen sus claves
+compartidas. Se actualizaron JPQL, métodos derivados, proyecciones y ordenación.
+
+En 34 DTO se renombró la identidad principal a `id`, incluido el paciente cuya
+clave se comparte con persona. Los identificadores de entidades referenciadas
+conservan nombres como `idPaciente`, `idReceta` e `idProducto`. Los DTO de
+operaciones que todavía no tienen identidad propia conservan sus referencias.
+Este cambio modifica los nombres JSON públicos y los campos de ordenación por
+ID: los consumidores deben usar `id` para la entidad principal.
+
+Se eliminaron `LenteTratamientoCristal` y su repositorio. La colección lazy
+`Lente.tratamientosCristal` usa `@ManyToMany`, sin cascadas, con orden por `id`.
+Se conserva la tabla `LENTE_TRATAMIENTO_CRISTAL`, incluida su columna identity;
+no se requiere un cambio del DDL inspeccionado. Las pruebas verifican que
+desvincular o eliminar lentes conserva los tratamientos compartidos y que un
+fallo después del flush revierte el lente y ambos conjuntos de vínculos.
+Oracle real permanece sin verificar; las pruebas de persistencia usan H2.
+
+Verificación final: `./mvnw.cmd -o test`, **245 pruebas, 0 fallos y 0 errores**,
+después de eliminar los binarios antiguos con `clean`. Log:
+`target/id-treatment-tests.log`.
 
 ## Inventario completo
 
@@ -207,8 +255,6 @@ redacción de contraseñas. Log: `target/dto-record-final-tests.log`.
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/EnvioLaboratorio.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/orden_trabajo/EnvioLaboratorio.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/Laboratorio.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/gestion_mantenimiento/Laboratorio.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/Lente.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/atencion/Lente.java` |
-| `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/LenteMedida.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/atencion/LenteMedida.java` |
-| `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/LenteTratamientoCristal.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/atencion/LenteTratamientoCristal.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/MaterialCristal.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/gestion_mantenimiento/MaterialCristal.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/Medida.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/atencion/Medida.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/MedidaOjo.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/atencion/MedidaOjo.java` |
@@ -271,9 +317,7 @@ redacción de contraseñas. Log: `target/dto-record-final-tests.log`.
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/EmpleadoRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/security/EmpleadoRepository.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/EnvioLaboratorioRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/orden_trabajo/EnvioLaboratorioRepository.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/LaboratorioRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/gestion_mantenimiento/LaboratorioRepository.java` |
-| `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/LenteMedidaRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/atencion/LenteMedidaRepository.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/LenteRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/atencion/LenteRepository.java` |
-| `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/LenteTratamientoCristalRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/atencion/LenteTratamientoCristalRepository.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/MantenimientoLock.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/gestion_mantenimiento/MantenimientoLock.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/MaterialCristalRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/gestion_mantenimiento/MaterialCristalRepository.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/repository/MedidaOjoRepository.java` | `src/main/java/pe/edu/upeu/geovision_backend/repository/atencion/MedidaOjoRepository.java` |

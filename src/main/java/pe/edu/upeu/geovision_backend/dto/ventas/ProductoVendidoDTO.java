@@ -1,15 +1,13 @@
 package pe.edu.upeu.geovision_backend.dto.ventas;
 
-import lombok.Builder;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 
-@Builder(toBuilder = true)
 public record ProductoVendidoDTO(
-    Long idProductoVendido,
+    Long id,
     @NotNull(message = "El ID del producto es obligatorio")
     Long idProducto,
     String codigoProducto,

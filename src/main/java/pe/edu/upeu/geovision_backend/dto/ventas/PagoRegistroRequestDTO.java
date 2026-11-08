@@ -1,6 +1,5 @@
 package pe.edu.upeu.geovision_backend.dto.ventas;
 
-import lombok.Builder;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -8,7 +7,6 @@ import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 
 import java.math.BigDecimal;
 
-@Builder(toBuilder = true)
 public record PagoRegistroRequestDTO(
     Long idVenta,
     @NotNull(message = "El monto del pago es obligatorio")

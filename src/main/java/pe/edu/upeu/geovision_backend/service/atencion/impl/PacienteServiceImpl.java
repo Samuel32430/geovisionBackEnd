@@ -55,13 +55,13 @@ public class PacienteServiceImpl implements PacienteService {
         }
         Sort orden = pageable.getSort();
         for (Sort.Order campo : orden) {
-            if (!Set.of("idPersona", "fechaRegistro", "persona.nombres", "persona.apellidos")
+            if (!Set.of("id", "fechaRegistro", "persona.nombres", "persona.apellidos")
                     .contains(campo.getProperty())) {
                 throw new ReglaNegocioException("Campo de ordenamiento no permitido");
             }
         }
-        if (orden.getOrderFor("idPersona") == null) {
-            orden = orden.and(Sort.by("idPersona"));
+        if (orden.getOrderFor("id") == null) {
+            orden = orden.and(Sort.by("id"));
         }
         String busqueda = termino == null || termino.isBlank() ? null : termino.trim();
         if (busqueda != null) {
@@ -91,13 +91,13 @@ public class PacienteServiceImpl implements PacienteService {
     @Transactional
     public PacienteResponseDTO registrarPaciente(PacienteRequestDTO request, String usernameAuditoria) {
         Usuario actor = obtenerActor(usernameAuditoria, request.idUsuario());
-        if ((request.idPersona() == null) == (request.persona() == null)) {
-            throw new ReglaNegocioException("Envíe idPersona o los datos de persona, exclusivamente uno de ellos");
+        if ((request.id() == null) == (request.persona() == null)) {
+            throw new ReglaNegocioException("Envíe id o los datos de persona, exclusivamente uno de ellos");
         }
         Persona persona;
-        if (request.idPersona() != null) {
-            persona = bloquearPersona(request.idPersona());
-            if (pacienteRepository.existsById(persona.getIdPersona())) {
+        if (request.id() != null) {
+            persona = bloquearPersona(request.id());
+            if (pacienteRepository.existsById(persona.getId())) {
                 throw new ReglaNegocioException("La persona ya está registrada como paciente");
             }
         } else {
@@ -108,8 +108,7 @@ public class PacienteServiceImpl implements PacienteService {
             persona = pacienteMapper.toPersona(request.persona());
             guardarPersona(persona);
         }
-        Paciente paciente = Paciente.builder().persona(persona).usuario(actor)
-                .activo(estado(request.estado() == null ? 1 : request.estado())).build();
+        Paciente paciente = new Paciente(null, persona, estado(request.estado() == null ? 1 : request.estado()), null, actor);
         pacienteRepository.saveAndFlush(paciente);
         auditar(paciente, actor);
         return pacienteMapper.toPacienteResponse(paciente);
@@ -123,13 +122,13 @@ public class PacienteServiceImpl implements PacienteService {
         if (request.persona() == null) {
             throw new ReglaNegocioException("Los datos de persona son obligatorios para actualizar");
         }
-        if (request.idPersona() != null && !request.idPersona().equals(idPaciente)) {
+        if (request.id() != null && !request.id().equals(idPaciente)) {
             throw new ReglaNegocioException("No se puede cambiar la identidad del paciente");
         }
         Persona persona = bloquearPersona(idPaciente);
         Paciente paciente = buscarPaciente(idPaciente);
         String documento = request.persona().numeroDocumento().trim();
-        if (personaRepository.existsByNumeroDocumentoAndIdPersonaNot(documento, idPaciente)) {
+        if (personaRepository.existsByNumeroDocumentoAndIdNot(documento, idPaciente)) {
             throw new ReglaNegocioException("El documento ya pertenece a otra persona");
         }
         pacienteMapper.actualizarPersona(persona, request.persona());
@@ -171,7 +170,7 @@ public class PacienteServiceImpl implements PacienteService {
         Usuario actor = usuarioRepository.findByNombre(username)
                 .filter(usuario -> Boolean.TRUE.equals(usuario.getActivo()))
                 .orElseThrow(() -> new AccessDeniedException("Usuario no habilitado"));
-        if (idSolicitado != null && !idSolicitado.equals(actor.getIdUsuario())) {
+        if (idSolicitado != null && !idSolicitado.equals(actor.getId())) {
             throw new AccessDeniedException("El usuario de auditoría debe ser el usuario autenticado");
         }
         return actor;
@@ -194,6 +193,6 @@ public class PacienteServiceImpl implements PacienteService {
     }
 
     private void auditar(Paciente paciente, Usuario actor) {
-        pacienteLogRepository.saveAndFlush(PacienteLog.builder().paciente(paciente).usuario(actor).build());
+        pacienteLogRepository.saveAndFlush(new PacienteLog(null, null, actor, paciente));
     }
 }

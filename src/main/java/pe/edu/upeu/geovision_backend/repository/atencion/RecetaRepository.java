@@ -18,23 +18,23 @@ import java.util.Optional;
 @Repository
 public interface RecetaRepository extends JpaRepository<Receta, Long>, JpaSpecificationExecutor<Receta> {
 
-    List<Receta> findByPacienteIdPersonaOrderByFechaRegistroDesc(Long idPaciente);
+    List<Receta> findByPacienteIdOrderByFechaRegistroDesc(Long idPaciente);
 
     @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
-    Page<Receta> findByPacienteIdPersona(Long idPaciente, Pageable pageable);
+    Page<Receta> findByPacienteId(Long idPaciente, Pageable pageable);
 
     @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
-    List<Receta> findByPacienteIdPersonaOrderByFechaRegistroDescIdRecetaDesc(Long idPaciente);
+    List<Receta> findByPacienteIdOrderByFechaRegistroDescIdDesc(Long idPaciente);
 
-    List<Receta> findByEmpleadoIdPersona(Long idEmpleado);
+    List<Receta> findByEmpleadoId(Long idEmpleado);
 
     Page<Receta> findByEsExterno(Integer esExterno, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT r FROM Receta r WHERE r.idReceta = :id")
+    @Query("SELECT r FROM Receta r WHERE r.id = :id")
     Optional<Receta> findByIdForUpdate(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
-    @Query("SELECT r FROM Receta r WHERE r.idReceta = :id")
+    @Query("SELECT r FROM Receta r WHERE r.id = :id")
     Optional<Receta> findByIdWithDetails(@Param("id") Long id);
 }

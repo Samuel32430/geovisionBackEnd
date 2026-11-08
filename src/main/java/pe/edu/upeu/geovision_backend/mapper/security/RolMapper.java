@@ -27,11 +27,7 @@ public class RolMapper {
             return null;
         }
 
-        return RolDTO.builder()
-                .idRol(rol.getIdRol())
-                .nombre(rol.getNombre())
-                .permisos(permisos != null ? permisos : Collections.emptySet())
-                .build();
+        return new RolDTO(rol.getId(), rol.getNombre(), permisos != null ? permisos : Collections.emptySet());
     }
 
     public Rol toEntity(RolDTO dto) {
@@ -39,9 +35,6 @@ public class RolMapper {
             return null;
         }
 
-        return Rol.builder()
-                .idRol(dto.idRol())
-                .nombre(dto.nombre())
-                .build();
+        return new Rol(dto.id(), dto.nombre());
     }
 }

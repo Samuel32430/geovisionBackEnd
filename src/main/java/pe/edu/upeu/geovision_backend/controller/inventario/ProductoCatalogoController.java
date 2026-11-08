@@ -109,7 +109,7 @@ public class ProductoCatalogoController {
         boolean disponible = productoCatalogoService.validarDisponibilidad(id, cantidad);
 
         return ResponseEntity.ok(Map.of(
-                "idProducto", id,
+                "id", id,
                 "cantidadSolicitada", cantidad,
                 "disponible", disponible
         ));

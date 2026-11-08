@@ -100,7 +100,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
             monturaGuardada = monturaRepository.save(montura);
         }
 
-        log.info("Producto registrado exitosamente con ID: {}", productoGuardado.getIdProducto());
+        log.info("Producto registrado exitosamente con ID: {}", productoGuardado.getId());
         return productoMapper.toResponseDTO(productoGuardado, monturaGuardada);
     }
 
@@ -117,7 +117,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
                 .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + id));
 
         String nuevoCodigo = request.codigo().trim();
-        if (productoRepository.existsByCodigoAndIdProductoNot(nuevoCodigo, id)) {
+        if (productoRepository.existsByCodigoAndIdNot(nuevoCodigo, id)) {
             throw new ReglaNegocioException("Ya existe otro producto registrado con el código: " + nuevoCodigo);
         }
 
@@ -208,7 +208,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
     }
 
     private ProductoResponseDTO construirResponseDTO(Producto producto) {
-        Montura montura = monturaRepository.findById(producto.getIdProducto()).orElse(null);
+        Montura montura = monturaRepository.findById(producto.getId()).orElse(null);
         return productoMapper.toResponseDTO(producto, montura);
     }
 }

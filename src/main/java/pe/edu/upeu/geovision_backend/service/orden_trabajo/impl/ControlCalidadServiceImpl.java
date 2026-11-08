@@ -14,11 +14,9 @@ import pe.edu.upeu.geovision_backend.dto.orden_trabajo.PoliticaCalidadDTO;
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.repository.orden_trabajo.EnvioLaboratorioRepository;
-import pe.edu.upeu.geovision_backend.repository.atencion.LenteMedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaOjoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.MedidaRepository;
 import pe.edu.upeu.geovision_backend.repository.orden_trabajo.OrdenTrabajoRepository;
-import pe.edu.upeu.geovision_backend.entity.atencion.LenteMedida;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.mapper.orden_trabajo.OrdenTrabajoMapper;
 import pe.edu.upeu.geovision_backend.mapper.atencion.RecetaMapper;
@@ -36,7 +34,6 @@ import pe.edu.upeu.geovision_backend.service.orden_trabajo.ControlCalidadService
 public class ControlCalidadServiceImpl implements ControlCalidadService {
     private final OrdenTrabajoRepository ordenes;
     private final EnvioLaboratorioRepository envios;
-    private final LenteMedidaRepository lenteMedidas;
     private final MedidaRepository medidas;
     private final MedidaOjoRepository ojos;
     private final ActorOrdenTrabajo actores;
@@ -68,10 +65,10 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         var ot = envio.getOrdenTrabajo();
         if (ot.getEstado() != EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO || envio.getFechaRecepcion() == null)
             throw new ReglaNegocioException("Debe recibir el ultimo envio antes de registrar calidad");
-        if (envio.getFechaRevision() != null || envio.getAprobado() != null || !medidas.findByEnvioLaboratorioIdEnvioLaboratorioOrderByIdMedidaAsc(envio.getIdEnvioLaboratorio()).isEmpty())
+        if (envio.getFechaRevision() != null || envio.getAprobado() != null || !medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
             throw new ReglaNegocioException("Este envio ya tiene un control; para recontrolar registre un nuevo envio y recepcion");
-        ventasOrden.bloquear(ot.getLente().getReceta().getIdReceta());
-        var referencia = lenteMedidas.findByLenteIdLente(ot.getLente().getIdLente()).stream().map(LenteMedida::getMedida).toList();
+        ventasOrden.bloquear(ot.getLente().getReceta().getId());
+        var referencia = new java.util.ArrayList<>(ot.getLente().getMedidas());
         boolean aprobado = comparador.comparar(referencia, request.medidasLensometria(), p);
         for (var m : request.medidasLensometria()) {
             var derecha = ojos.save(recetas.toMedidaOjo(m.ojoDerecho()));

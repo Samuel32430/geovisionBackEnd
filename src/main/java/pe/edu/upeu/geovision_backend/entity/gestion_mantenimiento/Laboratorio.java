@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,13 +18,12 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Laboratorio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_laboratorio")
-    private Long idLaboratorio;
+    private Long id;
 
     @Column(name = "nombre", nullable = false, length = 200)
     private String nombre;
@@ -43,7 +41,6 @@ public class Laboratorio {
     private String correo;
 
     @Column(name = "estado", nullable = false)
-    @Builder.Default
     private Boolean activo = true;
 
     @PrePersist

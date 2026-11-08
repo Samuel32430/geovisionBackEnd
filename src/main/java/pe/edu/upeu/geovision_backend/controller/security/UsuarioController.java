@@ -103,8 +103,10 @@ public class UsuarioController {
         if ((long) page * size > Integer.MAX_VALUE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La página solicitada excede el límite permitido");
         }
-        return ResponseEntity.ok(PaginaResponseDTO.de(usuarioService.buscarPersonasParaUsuario(termino, sinUsuario,
-                PageRequest.of(page, size, Sort.by("apellidos", "nombres", "idPersona")))));
+        var resultado = usuarioService.buscarPersonasParaUsuario(termino, sinUsuario,
+                PageRequest.of(page, size, Sort.by("apellidos", "nombres", "id")));
+        return ResponseEntity.ok(new PaginaResponseDTO<>(resultado.getContent(), resultado.getNumber(), resultado.getSize(),
+                resultado.getTotalElements(), resultado.getTotalPages(), resultado.isFirst(), resultado.isLast(), resultado.isEmpty()));
     }
 
     @PostMapping("/con-persona")

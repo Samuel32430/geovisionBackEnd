@@ -83,12 +83,12 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
         var ot=ordenes.findByIdForUpdate(id).orElseThrow(()->new RecursosNoEncontradosException("Orden no encontrada"));
         if(ot.getEstado()!=EstadoOrdenTrabajoEnum.LISTO_ENTREGA)
             throw new ReglaNegocioException("Solo se notifican ordenes listas para entrega");
-        var envio=envios.findFirstByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDescIdEnvioLaboratorioDesc(id)
+        var envio=envios.findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(id)
             .orElseThrow(()->new ReglaNegocioException("La orden no tiene control de calidad aprobado"));
         if(envio.getFechaRecepcion()==null || envio.getFechaRevision()==null || !Integer.valueOf(1).equals(envio.getAprobado())
-            || medidas.findByEnvioLaboratorioIdEnvioLaboratorioOrderByIdMedidaAsc(envio.getIdEnvioLaboratorio()).isEmpty())
+            || medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
             throw new ReglaNegocioException("La orden requiere lensometria y control de calidad aprobado");
-        ventasOrden.bloquear(ot.getLente().getReceta().getIdReceta()); return ot;
+        ventasOrden.bloquear(ot.getLente().getReceta().getId()); return ot;
     }
     private void validarTelefono(OrdenTrabajo ot,String telefono) {
         if(telefono==null || !telefono.matches("\\+[1-9][0-9]{7,14}")) throw new ReglaNegocioException("Use telefono internacional E.164");
@@ -98,12 +98,12 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
     }
     private void validarActor(String nombre) {
         var u=usuarios.findByNombre(nombre).orElseThrow(()->new ReglaNegocioException("Usuario no disponible"));
-        var e=empleados.findByUsuarioIdUsuario(u.getIdUsuario()).orElseThrow(()->new ReglaNegocioException("La cuenta requiere empleado"));
+        var e=empleados.findByUsuarioId(u.getId()).orElseThrow(()->new ReglaNegocioException("La cuenta requiere empleado"));
         if(!Boolean.TRUE.equals(u.getActivo()) || !Boolean.TRUE.equals(e.getActivo()))
             throw new ReglaNegocioException("Se requiere usuario y empleado activos");
     }
     private NotificacionOrdenResponseDTO respuesta(OrdenTrabajo ot,String canal,String estado,String telefono,String referencia,String detalle,String enlace) {
-        return new NotificacionOrdenResponseDTO(ot.getIdOrdenTrabajo(),canal,estado,telefono,MENSAJE,
+        return new NotificacionOrdenResponseDTO(ot.getId(),canal,estado,telefono,MENSAJE,
             ot.getFechaNotificacion(),referencia,detalle,enlace);
     }
 }

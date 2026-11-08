@@ -59,22 +59,11 @@ class RolServiceTest {
 
     @BeforeEach
     void setUp() {
-        testRol = Rol.builder()
-                .idRol(1L)
-                .nombre("VENDEDOR")
-                .build();
+        testRol = new Rol(1L, "VENDEDOR");
 
-        permisoVentas = Permiso.builder()
-                .idPermiso(10L)
-                .nombre("VENTAS_REGISTRAR")
-                .modulo(ModuloEnum.VENTAS)
-                .build();
+        permisoVentas = new Permiso(10L, "VENTAS_REGISTRAR", ModuloEnum.VENTAS);
 
-        permisoPacientes = Permiso.builder()
-                .idPermiso(20L)
-                .nombre("PACIENTES_REGISTRAR")
-                .modulo(ModuloEnum.ATENCION_PACIENTES)
-                .build();
+        permisoPacientes = new Permiso(20L, "PACIENTES_REGISTRAR", ModuloEnum.ATENCION_PACIENTES);
     }
 
     @Test
@@ -84,9 +73,9 @@ class RolServiceTest {
 
         when(rolRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testRol));
         when(permisoRepository.findAllById(permisoIds)).thenReturn(List.of(permisoVentas, permisoPacientes));
-        when(permisoMapper.toDTO(permisoVentas)).thenReturn(PermisoDTO.builder().idPermiso(10L).nombre("VENTAS_REGISTRAR").build());
-        when(permisoMapper.toDTO(permisoPacientes)).thenReturn(PermisoDTO.builder().idPermiso(20L).nombre("PACIENTES_REGISTRAR").build());
-        when(rolMapper.toDTO(eq(testRol), any())).thenReturn(RolDTO.builder().idRol(1L).nombre("VENDEDOR").build());
+        when(permisoMapper.toDTO(permisoVentas)).thenReturn(new PermisoDTO(10L, "VENTAS_REGISTRAR", null, null));
+        when(permisoMapper.toDTO(permisoPacientes)).thenReturn(new PermisoDTO(20L, "PACIENTES_REGISTRAR", null, null));
+        when(rolMapper.toDTO(eq(testRol), any())).thenReturn(new RolDTO(1L, "VENDEDOR", null));
 
         RolDTO response = rolService.asignarPermisos(1L, permisoIds);
 
