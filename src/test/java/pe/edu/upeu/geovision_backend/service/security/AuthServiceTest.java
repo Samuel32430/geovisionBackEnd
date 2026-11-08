@@ -25,7 +25,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.security.Rol;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.security.UsuarioRol;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.TipoLogEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.security.PermisoMapper;
@@ -109,7 +108,7 @@ class AuthServiceTest {
                 .nombre("juan.perez")
                 .correo("juan@geovision.com")
                 .password("$2a$10$encodedHash")
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .persona(testPersona)
                 .build();
 

@@ -17,7 +17,6 @@ import pe.edu.upeu.geovision_backend.dto.atencion.PersonaRequestDTO;
 import pe.edu.upeu.geovision_backend.entity.atencion.PacienteLog;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.repository.atencion.PacienteLogRepository;
@@ -93,7 +92,7 @@ class PacienteControllerTest {
         // Repetir la misma transición es idempotente y no duplica el evento.
         mvc.perform(patch("/api/v1/pacientes/{id}/estado", id).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"estado\":0}")).andExpect(status().isOk());
-        assertThat(patients.findById(id).orElseThrow().getEstado()).isEqualTo(EstadoGeneralEnum.INACTIVO);
+        assertThat(patients.findById(id).orElseThrow().getActivo()).isEqualTo(false);
         assertThat(people.existsById(id)).isTrue();
         assertThat(patients.findById(id).orElseThrow().getFechaRegistro()).isEqualTo(registered);
         assertThat(logs.findByPacienteIdPersonaOrderByFechaLogDesc(id)).hasSize(3)
@@ -154,7 +153,7 @@ class PacienteControllerTest {
         request.setIdUsuario(actor.getIdUsuario() + 9999);
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(request))).andExpect(status().isForbidden());
-        actor.setEstado(EstadoGeneralEnum.INACTIVO);
+        actor.setActivo(false);
         users.saveAndFlush(actor);
         request.setIdUsuario(null);
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
@@ -188,7 +187,7 @@ class PacienteControllerTest {
         var request = request(document);
         request.getPersona().setNombres("Porcentaje%_!");
         var created = service.registrarPaciente(request, actor.getNombre());
-        var page = service.listarPacientes("%_!", EstadoGeneralEnum.ACTIVO,
+        var page = service.listarPacientes("%_!", true,
                 org.springframework.data.domain.PageRequest.of(0, 10));
         assertThat(page.getContent()).extracting("idPersona").containsExactly(created.getIdPersona());
     }

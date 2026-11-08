@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +32,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     boolean existsByCorreoAndIdUsuarioNot(String correo, Long idUsuario);
 
-    List<Usuario> findByEstado(EstadoGeneralEnum estado);
+    List<Usuario> findByActivo(Boolean estado);
 
     Optional<Usuario> findByPersonaIdPersona(Long idPersona);
 }

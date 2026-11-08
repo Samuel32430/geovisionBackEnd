@@ -15,7 +15,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Paciente;
 import pe.edu.upeu.geovision_backend.entity.ventas.Pago;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
@@ -70,12 +69,12 @@ class PagoPendienteServiceTest {
         paciente = Paciente.builder()
                 .idPersona(10L)
                 .persona(personaPaciente)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
 
         empleado = Empleado.builder()
                 .idPersona(1L)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
 
         ventaPendiente = Venta.builder()

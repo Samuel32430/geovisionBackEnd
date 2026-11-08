@@ -27,7 +27,6 @@ import pe.edu.upeu.geovision_backend.entity.orden_trabajo.OrdenTrabajo;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
@@ -136,7 +135,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         } else if(envios.findFirstByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDescIdEnvioLaboratorioDesc(ot.getIdOrdenTrabajo()).isPresent()) {
             throw new ReglaNegocioException("La orden pendiente ya registra un envio incompatible");
         }
-        var laboratorio=laboratorios.findById(request.getIdLaboratorio()).filter(l->l.getEstado()==EstadoGeneralEnum.ACTIVO)
+        var laboratorio=laboratorios.findById(request.getIdLaboratorio()).filter(l->Boolean.TRUE.equals(l.getActivo()))
             .orElseThrow(()->new ReglaNegocioException("Seleccione un laboratorio existente y activo"));
         var envio=EnvioLaboratorio.builder().ordenTrabajo(ot).laboratorio(laboratorio)
             .fechaRecepcionEstimada(request.getFechaRecepcionEstimada())
@@ -188,9 +187,9 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     }
     @Override @Transactional(readOnly=true)
     public List<LaboratorioDTO> laboratorios() {
-        return laboratorios.findByEstado(EstadoGeneralEnum.ACTIVO).stream().map(l->LaboratorioDTO.builder()
+        return laboratorios.findByActivo(true).stream().map(l->LaboratorioDTO.builder()
             .idLaboratorio(l.getIdLaboratorio()).nombre(l.getNombre()).ruc(l.getRuc()).telefono(l.getTelefono())
-            .direccion(l.getDireccion()).correo(l.getCorreo()).estado(l.getEstadoCodigo()).build()).toList();
+            .direccion(l.getDireccion()).correo(l.getCorreo()).estado((l.getActivo() == null ? null : Boolean.TRUE.equals(l.getActivo()) ? 1 : 0)).build()).toList();
     }
     private String escapar(String t) { return t==null?null:t.replace("!","!!").replace("%","!%").replace("_","!_"); }
     private String limpiar(String t) { return t==null || t.isBlank()?null:t.trim(); }

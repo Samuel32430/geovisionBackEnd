@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Laboratorio;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,9 +19,9 @@ public interface LaboratorioRepository extends JpaRepository<Laboratorio, Long>,
 
     boolean existsByRucAndIdLaboratorioNot(String ruc, Long idLaboratorio);
 
-    List<Laboratorio> findByEstado(EstadoGeneralEnum estado);
+    List<Laboratorio> findByActivo(Boolean estado);
 
-    Page<Laboratorio> findByEstado(EstadoGeneralEnum estado, Pageable pageable);
+    Page<Laboratorio> findByActivo(Boolean estado, Pageable pageable);
 
     Page<Laboratorio> findByNombreContainingIgnoreCaseOrRucContaining(String nombre, String ruc, Pageable pageable);
 }

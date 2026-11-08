@@ -11,7 +11,6 @@ import pe.edu.upeu.geovision_backend.dto.inventario.ProductoResponseDTO;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Categoria;
 import pe.edu.upeu.geovision_backend.entity.inventario.Montura;
 import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.inventario.ProductoMapper;
@@ -37,7 +36,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
     public Page<ProductoResponseDTO> listarProductos(
             String termino,
             Long idCategoria,
-            EstadoGeneralEnum estado,
+            Boolean estado,
             Pageable pageable) {
 
         log.debug("Consultando productos con filtros: termino='{}', categoria={}, estado={}",
@@ -88,7 +87,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         Categoria categoria = categoriaRepository.findById(request.getIdCategoria())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Categoría no encontrada con ID: " + request.getIdCategoria()));
 
-        if (categoria.getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (!Boolean.TRUE.equals(categoria.getActivo())) {
             throw new ReglaNegocioException("No se pueden asociar productos a una categoría inactiva");
         }
 
@@ -125,7 +124,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         Categoria categoria = categoriaRepository.findById(request.getIdCategoria())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Categoría no encontrada con ID: " + request.getIdCategoria()));
 
-        if (categoria.getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (!Boolean.TRUE.equals(categoria.getActivo())) {
             throw new ReglaNegocioException("No se pueden asociar productos a una categoría inactiva");
         }
 
@@ -137,7 +136,10 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         producto.setCategoria(categoria);
 
         if (request.getEstado() != null) {
-            producto.setEstado(EstadoGeneralEnum.fromCodigo(request.getEstado()));
+            if (request.getEstado() != 0 && request.getEstado() != 1) {
+                throw new ReglaNegocioException("El estado debe ser 0 o 1");
+            }
+            producto.setActivo(request.getEstado() == 1);
         }
 
         Producto productoActualizado = productoRepository.save(producto);
@@ -171,15 +173,15 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         if (id == null || id <= 0) {
             throw new ReglaNegocioException("El ID del producto debe ser un número positivo");
         }
-        if (nuevoEstado == null) {
-            throw new ReglaNegocioException("El nuevo estado es obligatorio");
+        if (nuevoEstado == null || (nuevoEstado != 0 && nuevoEstado != 1)) {
+            throw new ReglaNegocioException("El nuevo estado debe ser 0 o 1");
         }
 
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + id));
 
-        EstadoGeneralEnum estado = EstadoGeneralEnum.fromCodigo(nuevoEstado);
-        producto.setEstado(estado);
+        Boolean estado = nuevoEstado == 1;
+        producto.setActivo(estado);
         Producto guardado = productoRepository.save(producto);
 
         return construirResponseDTO(guardado);
@@ -189,7 +191,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
     @Transactional(readOnly = true)
     public Page<ProductoResponseDTO> listarDisponiblesParaVenta(Pageable pageable) {
         log.debug("Listando productos disponibles para venta (activos y con stock > 0)");
-        return productoRepository.findByEstadoAndStockGreaterThan(EstadoGeneralEnum.ACTIVO, 0, pageable)
+        return productoRepository.findByActivoAndStockGreaterThan(true, 0, pageable)
                 .map(this::construirResponseDTO);
     }
 
@@ -201,7 +203,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         }
 
         return productoRepository.findById(idProducto)
-                .map(p -> p.getEstado() == EstadoGeneralEnum.ACTIVO && p.getStock() != null && p.getStock() >= cantidad)
+                .map(p -> Boolean.TRUE.equals(p.getActivo()) && p.getStock() != null && p.getStock() >= cantidad)
                 .orElse(false);
     }
 

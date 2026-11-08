@@ -26,7 +26,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.MedidaOjo;
 import pe.edu.upeu.geovision_backend.entity.atencion.Paciente;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
@@ -194,7 +193,7 @@ class RecetaControllerTest {
 
     @Test
     void rechazaPacienteInactivoYNoEncontrado() throws Exception {
-        patient.setEstado(EstadoGeneralEnum.INACTIVO);
+        patient.setActivo(false);
         patients.saveAndFlush(patient);
         expectPost("examen-visual", request(), 409);
         expectPost("externa", request(), 409);
@@ -208,12 +207,12 @@ class RecetaControllerTest {
         var request = request();
         request.setIdEmpleado(employee.getIdPersona() + 99999);
         expectPost("examen-visual", request, 403);
-        employee.setEstado(EstadoGeneralEnum.INACTIVO);
+        employee.setActivo(false);
         employees.saveAndFlush(employee);
         expectPost("examen-visual", request(), 403);
-        employee.setEstado(EstadoGeneralEnum.ACTIVO);
+        employee.setActivo(true);
         employees.saveAndFlush(employee);
-        actor.setEstado(EstadoGeneralEnum.INACTIVO);
+        actor.setActivo(false);
         users.saveAndFlush(actor);
         expectPost("externa", request(), 403);
     }

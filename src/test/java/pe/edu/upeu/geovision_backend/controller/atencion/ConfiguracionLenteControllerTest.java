@@ -28,7 +28,6 @@ import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCristal;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.MaterialMonturaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
@@ -101,9 +100,9 @@ class ConfiguracionLenteControllerTest {
                 .numeroDocumento(UUID.randomUUID().toString()).tipoDocumento(TipoDocumentoEnum.DNI).build());
     }
 
-    Montura frame(int stock, EstadoGeneralEnum state) {
+    Montura frame(int stock, Boolean state) {
         Producto product = products.saveAndFlush(Producto.builder().codigo(UUID.randomUUID().toString())
-                .nombre("Montura de prueba").precio(new BigDecimal("120.50")).stock(stock).estado(state).build());
+                .nombre("Montura de prueba").precio(new BigDecimal("120.50")).stock(stock).activo(state).build());
         return frames.saveAndFlush(Montura.builder().producto(product).color("Negro")
                 .modelo(ModeloMonturaEnum.ARO_COMPLETO).material(MaterialMonturaEnum.ACETATO).build());
     }
@@ -125,7 +124,7 @@ class ConfiguracionLenteControllerTest {
         clinical = List.of(measure(recipe, TipoMedidaEnum.LEJOS), measure(recipe, TipoMedidaEnum.CERCA));
         material = materials.saveAndFlush(MaterialCristal.builder().nombre("Resina " + UUID.randomUUID()).build());
         treatment = treatments.saveAndFlush(TratamientoCristal.builder().nombre("Filtro " + UUID.randomUUID()).build());
-        frame = frame(5, EstadoGeneralEnum.ACTIVO);
+        frame = frame(5, true);
     }
 
     LenteRequestDTO request() {
@@ -211,7 +210,7 @@ class ConfiguracionLenteControllerTest {
         products.saveAndFlush(frame.getProducto());
         expectPost(recipe.getIdReceta(), request, 409);
         frame.getProducto().setStock(5);
-        frame.getProducto().setEstado(EstadoGeneralEnum.INACTIVO);
+        frame.getProducto().setActivo(false);
         products.saveAndFlush(frame.getProducto());
         expectPost(recipe.getIdReceta(), request, 409);
         Producto other = products.saveAndFlush(Producto.builder().codigo(UUID.randomUUID().toString())
@@ -295,9 +294,9 @@ class ConfiguracionLenteControllerTest {
 
     @Test
     void catalogosDevuelvenDatosUtilesYMonturasActivasConStockEnPaginasEstables() throws Exception {
-        Montura second = frame(2, EstadoGeneralEnum.ACTIVO);
-        frame(0, EstadoGeneralEnum.ACTIVO);
-        frame(4, EstadoGeneralEnum.INACTIVO);
+        Montura second = frame(2, true);
+        frame(0, true);
+        frame(4, false);
         mvc.perform(get("/api/v1/catalogos-opticos/materiales-cristal"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].nombre").value(material.getNombre()));
         mvc.perform(get("/api/v1/catalogos-opticos/tratamientos-cristal"))

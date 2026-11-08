@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.MaterialCristalDTO;
 import pe.edu.upeu.geovision_backend.dto.inventario.MonturaDTO;
 import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.TratamientoCristalDTO;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.atencion.CatalogoOpticoMapper;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.MaterialCristalRepository;
@@ -65,7 +64,7 @@ public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
         if (orden.getOrderFor("idProducto") == null) {
             orden = orden.and(Sort.by("idProducto"));
         }
-        return monturaRepository.findByProductoEstadoAndProductoStockGreaterThan(EstadoGeneralEnum.ACTIVO, 0,
+        return monturaRepository.findByProductoActivoAndProductoStockGreaterThan(true, 0,
                         PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden))
                 .map(catalogoOpticoMapper::toMonturaDTO);
     }

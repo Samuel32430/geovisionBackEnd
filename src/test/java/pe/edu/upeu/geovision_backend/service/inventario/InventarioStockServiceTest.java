@@ -21,7 +21,6 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Categoria;
 import pe.edu.upeu.geovision_backend.entity.inventario.MovimientoStockLog;
 import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.MotivoMovimientoStockEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.inventario.MovimientoStockMapper;
@@ -81,7 +80,7 @@ class InventarioStockServiceTest {
                 .nombre("Montura Aviator")
                 .precio(new BigDecimal("350.00"))
                 .stock(20)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .categoria(categoria)
                 .fechaRegistro(LocalDateTime.now())
                 .build();
@@ -90,7 +89,7 @@ class InventarioStockServiceTest {
                 .idUsuario(1L)
                 .nombre("admin")
                 .correo("admin@geovision.com")
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
     }
 
@@ -234,7 +233,7 @@ class InventarioStockServiceTest {
                 .nombre("Montura Estuche")
                 .stock(2)
                 .precio(new BigDecimal("100.00"))
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
 
         when(productoRepository.findProductosBajoStock(5)).thenReturn(List.of(productoBajo));

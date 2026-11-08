@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Servicio;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +17,7 @@ public interface ServicioRepository extends JpaRepository<Servicio, Long>, JpaSp
 
     boolean existsByNombreIgnoreCase(String nombre);
 
-    List<Servicio> findByEstado(EstadoGeneralEnum estado);
+    List<Servicio> findByActivo(Boolean estado);
 
     Page<Servicio> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
 }

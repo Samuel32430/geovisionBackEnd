@@ -30,7 +30,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Servicio;
 import pe.edu.upeu.geovision_backend.entity.ventas.ServicioVendido;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
@@ -218,8 +217,8 @@ class MantenimientoControllerTest {
         String body = "{\"nombre\":\"Categoría dependiente\",\"estado\":0}";
         mvc.perform(put(BASE + "categorias/" + categoria.getIdCategoria()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isConflict());
-        assertThat(categoria.getEstado()).isEqualTo(EstadoGeneralEnum.ACTIVO);
-        producto.setEstado(EstadoGeneralEnum.INACTIVO); em.flush();
+        assertThat(categoria.getActivo()).isEqualTo(true);
+        producto.setActivo(false); em.flush();
         mvc.perform(put(BASE + "categorias/" + categoria.getIdCategoria()).contentType(MediaType.APPLICATION_JSON)
                 .content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.estado").value(0));
         verify(lock, times(2)).bloquear(Catalogo.CATEGORIA, true);

@@ -11,7 +11,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import pe.edu.upeu.geovision_backend.dto.orden_trabajo.EstadoNotificacionOrdenDTO;
 import pe.edu.upeu.geovision_backend.dto.orden_trabajo.NotificacionOrdenResponseDTO;
 import pe.edu.upeu.geovision_backend.entity.orden_trabajo.OrdenTrabajo;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
@@ -100,7 +99,7 @@ public class NotificacionOrdenServiceImpl implements NotificacionOrdenService {
     private void validarActor(String nombre) {
         var u=usuarios.findByNombre(nombre).orElseThrow(()->new ReglaNegocioException("Usuario no disponible"));
         var e=empleados.findByUsuarioIdUsuario(u.getIdUsuario()).orElseThrow(()->new ReglaNegocioException("La cuenta requiere empleado"));
-        if(u.getEstado()!=EstadoGeneralEnum.ACTIVO || e.getEstado()!=EstadoGeneralEnum.ACTIVO)
+        if(!Boolean.TRUE.equals(u.getActivo()) || !Boolean.TRUE.equals(e.getActivo()))
             throw new ReglaNegocioException("Se requiere usuario y empleado activos");
     }
     private NotificacionOrdenResponseDTO respuesta(OrdenTrabajo ot,String canal,String estado,String telefono,String referencia,String detalle,String enlace) {

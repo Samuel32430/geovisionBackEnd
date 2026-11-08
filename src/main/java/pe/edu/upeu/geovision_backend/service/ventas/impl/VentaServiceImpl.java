@@ -21,7 +21,6 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Servicio;
 import pe.edu.upeu.geovision_backend.entity.ventas.ServicioVendido;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
@@ -78,7 +77,7 @@ public class VentaServiceImpl implements VentaService {
         if (request.getIdPaciente() != null) {
             paciente = pacienteRepository.findById(request.getIdPaciente())
                     .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado con ID: " + request.getIdPaciente()));
-            if (paciente.getEstado() != EstadoGeneralEnum.ACTIVO) {
+            if (!Boolean.TRUE.equals(paciente.getActivo())) {
                 throw new ReglaNegocioException("El paciente indicado no se encuentra en estado activo");
             }
         }
@@ -278,7 +277,7 @@ public class VentaServiceImpl implements VentaService {
                 Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioIdUsuario(usuarioOpt.get().getIdUsuario());
                 if (empleadoOpt.isPresent()) {
                     Empleado emp = empleadoOpt.get();
-                    if (emp.getEstado() == EstadoGeneralEnum.ACTIVO) {
+                    if (Boolean.TRUE.equals(emp.getActivo())) {
                         return emp;
                     }
                 }
@@ -287,7 +286,7 @@ public class VentaServiceImpl implements VentaService {
 
         // Fallback para pruebas o llamadas con ID explícito
         if (idEmpleadoFallback != null) {
-            return empleadoRepository.findByIdPersonaAndEstado(idEmpleadoFallback, EstadoGeneralEnum.ACTIVO)
+            return empleadoRepository.findByIdPersonaAndActivo(idEmpleadoFallback, true)
                     .orElseThrow(() -> new RecursosNoEncontradosException("Empleado responsable no encontrado o inactivo con ID: " + idEmpleadoFallback));
         }
 

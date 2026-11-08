@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,17 +25,17 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 
     List<Producto> findByCategoriaIdCategoria(Long idCategoria);
 
-    boolean existsByCategoriaIdCategoriaAndEstado(Long idCategoria, EstadoGeneralEnum estado);
+    boolean existsByCategoriaIdCategoriaAndActivo(Long idCategoria, Boolean estado);
 
-    List<Producto> findByEstado(EstadoGeneralEnum estado);
+    List<Producto> findByActivo(Boolean estado);
 
-    Page<Producto> findByEstadoAndStockGreaterThan(EstadoGeneralEnum estado, Integer stock, Pageable pageable);
+    Page<Producto> findByActivoAndStockGreaterThan(Boolean estado, Integer stock, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Producto p WHERE p.idProducto = :id")
     Optional<Producto> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("SELECT p FROM Producto p WHERE p.stock <= :stockMinimo AND p.estado = pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.ACTIVO")
+    @Query("SELECT p FROM Producto p WHERE p.stock <= :stockMinimo AND p.activo = true")
     List<Producto> findProductosBajoStock(@Param("stockMinimo") Integer stockMinimo);
 
     @Query("SELECT p FROM Producto p WHERE (:termino IS NULL " +
@@ -44,11 +43,11 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
            "OR LOWER(p.codigo) LIKE LOWER(CONCAT('%', :termino, '%')) " +
            "OR LOWER(p.marca) LIKE LOWER(CONCAT('%', :termino, '%'))) " +
            "AND (:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) " +
-           "AND (:estado IS NULL OR p.estado = :estado)")
+           "AND (:estado IS NULL OR p.activo = :estado)")
     Page<Producto> buscarProductosPaginado(
             @Param("termino") String termino,
             @Param("idCategoria") Long idCategoria,
-            @Param("estado") EstadoGeneralEnum estado,
+            @Param("estado") Boolean estado,
             Pageable pageable
     );
 }

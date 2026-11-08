@@ -22,7 +22,6 @@ import pe.edu.upeu.geovision_backend.entity.security.Rol;
 import pe.edu.upeu.geovision_backend.entity.security.RolPermiso;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.security.UsuarioRol;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.security.PermisoMapper;
@@ -135,7 +134,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new ReglaNegocioException("La persona seleccionada ya tiene una cuenta de usuario asignada");
         }
         Optional<Empleado> existente = empleadoRepository.findById(persona.getIdPersona());
-        if (existente.isEmpty() || existente.get().getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (existente.isEmpty() || !Boolean.TRUE.equals(existente.get().getActivo())) {
             throw new ReglaNegocioException("Solo se pueden crear cuentas para empleados activos");
         }
         if (existente.get().getUsuario() != null) {
@@ -145,7 +144,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             if (request.getEmpleado().getFechaContrato() == null) {
                 throw new ReglaNegocioException("La fecha de contrato es obligatoria para registrar al empleado");
             }
-            if (existente.isPresent() && existente.get().getEstado() != EstadoGeneralEnum.ACTIVO) {
+            if (existente.isPresent() && !Boolean.TRUE.equals(existente.get().getActivo())) {
                 throw new ReglaNegocioException("El empleado está inactivo; no se reactiva mediante el registro de usuarios");
             }
         }
@@ -157,9 +156,12 @@ public class UsuarioServiceImpl implements UsuarioService {
                 throw new RecursosNoEncontradosException("Uno o más roles seleccionados no existen");
             }
         }
-        EstadoGeneralEnum estado = request.getEstado() == null ? EstadoGeneralEnum.ACTIVO : EstadoGeneralEnum.fromCodigo(request.getEstado());
+        if (request.getEstado() != null && request.getEstado() != 0 && request.getEstado() != 1) {
+            throw new ReglaNegocioException("El estado debe ser 0 o 1");
+        }
+        Boolean estado = request.getEstado() == null || request.getEstado() == 1;
         Usuario usuario = Usuario.builder().nombre(nombre).correo(correo)
-                .password(passwordEncoder.encode(request.getPassword())).estado(estado).persona(persona).build();
+                .password(passwordEncoder.encode(request.getPassword())).activo(estado).persona(persona).build();
         try {
             Usuario guardado = usuarioRepository.saveAndFlush(usuario);
             Empleado empleado = existente.orElse(null);
@@ -201,7 +203,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setCorreo(correo);
 
         if (request.getEstado() != null) {
-            usuario.setEstado(EstadoGeneralEnum.fromCodigo(request.getEstado()));
+            if (request.getEstado() != 0 && request.getEstado() != 1) {
+                throw new ReglaNegocioException("El estado debe ser 0 o 1");
+            }
+            usuario.setActivo(request.getEstado() == 1);
         }
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
@@ -227,18 +232,21 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado con ID: " + id));
 
-        EstadoGeneralEnum estado = EstadoGeneralEnum.fromCodigo(nuevoEstado);
+        if (nuevoEstado == null || (nuevoEstado != 0 && nuevoEstado != 1)) {
+            throw new ReglaNegocioException("El estado debe ser 0 o 1");
+        }
+        Boolean estado = nuevoEstado == 1;
 
         // Protección de autodesactivación
-        if (usuario.getNombre().equalsIgnoreCase(authUsername) && estado == EstadoGeneralEnum.INACTIVO) {
+        if (usuario.getNombre().equalsIgnoreCase(authUsername) && Boolean.FALSE.equals(estado)) {
             throw new ReglaNegocioException("Un administrador no puede desactivar su propia cuenta");
         }
 
-        usuario.setEstado(estado);
+        usuario.setActivo(estado);
         Usuario actualizado = usuarioRepository.save(usuario);
 
         log.info("Estado de usuario actualizado: id={} usuario={} estado={}",
-                actualizado.getIdUsuario(), actualizado.getNombre(), estado.getDescripcion());
+                actualizado.getIdUsuario(), actualizado.getNombre(), Boolean.TRUE.equals(estado) ? "Activo" : "Inactivo");
 
         return cargarUsuarioConRoles(actualizado);
     }
@@ -338,7 +346,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .direccion(limpiar(datos.getDireccion())).build();
         try {
             personaRepository.saveAndFlush(persona);
-            empleadoRepository.saveAndFlush(Empleado.builder().persona(persona).estado(EstadoGeneralEnum.ACTIVO)
+            empleadoRepository.saveAndFlush(Empleado.builder().persona(persona).activo(true)
                     .fechaContrato(request.getEmpleado().getFechaContrato()).build());
             var cuenta = request.getUsuario();
             return crearCuentaInterna(UsuarioRequestDTO.builder()

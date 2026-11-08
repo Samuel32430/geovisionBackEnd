@@ -1,7 +1,6 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
 import lombok.Getter;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 
 /** Proyección de selección: no contiene contraseñas, hashes ni datos clínicos. */
@@ -20,7 +19,7 @@ public class PersonaUsuarioResumenDTO {
 
     public PersonaUsuarioResumenDTO(Long idPersona, String nombres, String apellidos,
             TipoDocumentoEnum tipoDocumento, String numeroDocumento, Long idUsuario,
-            String nombreUsuario, EstadoGeneralEnum estadoUsuario, boolean esEmpleado, boolean empleadoActivo) {
+            String nombreUsuario, Boolean estadoUsuario, boolean esEmpleado, boolean empleadoActivo) {
         this.idPersona = idPersona;
         this.nombres = nombres;
         this.apellidos = apellidos;
@@ -28,7 +27,7 @@ public class PersonaUsuarioResumenDTO {
         this.numeroDocumento = numeroDocumento;
         this.idUsuario = idUsuario;
         this.nombreUsuario = nombreUsuario;
-        this.estadoUsuario = estadoUsuario == null ? null : estadoUsuario.getCodigo();
+        this.estadoUsuario = estadoUsuario == null ? null : (Boolean.TRUE.equals(estadoUsuario) ? 1 : 0);
         this.esEmpleado = esEmpleado;
         this.empleadoActivo = empleadoActivo;
     }

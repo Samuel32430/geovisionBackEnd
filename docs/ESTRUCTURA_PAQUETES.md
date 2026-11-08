@@ -65,6 +65,30 @@ Verificación final: `./mvnw.cmd -o test` terminó con **BUILD SUCCESS**:
 233 pruebas correctas, 0 fallos, 0 errores y 0 omitidas. Registro de esta
 ejecución: `target/remaining-fixes-tests.log`.
 
+## Indicador Boolean de actividad
+
+`Usuario`, `Empleado`, `Paciente`, `Producto`, `Categoria`, `Servicio` y
+`Laboratorio` usan `Boolean activo = true`. Se eliminaron el enum de estado
+general, sus siete converters y los métodos `getEstadoCodigo`/`setEstadoCodigo`
+asociados. Lombok proporciona `getActivo`/`setActivo`; las consultas JPQL y los
+métodos derivados de repositorios usan la propiedad `activo`.
+
+Se conservan las columnas `estado` y su representación numérica `0/1`, mediante
+`@JdbcTypeCode(SqlTypes.INTEGER)`, sin converters propios. También se conservan
+los campos numéricos de los DTO y parámetros públicos, con validación `0/1` en
+la entrada y mapeo al Boolean. El ordenamiento público `sortBy=estado` se dirige
+a la propiedad `activo`. Las comprobaciones de permisos, autenticación y
+disponibilidad utilizan `Boolean.TRUE.equals(...)`.
+
+Los estados múltiples de ventas y órdenes, así como los demás enums, conservan
+sus converters y métodos propios. Se añadió una prueba de persistencia que
+comprueba `true → 1`, `false → 0`, lectura desde la columna numérica y valor
+predeterminado activo cuando se inserta un indicador nulo.
+
+Verificación final de este cambio: `./mvnw.cmd -o clean test`, **234 pruebas
+correctas, 0 fallos, 0 errores**. El clean elimina también los binarios antiguos
+del enum y sus converters. Log: `target/boolean-activo-verification.log`.
+
 ## Inventario completo
 
 | Origen | Destino |
@@ -185,7 +209,6 @@ ejecución: `target/remaining-fixes-tests.log`.
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/UsuarioLog.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/security/UsuarioLog.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/UsuarioRol.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/security/UsuarioRol.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/entity/Venta.java` | `src/main/java/pe/edu/upeu/geovision_backend/entity/ventas/Venta.java` |
-| `src/main/java/pe/edu/upeu/geovisionBackEnd/enums/EstadoGeneralEnum.java` | `src/main/java/pe/edu/upeu/geovision_backend/enums/EstadoGeneralEnum.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/enums/EstadoOrdenTrabajoEnum.java` | `src/main/java/pe/edu/upeu/geovision_backend/enums/orden_trabajo/EstadoOrdenTrabajoEnum.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/enums/EstadoVentaEnum.java` | `src/main/java/pe/edu/upeu/geovision_backend/enums/ventas/EstadoVentaEnum.java` |
 | `src/main/java/pe/edu/upeu/geovisionBackEnd/enums/MaterialMonturaEnum.java` | `src/main/java/pe/edu/upeu/geovision_backend/enums/inventario/MaterialMonturaEnum.java` |

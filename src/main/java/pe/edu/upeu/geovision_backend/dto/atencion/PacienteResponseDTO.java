@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.time.LocalDateTime;
 

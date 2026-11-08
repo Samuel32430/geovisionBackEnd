@@ -20,7 +20,6 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Laboratorio;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.MaterialCristal;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Servicio;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCristal;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
@@ -209,7 +208,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     }
 
     private void validarDependenciasCategoria(Long id) {
-        if (productoRepository.existsByCategoriaIdCategoriaAndEstado(id, EstadoGeneralEnum.ACTIVO)) {
+        if (productoRepository.existsByCategoriaIdCategoriaAndActivo(id, true)) {
             throw new ReglaNegocioException("No se puede desactivar la categoría: tiene productos activos.");
         }
     }
@@ -255,7 +254,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
                         .replace("!", "!!").replace("%", "!%").replace("_", "!_");
                 condiciones.add(cb.like(cb.lower(root.get("nombre")), "%" + literal + "%", '!'));
             }
-            if (estado != null) condiciones.add(cb.equal(root.get("estado"), EstadoGeneralEnum.fromCodigo(estado)));
+            if (estado != null) condiciones.add(cb.equal(root.get("activo"), (estado == null ? null : estado == 1)));
             return cb.and(condiciones.toArray(jakarta.persistence.criteria.Predicate[]::new));
         };
         return repository.findAll(filtro, pageable).map(convertir);

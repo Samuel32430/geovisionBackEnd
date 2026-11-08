@@ -19,13 +19,13 @@ public interface PersonaRepository extends JpaRepository<Persona, Long> {
     @Query(value = """
         SELECT new pe.edu.upeu.geovision_backend.dto.security.PersonaUsuarioResumenDTO(
             p.idPersona, p.nombres, p.apellidos, p.tipoDocumento, p.numeroDocumento,
-            u.idUsuario, u.nombre, u.estado,
+            u.idUsuario, u.nombre, u.activo,
             CASE WHEN e.idPersona IS NOT NULL THEN true ELSE false END,
-            CASE WHEN e.estado = pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.ACTIVO THEN true ELSE false END)
+            CASE WHEN e.activo = true THEN true ELSE false END)
         FROM Persona p
         LEFT JOIN Usuario u ON u.persona.idPersona = p.idPersona
         JOIN Empleado e ON e.idPersona = p.idPersona
-        WHERE e.estado = pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.ACTIVO
+        WHERE e.activo = true
           AND (:sinUsuario = false OR u.idUsuario IS NULL)
           AND (LOWER(CONCAT(CONCAT(p.nombres, ' '), p.apellidos)) LIKE :patron ESCAPE '!'
                OR LOWER(p.numeroDocumento) LIKE :patron ESCAPE '!')
@@ -33,7 +33,7 @@ public interface PersonaRepository extends JpaRepository<Persona, Long> {
         SELECT COUNT(p) FROM Persona p
         LEFT JOIN Usuario u ON u.persona.idPersona = p.idPersona
         JOIN Empleado e ON e.idPersona = p.idPersona
-        WHERE e.estado = pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.ACTIVO
+        WHERE e.activo = true
           AND (:sinUsuario = false OR u.idUsuario IS NULL)
           AND (LOWER(CONCAT(CONCAT(p.nombres, ' '), p.apellidos)) LIKE :patron ESCAPE '!'
                OR LOWER(p.numeroDocumento) LIKE :patron ESCAPE '!')

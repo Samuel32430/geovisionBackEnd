@@ -26,7 +26,6 @@ import pe.edu.upeu.geovision_backend.entity.security.Rol;
 import pe.edu.upeu.geovision_backend.entity.security.RolPermiso;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.security.UsuarioRol;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.TipoLogEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
@@ -117,12 +116,12 @@ public class AuthServiceImpl implements AuthService {
         Usuario usuario = usuarioRepository.findByNombreOrCorreo(principal.getUsername(), principal.getUsername())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado"));
 
-        if (usuario.getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (!Boolean.TRUE.equals(usuario.getActivo())) {
             throw new ReglaNegocioException("La cuenta de usuario está inactiva");
         }
 
         Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
-        if (empleadoOpt.isPresent() && empleadoOpt.get().getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (empleadoOpt.isPresent() && !Boolean.TRUE.equals(empleadoOpt.get().getActivo())) {
             throw new ReglaNegocioException("El empleado asociado a esta cuenta se encuentra inactivo");
         }
 
@@ -236,7 +235,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new RecursosNoEncontradosException(
                         "No se encontró ninguna cuenta registrada con el correo: " + correo));
 
-        if (usuario.getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (!Boolean.TRUE.equals(usuario.getActivo())) {
             throw new ReglaNegocioException("La cuenta de usuario asociada a este correo se encuentra inactiva");
         }
 
@@ -273,7 +272,7 @@ public class AuthServiceImpl implements AuthService {
         Usuario usuario = usuarioRepository.findByCorreo(email)
                 .orElseThrow(() -> new RecursosNoEncontradosException("No se encontró el usuario asociado al token"));
 
-        if (usuario.getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (!Boolean.TRUE.equals(usuario.getActivo())) {
             throw new ReglaNegocioException("La cuenta de usuario se encuentra inactiva");
         }
 
