@@ -23,7 +23,7 @@ springdoc:
 
 logging:
   level:
-    pe.edu.upeu.geovisionBackEnd: DEBUG
+    pe.edu.upeu.geovision_backend: DEBUG
     pe.edu.upeu.PharmaBackend: DEBUG
     org.hibernate.orm.jdbc.bind: OFF
 
