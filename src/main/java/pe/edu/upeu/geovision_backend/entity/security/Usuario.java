@@ -18,9 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "USUARIO")
 @Getter
@@ -44,7 +41,6 @@ public class Usuario {
     @Column(name = "correo", nullable = false, unique = true, length = 100)
     private String correo;
 
-    @JdbcTypeCode(SqlTypes.INTEGER)
     @Column(name = "estado", nullable = false)
     @Builder.Default
     private Boolean activo = true;

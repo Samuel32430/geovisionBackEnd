@@ -15,9 +15,9 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCri
 @Component
 public class MantenimientoMapper {
     public void actualizar(CategoriaDTO source, Categoria target) {
-        target.setNombre(limpiar(source.getNombre()));
-        target.setDescripcion(limpiar(source.getDescripcion()));
-        target.setActivo((source.getEstado() == null ? null : source.getEstado() == 1));
+        target.setNombre(limpiar(source.nombre()));
+        target.setDescripcion(limpiar(source.descripcion()));
+        target.setActivo((source.estado() == null ? null : source.estado() == 1));
     }
 
     public CategoriaDTO toDTO(Categoria source) {
@@ -29,7 +29,7 @@ public class MantenimientoMapper {
     }
 
     public void actualizar(MaterialCristalDTO source, MaterialCristal target) {
-        target.setNombre(limpiar(source.getNombre()));
+        target.setNombre(limpiar(source.nombre()));
     }
 
     public MaterialCristalDTO toDTO(MaterialCristal source) {
@@ -38,7 +38,7 @@ public class MantenimientoMapper {
     }
 
     public void actualizar(TratamientoCristalDTO source, TratamientoCristal target) {
-        target.setNombre(limpiar(source.getNombre()));
+        target.setNombre(limpiar(source.nombre()));
     }
 
     public TratamientoCristalDTO toDTO(TratamientoCristal source) {
@@ -47,10 +47,10 @@ public class MantenimientoMapper {
     }
 
     public void actualizar(ServicioDTO source, Servicio target) {
-        target.setNombre(limpiar(source.getNombre()));
-        target.setDescripcion(limpiar(source.getDescripcion()));
-        target.setPrecio(source.getPrecio());
-        target.setActivo((source.getEstado() == null ? null : source.getEstado() == 1));
+        target.setNombre(limpiar(source.nombre()));
+        target.setDescripcion(limpiar(source.descripcion()));
+        target.setPrecio(source.precio());
+        target.setActivo((source.estado() == null ? null : source.estado() == 1));
     }
 
     public ServicioDTO toDTO(Servicio source) {
@@ -62,12 +62,12 @@ public class MantenimientoMapper {
     }
 
     public void actualizar(LaboratorioDTO source, Laboratorio target) {
-        target.setNombre(limpiar(source.getNombre()));
-        target.setRuc(limpiar(source.getRuc()));
-        target.setTelefono(limpiar(source.getTelefono()));
-        target.setDireccion(limpiar(source.getDireccion()));
-        target.setCorreo(limpiar(source.getCorreo()));
-        target.setActivo((source.getEstado() == null ? null : source.getEstado() == 1));
+        target.setNombre(limpiar(source.nombre()));
+        target.setRuc(limpiar(source.ruc()));
+        target.setTelefono(limpiar(source.telefono()));
+        target.setDireccion(limpiar(source.direccion()));
+        target.setCorreo(limpiar(source.correo()));
+        target.setActivo((source.estado() == null ? null : source.estado() == 1));
     }
 
     public LaboratorioDTO toDTO(Laboratorio source) {

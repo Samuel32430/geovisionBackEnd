@@ -93,10 +93,10 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     @Override
     public OrdenTrabajoResponseDTO generar(OrdenTrabajoRequestDTO request,String usuario) {
         flujo.validar(request); actores.obtener(usuario);
-        var referencia=lentes.findById(request.getIdLente()).orElseThrow(()->new RecursosNoEncontradosException("Lente no encontrado"));
+        var referencia=lentes.findById(request.idLente()).orElseThrow(()->new RecursosNoEncontradosException("Lente no encontrado"));
         recetas.findByIdForUpdate(referencia.getReceta().getIdReceta()).orElseThrow(()->new RecursosNoEncontradosException("Receta no encontrada"));
         var venta=ventasOrden.bloquear(referencia.getReceta().getIdReceta());
-        var lente=lentes.findByIdForUpdate(request.getIdLente()).orElseThrow(()->new RecursosNoEncontradosException("Lente no encontrado"));
+        var lente=lentes.findByIdForUpdate(request.idLente()).orElseThrow(()->new RecursosNoEncontradosException("Lente no encontrado"));
         validarVenta(venta,lente);
         if(ordenes.existsByLenteIdLente(lente.getIdLente())) throw new ReglaNegocioException("El lente ya tiene una orden de trabajo");
         var vinculos=lenteMedidas.findByLenteIdLente(lente.getIdLente());
@@ -108,7 +108,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
                 || m.getTipoMedida()==null || !tipos.add(m.getTipoMedida()))
                 throw new ReglaNegocioException("Las medidas deben pertenecer a la receta y tener tipos unicos");
         }
-        var orden=OrdenTrabajo.builder().lente(lente).descripcion(ConstanciaOrdenTrabajo.agregar(request.getDescripcion(),"[Creacion] Usuario: "+usuario))
+        var orden=OrdenTrabajo.builder().lente(lente).descripcion(ConstanciaOrdenTrabajo.agregar(request.descripcion(),"[Creacion] Usuario: "+usuario))
             .estado(EstadoOrdenTrabajoEnum.PENDIENTE).build();
         return mapper.orden(ordenes.saveAndFlush(orden));
     }
@@ -124,7 +124,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     }
     @Override
     public EnvioLaboratorioResponseDTO enviar(EnvioLaboratorioRequestDTO request,String usuario) {
-        flujo.validar(request); actores.obtener(usuario); var ot=flujo.bloquear(request.getIdOrdenTrabajo());
+        flujo.validar(request); actores.obtener(usuario); var ot=flujo.bloquear(request.idOrdenTrabajo());
         exigirVentaVigente(ot);
         if(ot.getEstado()!=EstadoOrdenTrabajoEnum.PENDIENTE && ot.getEstado()!=EstadoOrdenTrabajoEnum.CONTROL_CALIDAD_RECHAZADO)
             throw new ReglaNegocioException("Solo se envian ordenes pendientes o rechazadas");
@@ -135,11 +135,11 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         } else if(envios.findFirstByOrdenTrabajoIdOrdenTrabajoOrderByFechaEnvioDescIdEnvioLaboratorioDesc(ot.getIdOrdenTrabajo()).isPresent()) {
             throw new ReglaNegocioException("La orden pendiente ya registra un envio incompatible");
         }
-        var laboratorio=laboratorios.findById(request.getIdLaboratorio()).filter(l->Boolean.TRUE.equals(l.getActivo()))
+        var laboratorio=laboratorios.findById(request.idLaboratorio()).filter(l->Boolean.TRUE.equals(l.getActivo()))
             .orElseThrow(()->new ReglaNegocioException("Seleccione un laboratorio existente y activo"));
         var envio=EnvioLaboratorio.builder().ordenTrabajo(ot).laboratorio(laboratorio)
-            .fechaRecepcionEstimada(request.getFechaRecepcionEstimada())
-            .observaciones(ConstanciaOrdenTrabajo.agregar(request.getObservaciones(),"[Envio] Usuario: "+usuario)).build();
+            .fechaRecepcionEstimada(request.fechaRecepcionEstimada())
+            .observaciones(ConstanciaOrdenTrabajo.agregar(request.observaciones(),"[Envio] Usuario: "+usuario)).build();
         envios.saveAndFlush(envio); ot.setEstado(EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO);
         ordenes.saveAndFlush(ot); return mapper.envio(envio);
     }
@@ -158,8 +158,8 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     }
     @Override
     public OrdenTrabajoResponseDTO entregar(EntregaPedidoRequestDTO request,String usuario) {
-        flujo.validar(request); var actor=actores.obtener(usuario); var ot=flujo.bloquear(request.getIdOrdenTrabajo());
-        if(request.getIdEmpleadoEntrega()!=null && !request.getIdEmpleadoEntrega().equals(actor.getIdPersona()))
+        flujo.validar(request); var actor=actores.obtener(usuario); var ot=flujo.bloquear(request.idOrdenTrabajo());
+        if(request.idEmpleadoEntrega()!=null && !request.idEmpleadoEntrega().equals(actor.getIdPersona()))
             throw new AccessDeniedException("El empleado de entrega debe corresponder al usuario autenticado");
         if(ot.getEstado()!=EstadoOrdenTrabajoEnum.LISTO_ENTREGA || ot.getFechaEntrega()!=null)
             throw new ReglaNegocioException("La orden debe estar lista para entrega y no entregada previamente");
@@ -175,7 +175,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         if(saldo.compareTo(BigDecimal.ZERO)!=0) throw new ReglaNegocioException("No se puede entregar: el saldo pendiente debe ser exactamente cero. Saldo: "+saldo);
         ot.setEstado(EstadoOrdenTrabajoEnum.ENTREGADO); ot.setFechaEntrega(LocalDateTime.now().withNano(0));
         ot.setDescripcion(ConstanciaOrdenTrabajo.agregar(ot.getDescripcion(),"[Entrega] Usuario: "+usuario
-            +(request.getObservaciones()==null?"":". "+request.getObservaciones())));
+            +(request.observaciones()==null?"":". "+request.observaciones())));
         return mapper.orden(ordenes.saveAndFlush(ot));
     }
     private EnvioLaboratorio ultimo(OrdenTrabajo ot) {

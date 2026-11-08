@@ -26,9 +26,10 @@ class PatientFoundationValidationTest {
 
     @Test void validClinicalInputUsesLejosByDefaultAndAllowsTextVisualAcuity() {
         var request = validMeasure();
-        request.getOjoDerecho().setAgudezaVisual("20/20");
-        request.setPrisma(BigDecimal.ZERO);
-        assertEquals(TipoMedidaEnum.LEJOS, request.getTipoMedida());
+        request = request.toBuilder()
+                .ojoDerecho(request.ojoDerecho().toBuilder().agudezaVisual("20/20").build())
+                .prisma(BigDecimal.ZERO).build();
+        assertEquals(TipoMedidaEnum.LEJOS, request.tipoMedida());
         assertTrue(factory.getValidator().validate(request).isEmpty());
     }
 
@@ -36,15 +37,14 @@ class PatientFoundationValidationTest {
     @CsvSource({"0,0", "-1,0", "1000,0", "62.501,0", "62.50,-0.01", "62.50,1000", "62.50,0.001"})
     void rejectsNonpositiveDistanceAndValuesOutsideDdlPrecision(String distance, String prism) {
         var request = validMeasure();
-        request.setDistanciaPupilar(new BigDecimal(distance));
-        request.setPrisma(new BigDecimal(prism));
+        request = request.toBuilder().distanciaPupilar(new BigDecimal(distance))
+                .prisma(new BigDecimal(prism)).build();
         assertFalse(factory.getValidator().validate(request).isEmpty());
     }
 
     @Test void rejectsNullTypeAndMissingEyeWithoutPuttingValidationOnEntities() {
         var request = validMeasure();
-        request.setTipoMedida(null);
-        request.setOjoIzquierdo(null);
+        request = request.toBuilder().tipoMedida(null).ojoIzquierdo(null).build();
         assertEquals(2, factory.getValidator().validate(request).size());
     }
 
@@ -69,8 +69,7 @@ class PatientFoundationValidationTest {
         var lens = LenteRequestDTO.builder().idReceta(1L).idMaterialCristal(1L)
                 .subTotal(new BigDecimal("380.00")).build();
         assertTrue(factory.getValidator().validate(lens).isEmpty());
-        lens.setIdProducto(0L);
-        lens.setSubTotal(new BigDecimal("10000000000.00"));
+        lens = lens.toBuilder().idProducto(0L).subTotal(new BigDecimal("10000000000.00")).build();
         assertEquals(2, factory.getValidator().validate(lens).size());
     }
 

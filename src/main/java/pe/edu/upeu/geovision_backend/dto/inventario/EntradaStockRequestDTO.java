@@ -1,29 +1,26 @@
 package pe.edu.upeu.geovision_backend.dto.inventario;
 
+import lombok.Builder;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class EntradaStockRequestDTO {
-
+@Builder(toBuilder = true)
+@com.fasterxml.jackson.databind.annotation.JsonDeserialize(builder = EntradaStockRequestDTO.EntradaStockRequestDTOBuilder.class)
+@tools.jackson.databind.annotation.JsonDeserialize(builder = EntradaStockRequestDTO.EntradaStockRequestDTOBuilder.class)
+public record EntradaStockRequestDTO(
     @NotNull(message = "El ID del producto es obligatorio")
-    private Long idProducto;
-
+    Long idProducto,
     @NotNull(message = "La cantidad es obligatoria")
     @Positive(message = "La cantidad ingresada debe ser mayor a cero")
-    private Integer cantidad;
-
-    @Builder.Default
-    private Integer motivo = 1;
-
+    Integer cantidad,
+    Integer motivo,
     @Size(max = 500, message = "Las observaciones no deben superar los 500 caracteres")
-    private String observaciones;
+    String observaciones
+) {
+    @com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
+    @tools.jackson.databind.annotation.JsonPOJOBuilder(withPrefix = "")
+    public static class EntradaStockRequestDTOBuilder {
+        private Integer motivo = 1;
+    }
 }

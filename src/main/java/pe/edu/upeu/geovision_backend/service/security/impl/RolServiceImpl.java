@@ -69,7 +69,7 @@ public class RolServiceImpl implements RolService {
     @Override
     @Transactional
     public RolDTO crear(RolDTO request) {
-        String nombre = request.getNombre().trim().toUpperCase();
+        String nombre = request.nombre().trim().toUpperCase();
 
         if (rolRepository.existsByNombreIgnoreCase(nombre)) {
             throw new ReglaNegocioException("Ya existe un rol con el nombre: " + nombre);

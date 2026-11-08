@@ -191,8 +191,8 @@ class VentaServiceTest {
         VentaResponseDTO resultado = ventaService.registrarVenta(request);
 
         assertThat(resultado).isNotNull();
-        assertThat(resultado.getEstado()).isEqualTo(EstadoVentaEnum.PAGADA);
-        assertThat(resultado.getSaldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
+        assertThat(resultado.saldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(productoTest.getStock()).isEqualTo(9); // 10 - 1
         verify(productoRepository).save(productoTest);
         verify(ventaRepository).save(any(Venta.class));
@@ -308,8 +308,8 @@ class VentaServiceTest {
         VentaResponseDTO response = ventaService.registrarVenta(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.getEstado()).isEqualTo(EstadoVentaEnum.PENDIENTE);
-        assertThat(response.getSaldoPendiente()).isEqualByComparingTo(new BigDecimal("140.00"));
+        assertThat(response.estado()).isEqualTo(EstadoVentaEnum.PENDIENTE);
+        assertThat(response.saldoPendiente()).isEqualByComparingTo(new BigDecimal("140.00"));
     }
 
     @Test

@@ -64,7 +64,7 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         flujo.validar(request);
         actores.obtener(usuario);
         var p = politica.exigir();
-        var envio = flujo.bloquearEnvioActual(request.getIdEnvioLaboratorio());
+        var envio = flujo.bloquearEnvioActual(request.idEnvioLaboratorio());
         var ot = envio.getOrdenTrabajo();
         if (ot.getEstado() != EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO || envio.getFechaRecepcion() == null)
             throw new ReglaNegocioException("Debe recibir el ultimo envio antes de registrar calidad");
@@ -72,10 +72,10 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
             throw new ReglaNegocioException("Este envio ya tiene un control; para recontrolar registre un nuevo envio y recepcion");
         ventasOrden.bloquear(ot.getLente().getReceta().getIdReceta());
         var referencia = lenteMedidas.findByLenteIdLente(ot.getLente().getIdLente()).stream().map(LenteMedida::getMedida).toList();
-        boolean aprobado = comparador.comparar(referencia, request.getMedidasLensometria(), p);
-        for (var m : request.getMedidasLensometria()) {
-            var derecha = ojos.save(recetas.toMedidaOjo(m.getOjoDerecho()));
-            var izquierda = ojos.save(recetas.toMedidaOjo(m.getOjoIzquierdo()));
+        boolean aprobado = comparador.comparar(referencia, request.medidasLensometria(), p);
+        for (var m : request.medidasLensometria()) {
+            var derecha = ojos.save(recetas.toMedidaOjo(m.ojoDerecho()));
+            var izquierda = ojos.save(recetas.toMedidaOjo(m.ojoIzquierdo()));
             // Las medidas de taller se vinculan al envio, nunca a la receta clinica ni a LENTE_MEDIDA.
             var medida = recetas.toMedida(m, null, derecha, izquierda);
             medida.setEnvioLaboratorio(envio);
@@ -86,7 +86,7 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         envio.setAprobado(aprobado ? 1 : 0);
         String constancia="[Calidad] Usuario: "+usuario+". "+(aprobado?"Aprobado":"Rechazado")
             +". Margenes: eje="+p.ejeGrados()+", DP="+p.distanciaPupilarMm()+", prisma="+p.prisma()
-            +(request.getObservaciones()==null?"":". "+request.getObservaciones());
+            +(request.observaciones()==null?"":". "+request.observaciones());
         envio.setObservaciones(ConstanciaOrdenTrabajo.agregar(envio.getObservaciones(),constancia));
         ot.setEstado(aprobado ? EstadoOrdenTrabajoEnum.LISTO_ENTREGA : EstadoOrdenTrabajoEnum.CONTROL_CALIDAD_RECHAZADO);
         medidas.flush();

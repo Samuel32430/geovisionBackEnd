@@ -77,15 +77,15 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
     @Override
     @Transactional
     public ProductoResponseDTO registrarProducto(ProductoRequestDTO request) {
-        log.info("Registrando nuevo producto con código: {}", request.getCodigo());
+        log.info("Registrando nuevo producto con código: {}", request.codigo());
 
-        String codigo = request.getCodigo().trim();
+        String codigo = request.codigo().trim();
         if (productoRepository.existsByCodigo(codigo)) {
             throw new ReglaNegocioException("Ya existe un producto registrado con el código: " + codigo);
         }
 
-        Categoria categoria = categoriaRepository.findById(request.getIdCategoria())
-                .orElseThrow(() -> new RecursosNoEncontradosException("Categoría no encontrada con ID: " + request.getIdCategoria()));
+        Categoria categoria = categoriaRepository.findById(request.idCategoria())
+                .orElseThrow(() -> new RecursosNoEncontradosException("Categoría no encontrada con ID: " + request.idCategoria()));
 
         if (!Boolean.TRUE.equals(categoria.getActivo())) {
             throw new ReglaNegocioException("No se pueden asociar productos a una categoría inactiva");
@@ -95,8 +95,8 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         Producto productoGuardado = productoRepository.save(producto);
 
         Montura monturaGuardada = null;
-        if (request.getMontura() != null) {
-            Montura montura = productoMapper.toMonturaEntity(request.getMontura(), productoGuardado);
+        if (request.montura() != null) {
+            Montura montura = productoMapper.toMonturaEntity(request.montura(), productoGuardado);
             monturaGuardada = monturaRepository.save(montura);
         }
 
@@ -116,45 +116,45 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + id));
 
-        String nuevoCodigo = request.getCodigo().trim();
+        String nuevoCodigo = request.codigo().trim();
         if (productoRepository.existsByCodigoAndIdProductoNot(nuevoCodigo, id)) {
             throw new ReglaNegocioException("Ya existe otro producto registrado con el código: " + nuevoCodigo);
         }
 
-        Categoria categoria = categoriaRepository.findById(request.getIdCategoria())
-                .orElseThrow(() -> new RecursosNoEncontradosException("Categoría no encontrada con ID: " + request.getIdCategoria()));
+        Categoria categoria = categoriaRepository.findById(request.idCategoria())
+                .orElseThrow(() -> new RecursosNoEncontradosException("Categoría no encontrada con ID: " + request.idCategoria()));
 
         if (!Boolean.TRUE.equals(categoria.getActivo())) {
             throw new ReglaNegocioException("No se pueden asociar productos a una categoría inactiva");
         }
 
         producto.setCodigo(nuevoCodigo);
-        producto.setNombre(request.getNombre().trim());
-        producto.setMarca(request.getMarca() != null ? request.getMarca().trim() : null);
-        producto.setDescripcion(request.getDescripcion() != null ? request.getDescripcion().trim() : null);
-        producto.setPrecio(request.getPrecio());
+        producto.setNombre(request.nombre().trim());
+        producto.setMarca(request.marca() != null ? request.marca().trim() : null);
+        producto.setDescripcion(request.descripcion() != null ? request.descripcion().trim() : null);
+        producto.setPrecio(request.precio());
         producto.setCategoria(categoria);
 
-        if (request.getEstado() != null) {
-            if (request.getEstado() != 0 && request.getEstado() != 1) {
+        if (request.estado() != null) {
+            if (request.estado() != 0 && request.estado() != 1) {
                 throw new ReglaNegocioException("El estado debe ser 0 o 1");
             }
-            producto.setActivo(request.getEstado() == 1);
+            producto.setActivo(request.estado() == 1);
         }
 
         Producto productoActualizado = productoRepository.save(producto);
 
         Montura monturaFinal = null;
-        if (request.getMontura() != null) {
+        if (request.montura() != null) {
             Optional<Montura> monturaExistente = monturaRepository.findById(id);
             if (monturaExistente.isPresent()) {
                 Montura m = monturaExistente.get();
-                m.setColor(request.getMontura().getColor() != null ? request.getMontura().getColor().trim() : null);
-                m.setModelo(request.getMontura().getModelo());
-                m.setMaterial(request.getMontura().getMaterial());
+                m.setColor(request.montura().color() != null ? request.montura().color().trim() : null);
+                m.setModelo(request.montura().modelo());
+                m.setMaterial(request.montura().material());
                 monturaFinal = monturaRepository.save(m);
             } else {
-                Montura nuevaMontura = productoMapper.toMonturaEntity(request.getMontura(), productoActualizado);
+                Montura nuevaMontura = productoMapper.toMonturaEntity(request.montura(), productoActualizado);
                 monturaFinal = monturaRepository.save(nuevaMontura);
             }
         } else {

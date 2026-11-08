@@ -116,9 +116,9 @@ class InventarioStockServiceTest {
         MovimientoStockResponseDTO response = inventarioStockService.registrarEntradaStock(request, "admin");
 
         assertThat(response).isNotNull();
-        assertThat(response.getIdMovimiento()).isEqualTo(100L);
-        assertThat(response.getStockPrevio()).isEqualTo(20);
-        assertThat(response.getStockPosterior()).isEqualTo(30);
+        assertThat(response.idMovimiento()).isEqualTo(100L);
+        assertThat(response.stockPrevio()).isEqualTo(20);
+        assertThat(response.stockPosterior()).isEqualTo(30);
         assertThat(producto.getStock()).isEqualTo(30);
 
         verify(productoRepository).findByIdForUpdate(10L);
@@ -165,8 +165,8 @@ class InventarioStockServiceTest {
         MovimientoStockResponseDTO response = inventarioStockService.registrarAjusteStock(request, "admin");
 
         assertThat(response).isNotNull();
-        assertThat(response.getStockPrevio()).isEqualTo(20);
-        assertThat(response.getStockPosterior()).isEqualTo(25);
+        assertThat(response.stockPrevio()).isEqualTo(20);
+        assertThat(response.stockPosterior()).isEqualTo(25);
         assertThat(producto.getStock()).isEqualTo(25);
     }
 
@@ -218,10 +218,10 @@ class InventarioStockServiceTest {
         ProductoStockResponseDTO response = inventarioStockService.consultarStockActual(10L, 5);
 
         assertThat(response).isNotNull();
-        assertThat(response.getIdProducto()).isEqualTo(10L);
-        assertThat(response.getStockActual()).isEqualTo(20);
-        assertThat(response.getDisponible()).isTrue();
-        assertThat(response.getStockMinimoReferencial()).isEqualTo(5);
+        assertThat(response.idProducto()).isEqualTo(10L);
+        assertThat(response.stockActual()).isEqualTo(20);
+        assertThat(response.disponible()).isTrue();
+        assertThat(response.stockMinimoReferencial()).isEqualTo(5);
     }
 
     @Test
@@ -242,8 +242,8 @@ class InventarioStockServiceTest {
         List<ProductoResponseDTO> alertas = inventarioStockService.listarAlertasBajoStock(5);
 
         assertThat(alertas).hasSize(1);
-        assertThat(alertas.get(0).getIdProducto()).isEqualTo(11L);
-        assertThat(alertas.get(0).getStock()).isEqualTo(2);
+        assertThat(alertas.get(0).idProducto()).isEqualTo(11L);
+        assertThat(alertas.get(0).stock()).isEqualTo(2);
     }
 
     @Test
@@ -268,7 +268,7 @@ class InventarioStockServiceTest {
         Page<MovimientoStockResponseDTO> kardex = inventarioStockService.listarMovimientosKardex(10L, pageable);
 
         assertThat(kardex.getContent()).hasSize(1);
-        assertThat(kardex.getContent().get(0).getNombreUsuario()).isEqualTo("admin");
-        assertThat(kardex.getContent().get(0).getCantidad()).isEqualTo(5);
+        assertThat(kardex.getContent().get(0).nombreUsuario()).isEqualTo("admin");
+        assertThat(kardex.getContent().get(0).cantidad()).isEqualTo(5);
     }
 }

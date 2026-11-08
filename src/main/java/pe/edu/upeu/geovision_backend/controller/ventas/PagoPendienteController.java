@@ -60,7 +60,7 @@ public class PagoPendienteController {
     @PreAuthorize("hasAuthority('PAGOS_GESTIONAR')")
     public ResponseEntity<PagoResponseDTO> registrarPagoPendiente(
             @Valid @RequestBody PagoRegistroRequestDTO request) {
-        log.info("Petición REST para registrar abono/liquidación a venta ID: {}", request.getIdVenta());
+        log.info("Petición REST para registrar abono/liquidación a venta ID: {}", request.idVenta());
         PagoResponseDTO response = pagoPendienteService.registrarPagoPendiente(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

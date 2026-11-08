@@ -109,8 +109,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     // Ambos métodos públicos de alta abren la transacción antes de llamar a esta lógica común.
     private UsuarioResponseDTO crearCuentaInterna(UsuarioRequestDTO request) {
-        String nombre = request.getNombre().trim();
-        String correo = request.getCorreo().trim().toLowerCase(Locale.ROOT);
+        String nombre = request.nombre().trim();
+        String correo = request.correo().trim().toLowerCase(Locale.ROOT);
         if (nombre.length() < 3 || nombre.length() > 100) {
             throw new ReglaNegocioException("El nombre de usuario debe tener entre 3 y 100 caracteres");
         }
@@ -120,15 +120,15 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (usuarioRepository.existsByCorreo(correo)) {
             throw new ReglaNegocioException("Ya existe una cuenta con ese correo electrónico");
         }
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
+        if (request.password() == null || request.password().isBlank()) {
             throw new ReglaNegocioException("La contraseña es obligatoria para nuevos usuarios");
         }
-        if (request.getPassword().length() < 6 || request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+        if (request.password().length() < 6 || request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new ReglaNegocioException("La contraseña debe tener al menos 6 caracteres y no superar los 72 bytes");
         }
 
         // Serializar las altas para una misma persona, incluso cuando aún no existe su usuario.
-        Persona persona = personaRepository.findByIdForUpdate(request.getIdPersona())
+        Persona persona = personaRepository.findByIdForUpdate(request.idPersona())
                 .orElseThrow(() -> new RecursosNoEncontradosException("La persona seleccionada no existe"));
         if (usuarioRepository.findByPersonaIdPersona(persona.getIdPersona()).isPresent()) {
             throw new ReglaNegocioException("La persona seleccionada ya tiene una cuenta de usuario asignada");
@@ -140,8 +140,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (existente.get().getUsuario() != null) {
             throw new ReglaNegocioException("El empleado ya está vinculado a una cuenta; revise su asociación");
         }
-        if (request.getEmpleado() != null) {
-            if (request.getEmpleado().getFechaContrato() == null) {
+        if (request.empleado() != null) {
+            if (request.empleado().fechaContrato() == null) {
                 throw new ReglaNegocioException("La fecha de contrato es obligatoria para registrar al empleado");
             }
             if (existente.isPresent() && !Boolean.TRUE.equals(existente.get().getActivo())) {
@@ -150,18 +150,18 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         List<Rol> roles = Collections.emptyList();
-        if (request.getRolesIds() != null && !request.getRolesIds().isEmpty()) {
-            roles = rolRepository.findAllById(request.getRolesIds());
-            if (roles.size() != request.getRolesIds().size()) {
+        if (request.rolesIds() != null && !request.rolesIds().isEmpty()) {
+            roles = rolRepository.findAllById(request.rolesIds());
+            if (roles.size() != request.rolesIds().size()) {
                 throw new RecursosNoEncontradosException("Uno o más roles seleccionados no existen");
             }
         }
-        if (request.getEstado() != null && request.getEstado() != 0 && request.getEstado() != 1) {
+        if (request.estado() != null && request.estado() != 0 && request.estado() != 1) {
             throw new ReglaNegocioException("El estado debe ser 0 o 1");
         }
-        Boolean estado = request.getEstado() == null || request.getEstado() == 1;
+        Boolean estado = request.estado() == null || request.estado() == 1;
         Usuario usuario = Usuario.builder().nombre(nombre).correo(correo)
-                .password(passwordEncoder.encode(request.getPassword())).activo(estado).persona(persona).build();
+                .password(passwordEncoder.encode(request.password())).activo(estado).persona(persona).build();
         try {
             Usuario guardado = usuarioRepository.saveAndFlush(usuario);
             Empleado empleado = existente.orElse(null);
@@ -182,14 +182,14 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request) {
-        if (request.getEmpleado() != null) {
+        if (request.empleado() != null) {
             throw new ReglaNegocioException("El alta laboral solo se admite al registrar la cuenta");
         }
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado con ID: " + id));
 
-        String nombre = request.getNombre().trim();
-        String correo = request.getCorreo().trim().toLowerCase();
+        String nombre = request.nombre().trim();
+        String correo = request.correo().trim().toLowerCase();
 
         if (usuarioRepository.existsByNombreAndIdUsuarioNot(nombre, id)) {
             throw new ReglaNegocioException("Ya existe otro usuario con el nombre: " + nombre);
@@ -202,24 +202,24 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setNombre(nombre);
         usuario.setCorreo(correo);
 
-        if (request.getEstado() != null) {
-            if (request.getEstado() != 0 && request.getEstado() != 1) {
+        if (request.estado() != null) {
+            if (request.estado() != 0 && request.estado() != 1) {
                 throw new ReglaNegocioException("El estado debe ser 0 o 1");
             }
-            usuario.setActivo(request.getEstado() == 1);
+            usuario.setActivo(request.estado() == 1);
         }
 
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            if (request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+        if (request.password() != null && !request.password().isBlank()) {
+            if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
                 throw new ReglaNegocioException("La contraseña no puede superar los 72 bytes");
             }
-            usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+            usuario.setPassword(passwordEncoder.encode(request.password()));
         }
 
         Usuario actualizado = usuarioRepository.save(usuario);
 
-        if (request.getRolesIds() != null) {
-            actualizarRolesUsuario(usuario, request.getRolesIds(), null);
+        if (request.rolesIds() != null) {
+            actualizarRolesUsuario(usuario, request.rolesIds(), null);
         }
 
         log.info("Usuario actualizado exitosamente: id={} usuario={}", actualizado.getIdUsuario(), actualizado.getNombre());
@@ -328,30 +328,30 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public UsuarioResponseDTO registrarConPersona(RegistroPersonaUsuarioRequestDTO request) {
-        if (request.getEmpleado() == null || request.getEmpleado().getFechaContrato() == null) {
+        if (request.empleado() == null || request.empleado().fechaContrato() == null) {
             throw new ReglaNegocioException("El alta de empleado requiere una fecha de contrato");
         }
-        PersonaRequestDTO datos = request.getPersona();
-        String documento = datos.getNumeroDocumento().trim();
+        PersonaRequestDTO datos = request.persona();
+        String documento = datos.numeroDocumento().trim();
         if (personaRepository.existsByNumeroDocumento(documento)) {
             throw new ReglaNegocioException("El documento ya está registrado; seleccione la persona existente");
         }
-        if (datos.getFechaNacimiento() != null && datos.getFechaNacimiento().isAfter(LocalDate.now())) {
+        if (datos.fechaNacimiento() != null && datos.fechaNacimiento().isAfter(LocalDate.now())) {
             throw new ReglaNegocioException("La fecha de nacimiento no puede estar en el futuro");
         }
-        Persona persona = Persona.builder().nombres(datos.getNombres().trim())
-                .apellidos(datos.getApellidos().trim()).numeroDocumento(documento)
-                .tipoDocumento(datos.getTipoDocumento()).sexo(datos.getSexo())
-                .fechaNacimiento(datos.getFechaNacimiento()).telefono(limpiar(datos.getTelefono()))
-                .direccion(limpiar(datos.getDireccion())).build();
+        Persona persona = Persona.builder().nombres(datos.nombres().trim())
+                .apellidos(datos.apellidos().trim()).numeroDocumento(documento)
+                .tipoDocumento(datos.tipoDocumento()).sexo(datos.sexo())
+                .fechaNacimiento(datos.fechaNacimiento()).telefono(limpiar(datos.telefono()))
+                .direccion(limpiar(datos.direccion())).build();
         try {
             personaRepository.saveAndFlush(persona);
             empleadoRepository.saveAndFlush(Empleado.builder().persona(persona).activo(true)
-                    .fechaContrato(request.getEmpleado().getFechaContrato()).build());
-            var cuenta = request.getUsuario();
+                    .fechaContrato(request.empleado().fechaContrato()).build());
+            var cuenta = request.usuario();
             return crearCuentaInterna(UsuarioRequestDTO.builder()
-                    .nombre(cuenta.getNombre()).correo(cuenta.getCorreo()).password(cuenta.getPassword())
-                    .estado(cuenta.getEstado()).rolesIds(cuenta.getRolesIds()).idPersona(persona.getIdPersona())
+                    .nombre(cuenta.nombre()).correo(cuenta.correo()).password(cuenta.password())
+                    .estado(cuenta.estado()).rolesIds(cuenta.rolesIds()).idPersona(persona.getIdPersona())
                     .build());
         } catch (DataIntegrityViolationException ex) {
             throw new ReglaNegocioException("No se pudo registrar la persona y su cuenta; compruebe los datos duplicados");

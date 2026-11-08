@@ -91,15 +91,15 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
     @Transactional(rollbackFor = Exception.class)
     public PagoResponseDTO registrarPagoPendiente(PagoRegistroRequestDTO request) {
         log.info("Iniciando liquidación o abono para la venta ID: {}, monto: S/ {}",
-                request.getIdVenta(), request.getMonto());
+                request.idVenta(), request.monto());
 
-        if (request.getIdVenta() == null) {
+        if (request.idVenta() == null) {
             throw new ReglaNegocioException("El ID de la venta es obligatorio para registrar un pago pendiente");
         }
 
         // a) Bloqueo pesimista para evitar condiciones de carrera y sobrepagos concurrentes
-        Venta venta = ventaRepository.findByIdForUpdate(request.getIdVenta())
-                .orElseThrow(() -> new RecursosNoEncontradosException("Venta no encontrada con ID: " + request.getIdVenta()));
+        Venta venta = ventaRepository.findByIdForUpdate(request.idVenta())
+                .orElseThrow(() -> new RecursosNoEncontradosException("Venta no encontrada con ID: " + request.idVenta()));
 
         // b) RN-VE10: Validar que la venta admita pagos (no anulada y con estado PENDIENTE)
         if (venta.getEstado() == EstadoVentaEnum.ANULADA) {
@@ -113,11 +113,11 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         }
 
         // c) RN-VE12: Validar voucher obligatorio en cobros con tarjeta o transferencia
-        boolean requiereVoucher = request.getMetodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
-                request.getMetodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
-                request.getMetodoPago() == MetodoPagoEnum.TRANSFERENCIA;
+        boolean requiereVoucher = request.metodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
+                request.metodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
+                request.metodoPago() == MetodoPagoEnum.TRANSFERENCIA;
 
-        if (requiereVoucher && (request.getNumeroOperacion() == null || request.getNumeroOperacion().trim().isEmpty())) {
+        if (requiereVoucher && (request.numeroOperacion() == null || request.numeroOperacion().trim().isEmpty())) {
             throw new ReglaNegocioException("Es obligatorio ingresar el número de voucher/operación para cobros con tarjeta o transferencia (RN-VE12)");
         }
 
@@ -129,11 +129,11 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagadoActual);
 
         // e) RN-VE13: El monto no puede ser <= 0 ni exceder el saldo adeudado
-        if (request.getMonto() == null || request.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
+        if (request.monto() == null || request.monto().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ReglaNegocioException("El monto del abono debe ser mayor a cero (RN-VE13)");
         }
-        if (request.getMonto().compareTo(saldoPendiente) > 0) {
-            throw new ReglaNegocioException("El monto a pagar (S/ " + request.getMonto() +
+        if (request.monto().compareTo(saldoPendiente) > 0) {
+            throw new ReglaNegocioException("El monto a pagar (S/ " + request.monto() +
                     ") excede el saldo pendiente restante (S/ " + saldoPendiente + ") (RN-VE13)");
         }
 
@@ -142,7 +142,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         Pago pagoGuardado = pagoRepository.save(pago);
 
         // g) RN-VE14: Si el saldo llega a cero, actualizar automáticamente el estado a PAGADA
-        BigDecimal nuevoSaldo = saldoPendiente.subtract(request.getMonto());
+        BigDecimal nuevoSaldo = saldoPendiente.subtract(request.monto());
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
             log.info("Venta ID {} liquidada al 100%. Actualizando estado a PAGADA.", venta.getIdVenta());
             venta.setEstado(EstadoVentaEnum.PAGADA);

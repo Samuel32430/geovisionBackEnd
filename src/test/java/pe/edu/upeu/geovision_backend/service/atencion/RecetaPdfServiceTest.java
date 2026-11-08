@@ -52,8 +52,8 @@ class RecetaPdfServiceTest {
                 .ojoIzquierdo(MedidaOjoDTO.builder().agudezaVisual("20/25").esfera(new BigDecimal("2.50"))
                         .cilindro(BigDecimal.ZERO).eje(80).build()).build();
         var near = MedidaResponseDTO.builder().idMedida(21L).tipoMedida(TipoMedidaEnum.CERCA)
-                .distanciaPupilar(new BigDecimal("62.50")).ojoDerecho(far.getOjoDerecho())
-                .ojoIzquierdo(far.getOjoIzquierdo()).observaciones("Lectura y trabajo de cerca.").build();
+                .distanciaPupilar(new BigDecimal("62.50")).ojoDerecho(far.ojoDerecho())
+                .ojoIzquierdo(far.ojoIzquierdo()).observaciones("Lectura y trabajo de cerca.").build();
         return RecetaResponseDTO.builder().idReceta(id).fechaRegistro(LocalDateTime.of(2026, 11, 1, 10, 15))
                 .esExterno(0).nombreCompletoPaciente("Ana María Muñoz Peña")
                 .numeroDocumentoPaciente("72458912").nombreCompletoEmpleado("José Núñez")
@@ -90,9 +90,9 @@ class RecetaPdfServiceTest {
     @Test
     void datosOpcionalesAusentesNoSeInventanYTipoExternoSeDistingue() throws Exception {
         var recipe = recipe(106);
-        recipe.setEsExterno(1);
-        recipe.setMedidas(List.of(MedidaResponseDTO.builder().idMedida(1L).build()));
-        recipe.setLentes(List.of());
+        recipe = recipe.toBuilder().esExterno(1).build();
+        recipe = recipe.toBuilder().medidas(List.of(MedidaResponseDTO.builder().idMedida(1L).build())).build();
+        recipe = recipe.toBuilder().lentes(List.of()).build();
         when(prescriptions.obtenerRecetaPorId(106L)).thenReturn(recipe);
         try (PDDocument document = Loader.loadPDF(service.generarRecetaPdf(106L))) {
             assertThat(new PDFTextStripper().getText(document)).contains("Prescripción externa", "Sin registrar",
@@ -103,16 +103,16 @@ class RecetaPdfServiceTest {
     @Test
     void textoLargoYSinEspaciosSeAjustaYSeConservaEnVariasPaginas() throws Exception {
         var recipe = recipe(107);
-        recipe.setNombreCompletoPaciente("Nombre de prueba " + "Á".repeat(150));
+        recipe = recipe.toBuilder().nombreCompletoPaciente("Nombre de prueba " + "Á".repeat(150)).build();
         List<MedidaResponseDTO> measurements = new ArrayList<>();
         for (int i = 0; i < 12; i++) {
-            var measure = recipe.getMedidas().getFirst();
+            var measure = recipe.medidas().getFirst();
             measurements.add(MedidaResponseDTO.builder().idMedida((long) i).tipoMedida(TipoMedidaEnum.MEDIO)
-                    .ojoDerecho(measure.getOjoDerecho()).ojoIzquierdo(measure.getOjoIzquierdo())
+                    .ojoDerecho(measure.ojoDerecho()).ojoIzquierdo(measure.ojoIzquierdo())
                     .observaciones("Observación " + i + ": " + "Texto clínico extenso con acentos. ".repeat(6))
                     .build());
         }
-        recipe.setMedidas(measurements);
+        recipe = recipe.toBuilder().medidas(measurements).build();
         when(prescriptions.obtenerRecetaPorId(107L)).thenReturn(recipe);
         byte[] bytes = service.generarRecetaPdf(107L);
         Files.write(Path.of("target/stage6-long-preview.pdf"), bytes);
@@ -137,7 +137,8 @@ class RecetaPdfServiceTest {
     @Test
     void caracteresSinGlifoNoSePierdenNiRompenGeneracion() throws Exception {
         var recipe = recipe(108);
-        recipe.getMedidas().getFirst().setObservaciones("Control Ω y símbolo 😀");
+        recipe.medidas().set(0, recipe.medidas().getFirst().toBuilder()
+                .observaciones("Control Ω y símbolo 😀").build());
         when(prescriptions.obtenerRecetaPorId(108L)).thenReturn(recipe);
         try (PDDocument document = Loader.loadPDF(service.generarRecetaPdf(108L))) {
             assertThat(new PDFTextStripper().getText(document)).contains("Control Ω", "[U+1F600]");

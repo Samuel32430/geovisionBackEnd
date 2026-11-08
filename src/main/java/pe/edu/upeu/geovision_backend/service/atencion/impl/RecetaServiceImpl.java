@@ -174,7 +174,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public LenteResponseDTO configurarLente(Long idReceta, LenteRequestDTO request) {
-        if (!request.getIdReceta().equals(idReceta)) {
+        if (!request.idReceta().equals(idReceta)) {
             throw new ReglaNegocioException("La receta del cuerpo debe coincidir con la receta de la ruta");
         }
         Receta receta = recetaRepository.findByIdForUpdate(idReceta)
@@ -183,21 +183,21 @@ public class RecetaServiceImpl implements RecetaService {
         if (ventaRepository.existsByRecetaIdReceta(idReceta)) {
             throw new ReglaNegocioException("No se puede configurar una receta que ya está vinculada a una venta");
         }
-        MaterialCristal material = materialCristalRepository.findById(request.getIdMaterialCristal())
+        MaterialCristal material = materialCristalRepository.findById(request.idMaterialCristal())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Material de cristal no encontrado"));
         Montura montura = null;
-        if (request.getIdProducto() != null) {
-            montura = monturaRepository.findById(request.getIdProducto())
+        if (request.idProducto() != null) {
+            montura = monturaRepository.findById(request.idProducto())
                     .orElseThrow(() -> new RecursosNoEncontradosException("Montura no encontrada"));
             if (!Boolean.TRUE.equals(montura.getProducto().getActivo())
                     || montura.getProducto().getStock() <= 0) {
                 throw new ReglaNegocioException("La montura debe estar activa y tener stock disponible");
             }
         }
-        List<Medida> medidas = seleccionarMedidas(idReceta, request.getMedidasIds());
-        List<TratamientoCristal> tratamientos = seleccionarTratamientos(request.getTratamientosCristalIds());
+        List<Medida> medidas = seleccionarMedidas(idReceta, request.medidasIds());
+        List<TratamientoCristal> tratamientos = seleccionarTratamientos(request.tratamientosCristalIds());
         Lente lente = lenteRepository.saveAndFlush(Lente.builder().receta(receta).materialCristal(material)
-                .montura(montura).subTotal(request.getSubTotal()).build());
+                .montura(montura).subTotal(request.subTotal()).build());
         lenteMedidaRepository.saveAllAndFlush(medidas.stream()
                 .map(medida -> LenteMedida.builder().lente(lente).medida(medida).build()).toList());
         lenteTratamientoCristalRepository.saveAllAndFlush(tratamientos.stream()
@@ -247,7 +247,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public RecetaResponseDTO registrarExamenVisual(RecetaRequestDTO request, String usernameAuditoria) {
-        if (request.getEsExterno() == 1) {
+        if (request.esExterno() == 1) {
             throw new ReglaNegocioException("Utilice el endpoint de receta externa para una prescripción externa");
         }
         return registrar(request, usernameAuditoria, 0);
@@ -259,27 +259,27 @@ public class RecetaServiceImpl implements RecetaService {
     }
 
     private RecetaResponseDTO registrar(RecetaRequestDTO request, String username, int esExterno) {
-        Empleado empleado = obtenerEmpleadoActual(username, request.getIdEmpleado());
-        validarDatosNuevos(request.getMedidas());
-        opticaValidator.validarMedidas(request.getMedidas());
+        Empleado empleado = obtenerEmpleadoActual(username, request.idEmpleado());
+        validarDatosNuevos(request.medidas());
+        opticaValidator.validarMedidas(request.medidas());
 
         // Comparte el bloqueo con la gestión del paciente para serializar su desactivación.
-        personaRepository.findByIdForUpdate(request.getIdPaciente())
+        personaRepository.findByIdForUpdate(request.idPaciente())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado"));
-        Paciente paciente = pacienteRepository.findByIdWithDetails(request.getIdPaciente())
+        Paciente paciente = pacienteRepository.findByIdWithDetails(request.idPaciente())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado"));
         if (!Boolean.TRUE.equals(paciente.getActivo())) {
             throw new ReglaNegocioException("El paciente debe estar activo para registrar una receta");
         }
 
         Receta receta = Receta.builder().paciente(paciente).empleado(empleado).esExterno(esExterno)
-                .fechaRegistro(request.getFechaRegistro() == null ? null : request.getFechaRegistro().withNano(0))
+                .fechaRegistro(request.fechaRegistro() == null ? null : request.fechaRegistro().withNano(0))
                 .build();
         recetaRepository.saveAndFlush(receta);
         List<Medida> medidas = new ArrayList<>();
-        for (MedidaRequestDTO medida : request.getMedidas()) {
-            MedidaOjo derecha = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.getOjoDerecho()));
-            MedidaOjo izquierda = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.getOjoIzquierdo()));
+        for (MedidaRequestDTO medida : request.medidas()) {
+            MedidaOjo derecha = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.ojoDerecho()));
+            MedidaOjo izquierda = medidaOjoRepository.saveAndFlush(recetaMapper.toMedidaOjo(medida.ojoIzquierdo()));
             medidas.add(medidaRepository.saveAndFlush(recetaMapper.toMedida(medida, receta, derecha, izquierda)));
         }
         return recetaMapper.toRecetaResponse(receta, medidas);
@@ -303,9 +303,9 @@ public class RecetaServiceImpl implements RecetaService {
 
     private void validarDatosNuevos(List<MedidaRequestDTO> medidas) {
         for (MedidaRequestDTO medida : medidas) {
-            if (medida.getIdReceta() != null || medida.getIdEnvioLaboratorio() != null
-                    || medida.getOjoDerecho().getIdMedidaOjo() != null
-                    || medida.getOjoIzquierdo().getIdMedidaOjo() != null) {
+            if (medida.idReceta() != null || medida.idEnvioLaboratorio() != null
+                    || medida.ojoDerecho().idMedidaOjo() != null
+                    || medida.ojoIzquierdo().idMedidaOjo() != null) {
                 throw new ReglaNegocioException("Las medidas nuevas no deben incluir IDs de receta, ojos o envío");
             }
         }

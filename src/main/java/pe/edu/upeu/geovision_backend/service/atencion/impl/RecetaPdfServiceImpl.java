@@ -47,37 +47,37 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
                 .orElse(null);
         try (PDDocument documento = new PDDocument(); ByteArrayOutputStream salida = new ByteArrayOutputStream();
              PaginaPdf pagina = new PaginaPdf(documento)) {
-            documento.getDocumentInformation().setTitle("Receta oftálmica #" + receta.getIdReceta());
+            documento.getDocumentInformation().setTitle("Receta oftálmica #" + receta.idReceta());
             escribirCabecera(pagina, empresa);
-            pagina.seccion("RECETA OFTÁLMICA #" + receta.getIdReceta());
-            pagina.parrafo("Tipo: " + (Boolean.TRUE.equals(receta.getEsRecetaExterna())
+            pagina.seccion("RECETA OFTÁLMICA #" + receta.idReceta());
+            pagina.parrafo("Tipo: " + (Boolean.TRUE.equals(receta.esRecetaExterna())
                     ? "Prescripción externa" : "Examen visual interno"));
-            pagina.parrafo("Fecha: " + (receta.getFechaRegistro() == null ? "Sin registrar"
-                    : receta.getFechaRegistro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
-            pagina.parrafo("Paciente: " + texto(receta.getNombreCompletoPaciente()));
-            pagina.parrafo("Documento: " + texto(receta.getNumeroDocumentoPaciente()));
-            pagina.parrafo("Empleado responsable del registro: " + texto(receta.getNombreCompletoEmpleado()));
+            pagina.parrafo("Fecha: " + (receta.fechaRegistro() == null ? "Sin registrar"
+                    : receta.fechaRegistro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
+            pagina.parrafo("Paciente: " + texto(receta.nombreCompletoPaciente()));
+            pagina.parrafo("Documento: " + texto(receta.numeroDocumentoPaciente()));
+            pagina.parrafo("Empleado responsable del registro: " + texto(receta.nombreCompletoEmpleado()));
             pagina.seccion("Medidas ópticas");
-            if (receta.getMedidas().isEmpty()) {
+            if (receta.medidas().isEmpty()) {
                 pagina.parrafo("No hay medidas registradas.");
             }
-            for (MedidaResponseDTO medida : receta.getMedidas()) {
+            for (MedidaResponseDTO medida : receta.medidas()) {
                 escribirMedida(pagina, medida);
             }
-            if (!receta.getLentes().isEmpty()) {
+            if (!receta.lentes().isEmpty()) {
                 pagina.seccion("Lentes configurados");
-                for (LenteResponseDTO lente : receta.getLentes()) {
+                for (LenteResponseDTO lente : receta.lentes()) {
                     pagina.espacio(100);
-                    pagina.parrafo("Lente #" + lente.getIdLente() + " - Material: " + texto(lente.getNombreMaterialCristal()));
-                    pagina.parrafo("Montura: " + (lente.getIdProductoMontura() == null ? "Propia del paciente"
-                            : texto(lente.getCodigoMontura()) + " - " + texto(lente.getNombreMontura())));
-                    pagina.parrafo("Tratamientos: " + (lente.getTratamientos().isEmpty() ? "Sin tratamientos"
-                            : lente.getTratamientos().stream().map(t -> t.getNombre()).collect(Collectors.joining(", "))));
-                    pagina.parrafo("Medidas asociadas: " + lente.getMedidas().stream()
-                            .map(m -> "#" + m.getIdMedida() + " (" + tipoMedida(m) + ")").collect(Collectors.joining(", ")));
+                    pagina.parrafo("Lente #" + lente.idLente() + " - Material: " + texto(lente.nombreMaterialCristal()));
+                    pagina.parrafo("Montura: " + (lente.idProductoMontura() == null ? "Propia del paciente"
+                            : texto(lente.codigoMontura()) + " - " + texto(lente.nombreMontura())));
+                    pagina.parrafo("Tratamientos: " + (lente.tratamientos().isEmpty() ? "Sin tratamientos"
+                            : lente.tratamientos().stream().map(t -> t.nombre()).collect(Collectors.joining(", "))));
+                    pagina.parrafo("Medidas asociadas: " + lente.medidas().stream()
+                            .map(m -> "#" + m.idMedida() + " (" + tipoMedida(m) + ")").collect(Collectors.joining(", ")));
                 }
             }
-            pagina.terminar(receta.getIdReceta());
+            pagina.terminar(receta.idReceta());
             documento.save(salida);
             return salida.toByteArray();
         } catch (IOException ex) {
@@ -102,30 +102,30 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
     }
 
     private void escribirMedida(PaginaPdf pagina, MedidaResponseDTO medida) throws IOException {
-        String[] derecha = filaOjo("OD", medida.getOjoDerecho());
-        String[] izquierda = filaOjo("OI", medida.getOjoIzquierdo());
-        int lineasObservacion = pagina.lineas("Observaciones: " + texto(medida.getObservaciones()), pagina.regular,
+        String[] derecha = filaOjo("OD", medida.ojoDerecho());
+        String[] izquierda = filaOjo("OI", medida.ojoIzquierdo());
+        int lineasObservacion = pagina.lineas("Observaciones: " + texto(medida.observaciones()), pagina.regular,
                 10, PaginaPdf.ANCHO).size();
         pagina.espacio(95 + pagina.altoFila(derecha) + pagina.altoFila(izquierda) + lineasObservacion * 14);
-        pagina.parrafo(tipoMedida(medida) + " - Medida #" + medida.getIdMedida());
+        pagina.parrafo(tipoMedida(medida) + " - Medida #" + medida.idMedida());
         pagina.fila(new String[]{"Ojo", "Agudeza visual", "Esfera", "Cilindro", "Eje", "Adición"}, true);
         pagina.fila(derecha, false);
         pagina.fila(izquierda, false);
-        pagina.parrafo("Distancia pupilar: " + decimal(medida.getDistanciaPupilar())
-                + "    Prisma: " + decimal(medida.getPrisma()));
-        if (medida.getObservaciones() != null && !medida.getObservaciones().isBlank()) {
-            pagina.parrafo("Observaciones: " + medida.getObservaciones());
+        pagina.parrafo("Distancia pupilar: " + decimal(medida.distanciaPupilar())
+                + "    Prisma: " + decimal(medida.prisma()));
+        if (medida.observaciones() != null && !medida.observaciones().isBlank()) {
+            pagina.parrafo("Observaciones: " + medida.observaciones());
         }
     }
 
     private String[] filaOjo(String lado, MedidaOjoDTO ojo) {
         if (ojo == null) return new String[]{lado, "Sin registrar", "-", "-", "-", "-"};
-        return new String[]{lado, texto(ojo.getAgudezaVisual()), decimal(ojo.getEsfera()), decimal(ojo.getCilindro()),
-                ojo.getEje() == null ? "-" : ojo.getEje().toString(), decimal(ojo.getAdicion())};
+        return new String[]{lado, texto(ojo.agudezaVisual()), decimal(ojo.esfera()), decimal(ojo.cilindro()),
+                ojo.eje() == null ? "-" : ojo.eje().toString(), decimal(ojo.adicion())};
     }
 
     private String tipoMedida(MedidaResponseDTO medida) {
-        return medida.getTipoMedida() == null ? "Sin tipo registrado" : medida.getTipoMedida().getDescripcion();
+        return medida.tipoMedida() == null ? "Sin tipo registrado" : medida.tipoMedida().getDescripcion();
     }
 
     private String decimal(BigDecimal valor) {

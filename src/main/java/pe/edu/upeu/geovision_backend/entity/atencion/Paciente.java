@@ -18,8 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -41,7 +39,6 @@ public class Paciente {
     @JoinColumn(name = "id_persona", nullable = false)
     private Persona persona;
 
-    @JdbcTypeCode(SqlTypes.INTEGER)
     @Column(name = "estado", nullable = false)
     @Builder.Default
     private Boolean activo = true;

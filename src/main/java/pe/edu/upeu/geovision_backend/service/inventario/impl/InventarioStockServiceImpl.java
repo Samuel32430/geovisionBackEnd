@@ -60,37 +60,37 @@ public class InventarioStockServiceImpl implements InventarioStockService {
     @Transactional
     public MovimientoStockResponseDTO registrarEntradaStock(EntradaStockRequestDTO request, String username) {
         log.info("Iniciando registro de entrada de stock para producto ID: {}, cantidad: {}, usuario: {}",
-                request.getIdProducto(), request.getCantidad(), username);
+                request.idProducto(), request.cantidad(), username);
 
-        if (request.getCantidad() == null || request.getCantidad() <= 0) {
+        if (request.cantidad() == null || request.cantidad() <= 0) {
             throw new ReglaNegocioException("La cantidad ingresada debe ser mayor a cero");
         }
 
         Usuario usuario = obtenerUsuarioAutenticado(username);
 
         // Bloqueo pesimista para evitar carreras concurrentes
-        Producto producto = productoRepository.findByIdForUpdate(request.getIdProducto())
-                .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + request.getIdProducto()));
+        Producto producto = productoRepository.findByIdForUpdate(request.idProducto())
+                .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + request.idProducto()));
 
         int stockPrevio = producto.getStock() != null ? producto.getStock() : 0;
-        int nuevoStock = stockPrevio + request.getCantidad();
+        int nuevoStock = stockPrevio + request.cantidad();
 
         producto.setStock(nuevoStock);
         productoRepository.save(producto);
 
-        int motivoCodigo = request.getMotivo() != null
-                ? request.getMotivo()
+        int motivoCodigo = request.motivo() != null
+                ? request.motivo()
                 : MotivoMovimientoStockEnum.ENTRADA_POR_COMPRA.getCodigo();
 
         MovimientoStockLog movimiento = MovimientoStockLog.builder()
                 .producto(producto)
                 .usuario(usuario)
                 .fechaRegistro(LocalDateTime.now())
-                .cantidad(request.getCantidad())
+                .cantidad(request.cantidad())
                 .stockPrevio(stockPrevio)
                 .stockPosterior(nuevoStock)
                 .motivo(motivoCodigo)
-                .observaciones(request.getObservaciones() != null ? request.getObservaciones().trim() : null)
+                .observaciones(request.observaciones() != null ? request.observaciones().trim() : null)
                 .build();
 
         MovimientoStockLog movimientoGuardado = movimientoStockLogRepository.save(movimiento);
@@ -105,37 +105,37 @@ public class InventarioStockServiceImpl implements InventarioStockService {
     @Transactional
     public MovimientoStockResponseDTO registrarAjusteStock(AjusteStockRequestDTO request, String username) {
         log.info("Iniciando registro de ajuste de stock para producto ID: {}, tipo: {}, cantidad: {}, usuario: {}",
-                request.getIdProducto(), request.getTipoAjuste(), request.getCantidad(), username);
+                request.idProducto(), request.tipoAjuste(), request.cantidad(), username);
 
-        if (request.getCantidad() == null || request.getCantidad() <= 0) {
+        if (request.cantidad() == null || request.cantidad() <= 0) {
             throw new ReglaNegocioException("La cantidad del ajuste debe ser mayor a cero");
         }
-        if (request.getObservaciones() == null || request.getObservaciones().trim().isBlank()) {
+        if (request.observaciones() == null || request.observaciones().trim().isBlank()) {
             throw new ReglaNegocioException("La justificación u observaciones son obligatorias para registrar un ajuste");
         }
 
         Usuario usuario = obtenerUsuarioAutenticado(username);
 
         // Bloqueo pesimista para consistencia matemática
-        Producto producto = productoRepository.findByIdForUpdate(request.getIdProducto())
-                .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + request.getIdProducto()));
+        Producto producto = productoRepository.findByIdForUpdate(request.idProducto())
+                .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + request.idProducto()));
 
         int stockPrevio = producto.getStock() != null ? producto.getStock() : 0;
-        boolean esIncremento = "INCREMENTO".equalsIgnoreCase(request.getTipoAjuste().trim());
+        boolean esIncremento = "INCREMENTO".equalsIgnoreCase(request.tipoAjuste().trim());
 
         int nuevoStock;
         if (esIncremento) {
-            nuevoStock = stockPrevio + request.getCantidad();
+            nuevoStock = stockPrevio + request.cantidad();
         } else {
-            if (stockPrevio - request.getCantidad() < 0) {
+            if (stockPrevio - request.cantidad() < 0) {
                 log.warn("Rechazando ajuste de salida: stock actual ({}) es insuficiente para restar ({})",
-                        stockPrevio, request.getCantidad());
+                        stockPrevio, request.cantidad());
                 throw new ReglaNegocioException(String.format(
                         "Operación rechazada: Un ajuste de salida de %d unidades dejaría el stock en negativo (Stock actual: %d)",
-                        request.getCantidad(), stockPrevio
+                        request.cantidad(), stockPrevio
                 ));
             }
-            nuevoStock = stockPrevio - request.getCantidad();
+            nuevoStock = stockPrevio - request.cantidad();
         }
 
         producto.setStock(nuevoStock);
@@ -145,11 +145,11 @@ public class InventarioStockServiceImpl implements InventarioStockService {
                 .producto(producto)
                 .usuario(usuario)
                 .fechaRegistro(LocalDateTime.now())
-                .cantidad(request.getCantidad())
+                .cantidad(request.cantidad())
                 .stockPrevio(stockPrevio)
                 .stockPosterior(nuevoStock)
-                .motivo(request.getMotivo())
-                .observaciones(request.getObservaciones().trim())
+                .motivo(request.motivo())
+                .observaciones(request.observaciones().trim())
                 .build();
 
         MovimientoStockLog movimientoGuardado = movimientoStockLogRepository.save(movimiento);

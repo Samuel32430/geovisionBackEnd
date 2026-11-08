@@ -136,7 +136,7 @@ class UsuarioServiceTest {
                 .build();
         when(empleadoRepository.findById(2L)).thenReturn(Optional.of(empleadoVendedor));
         when(usuarioRolRepository.findByUsuarioIdUsuario(2L)).thenReturn(Collections.emptyList());
-        when(usuarioMapper.toUsuarioResponse(eq(vendedorUser), any())).thenReturn(new UsuarioResponseDTO());
+        when(usuarioMapper.toUsuarioResponse(eq(vendedorUser), any())).thenReturn(UsuarioResponseDTO.builder().build());
 
         UsuarioResponseDTO response = usuarioService.crear(request);
 

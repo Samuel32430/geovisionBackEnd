@@ -166,8 +166,8 @@ class ConfiguracionLenteControllerTest {
     @Test
     void monturaDeTiendaAsociaSubconjuntoDeMedidasYNoReservaStock() throws Exception {
         var request = request();
-        request.setIdProducto(frame.getIdProducto());
-        request.setMedidasIds(List.of(clinical.getLast().getIdMedida()));
+        request = request.toBuilder().idProducto(frame.getIdProducto()).build();
+        request = request.toBuilder().medidasIds(List.of(clinical.getLast().getIdMedida())).build();
         mvc.perform(post("/api/v1/recetas/{id}/lentes", recipe.getIdReceta()).contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -178,8 +178,8 @@ class ConfiguracionLenteControllerTest {
                 .andExpect(jsonPath("$.medidas[0].tipoMedida").value("CERCA"));
         assertThat(products.findById(frame.getIdProducto()).orElseThrow().getStock()).isEqualTo(5);
         // La receta admite otro lente antes de estar vinculada a una venta.
-        request.setMedidasIds(List.of());
-        request.setTratamientosCristalIds(null);
+        request = request.toBuilder().medidasIds(List.of()).build();
+        request = request.toBuilder().tratamientosCristalIds(null).build();
         expectPost(recipe.getIdReceta(), request, 201);
         assertThat(lenses.findByRecetaIdRecetaOrderByIdLenteAsc(recipe.getIdReceta())).hasSize(2);
     }
@@ -188,16 +188,16 @@ class ConfiguracionLenteControllerTest {
     void rechazaRecetaInconsistenteYReferenciasInexistentes() throws Exception {
         var request = request();
         expectPost(recipe.getIdReceta() + 99999, request, 409);
-        request.setIdReceta(99999999L);
+        request = request.toBuilder().idReceta(99999999L).build();
         expectPost(99999999L, request, 404);
         request = request();
-        request.setIdMaterialCristal(99999999L);
+        request = request.toBuilder().idMaterialCristal(99999999L).build();
         expectPost(recipe.getIdReceta(), request, 404);
         request = request();
-        request.setIdProducto(99999999L);
+        request = request.toBuilder().idProducto(99999999L).build();
         expectPost(recipe.getIdReceta(), request, 404);
         request = request();
-        request.setTratamientosCristalIds(List.of(99999999L));
+        request = request.toBuilder().tratamientosCristalIds(List.of(99999999L)).build();
         expectPost(recipe.getIdReceta(), request, 404);
         assertThat(lenses.findByRecetaIdRecetaOrderByIdLenteAsc(recipe.getIdReceta())).isEmpty();
     }
@@ -205,7 +205,7 @@ class ConfiguracionLenteControllerTest {
     @Test
     void rechazaMonturaInactivaSinStockYProductoQueNoEsMontura() throws Exception {
         var request = request();
-        request.setIdProducto(frame.getIdProducto());
+        request = request.toBuilder().idProducto(frame.getIdProducto()).build();
         frame.getProducto().setStock(0);
         products.saveAndFlush(frame.getProducto());
         expectPost(recipe.getIdReceta(), request, 409);
@@ -215,7 +215,7 @@ class ConfiguracionLenteControllerTest {
         expectPost(recipe.getIdReceta(), request, 409);
         Producto other = products.saveAndFlush(Producto.builder().codigo(UUID.randomUUID().toString())
                 .nombre("Otro producto").precio(BigDecimal.ONE).stock(5).build());
-        request.setIdProducto(other.getIdProducto());
+        request = request.toBuilder().idProducto(other.getIdProducto()).build();
         expectPost(recipe.getIdReceta(), request, 404);
     }
 
@@ -224,14 +224,14 @@ class ConfiguracionLenteControllerTest {
         Receta other = prescriptions.saveAndFlush(Receta.builder().paciente(patient).empleado(employee).build());
         Medida foreign = measure(other, TipoMedidaEnum.LEJOS);
         var request = request();
-        request.setMedidasIds(List.of(clinical.getFirst().getIdMedida(), foreign.getIdMedida()));
+        request = request.toBuilder().medidasIds(List.of(clinical.getFirst().getIdMedida(), foreign.getIdMedida())).build();
         expectPost(recipe.getIdReceta(), request, 409);
-        request.setMedidasIds(List.of(99999999L));
+        request = request.toBuilder().medidasIds(List.of(99999999L)).build();
         expectPost(recipe.getIdReceta(), request, 409);
-        request.setMedidasIds(List.of(clinical.getFirst().getIdMedida(), clinical.getFirst().getIdMedida()));
+        request = request.toBuilder().medidasIds(List.of(clinical.getFirst().getIdMedida(), clinical.getFirst().getIdMedida())).build();
         expectPost(recipe.getIdReceta(), request, 409);
-        request.setMedidasIds(null);
-        request.setTratamientosCristalIds(List.of(treatment.getIdTratamientoCristal(), treatment.getIdTratamientoCristal()));
+        request = request.toBuilder().medidasIds(null).build();
+        request = request.toBuilder().tratamientosCristalIds(List.of(treatment.getIdTratamientoCristal(), treatment.getIdTratamientoCristal())).build();
         expectPost(recipe.getIdReceta(), request, 409);
         assertThat(lenses.findByRecetaIdRecetaOrderByIdLenteAsc(recipe.getIdReceta())).isEmpty();
     }
@@ -240,7 +240,7 @@ class ConfiguracionLenteControllerTest {
     void recetaSinMedidasNoAdmiteLente() throws Exception {
         Receta empty = prescriptions.saveAndFlush(Receta.builder().paciente(patient).empleado(employee).build());
         var request = request();
-        request.setIdReceta(empty.getIdReceta());
+        request = request.toBuilder().idReceta(empty.getIdReceta()).build();
         expectPost(empty.getIdReceta(), request, 409);
     }
 
@@ -260,7 +260,7 @@ class ConfiguracionLenteControllerTest {
                 .tipoComprobante(TipoComprobanteEnum.BOLETA).build());
         expectPost(recipe.getIdReceta(), request(), 409);
         assertThat(lenses.findByRecetaIdRecetaOrderByIdLenteAsc(recipe.getIdReceta()))
-                .extracting(Lente::getIdLente).containsExactly(first.getIdLente());
+                .extracting(Lente::getIdLente).containsExactly(first.idLente());
         mvc.perform(put("/api/v1/recetas/{id}/lentes", recipe.getIdReceta()).contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(request()))).andExpect(status().isMethodNotAllowed());
         mvc.perform(delete("/api/v1/recetas/{id}/lentes", recipe.getIdReceta()))
@@ -271,23 +271,23 @@ class ConfiguracionLenteControllerTest {
     void validaSubtotalIdsYElementosDeListas() throws Exception {
         for (BigDecimal invalid : List.of(new BigDecimal("-1"), new BigDecimal("1.001"), new BigDecimal("10000000000"))) {
             var request = request();
-            request.setSubTotal(invalid);
+            request = request.toBuilder().subTotal(invalid).build();
             expectPost(recipe.getIdReceta(), request, 400);
         }
         var request = request();
-        request.setMedidasIds(Arrays.asList((Long) null));
+        request = request.toBuilder().medidasIds(Arrays.asList((Long) null)).build();
         expectPost(recipe.getIdReceta(), request, 400);
         request = request();
-        request.setTratamientosCristalIds(List.of(0L));
+        request = request.toBuilder().tratamientosCristalIds(List.of(0L)).build();
         expectPost(recipe.getIdReceta(), request, 400);
         request = request();
-        request.setIdMaterialCristal(null);
+        request = request.toBuilder().idMaterialCristal(null).build();
         expectPost(recipe.getIdReceta(), request, 400);
         request = request();
-        request.setIdReceta(null);
+        request = request.toBuilder().idReceta(null).build();
         expectPost(recipe.getIdReceta(), request, 400);
         request = request();
-        request.setIdProducto(-1L);
+        request = request.toBuilder().idProducto(-1L).build();
         expectPost(recipe.getIdReceta(), request, 400);
         expectPost(-1L, request(), 400);
     }

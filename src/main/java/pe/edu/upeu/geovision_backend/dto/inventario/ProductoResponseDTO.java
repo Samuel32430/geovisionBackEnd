@@ -1,35 +1,28 @@
 package pe.edu.upeu.geovision_backend.dto.inventario;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProductoResponseDTO {
-
-    private Long idProducto;
-    private String codigo;
-    private String nombre;
-    private String marca;
-    private String descripcion;
-    private BigDecimal precio;
-    private Integer stock;
-    private Integer estado;
-    private String estadoDescripcion;
-    private LocalDateTime fechaRegistro;
-    private Long idCategoria;
-    private String nombreCategoria;
-    private MonturaDTO montura;
-    private Boolean esMontura;
-
-    public Boolean getEsMontura() {
+@Builder(toBuilder = true)
+public record ProductoResponseDTO(
+    Long idProducto,
+    String codigo,
+    String nombre,
+    String marca,
+    String descripcion,
+    BigDecimal precio,
+    Integer stock,
+    Integer estado,
+    String estadoDescripcion,
+    LocalDateTime fechaRegistro,
+    Long idCategoria,
+    String nombreCategoria,
+    MonturaDTO montura,
+    Boolean esMontura
+) {
+    public Boolean esMontura() {
         if (esMontura != null) {
             return esMontura;
         }

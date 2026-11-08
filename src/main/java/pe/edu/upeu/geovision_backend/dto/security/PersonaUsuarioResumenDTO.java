@@ -1,37 +1,34 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import lombok.Getter;
+import lombok.Builder;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 
 /** Proyección de selección: no contiene contraseñas, hashes ni datos clínicos. */
-@Getter
-public class PersonaUsuarioResumenDTO {
-    private final Long idPersona;
-    private final String nombres;
-    private final String apellidos;
-    private final TipoDocumentoEnum tipoDocumento;
-    private final String numeroDocumento;
-    private final Long idUsuario;
-    private final String nombreUsuario;
-    private final Integer estadoUsuario;
-    private final boolean esEmpleado;
-    private final boolean empleadoActivo;
 
+@Builder(toBuilder = true)
+public record PersonaUsuarioResumenDTO(
+    Long idPersona,
+    String nombres,
+    String apellidos,
+    TipoDocumentoEnum tipoDocumento,
+    String numeroDocumento,
+    Long idUsuario,
+    String nombreUsuario,
+    Integer estadoUsuario,
+    boolean esEmpleado,
+    boolean empleadoActivo
+) {
     public PersonaUsuarioResumenDTO(Long idPersona, String nombres, String apellidos,
             TipoDocumentoEnum tipoDocumento, String numeroDocumento, Long idUsuario,
             String nombreUsuario, Boolean estadoUsuario, boolean esEmpleado, boolean empleadoActivo) {
-        this.idPersona = idPersona;
-        this.nombres = nombres;
-        this.apellidos = apellidos;
-        this.tipoDocumento = tipoDocumento;
-        this.numeroDocumento = numeroDocumento;
-        this.idUsuario = idUsuario;
-        this.nombreUsuario = nombreUsuario;
-        this.estadoUsuario = estadoUsuario == null ? null : (Boolean.TRUE.equals(estadoUsuario) ? 1 : 0);
-        this.esEmpleado = esEmpleado;
-        this.empleadoActivo = empleadoActivo;
+        this(idPersona, nombres, apellidos, tipoDocumento, numeroDocumento, idUsuario,
+                nombreUsuario, estadoUsuario == null ? null : (estadoUsuario ? 1 : 0),
+                esEmpleado, empleadoActivo);
     }
 
-    public String getNombreCompleto() { return (nombres + " " + apellidos).trim(); }
-    public boolean getTieneUsuario() { return idUsuario != null; }
+    @com.fasterxml.jackson.annotation.JsonProperty("nombreCompleto")
+    public String nombreCompleto() { return (nombres + " " + apellidos).trim(); }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("tieneUsuario")
+    public boolean tieneUsuario() { return idUsuario != null; }
 }

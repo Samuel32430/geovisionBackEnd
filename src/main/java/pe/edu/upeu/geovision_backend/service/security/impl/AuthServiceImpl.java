@@ -98,13 +98,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO request) {
-        String identificador = request.getUsername().trim();
+        String identificador = request.username().trim();
         log.info("Intento de autenticación: usuario/correo={}", identificador);
 
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(identificador, request.getPassword()));
+                    new UsernamePasswordAuthenticationToken(identificador, request.password()));
         } catch (AuthenticationException ex) {
             log.warn("Fallo de autenticación para {}: {}", identificador, ex.getMessage());
             usuarioRepository.findByNombreOrCorreo(identificador, identificador)
@@ -202,23 +202,23 @@ public class AuthServiceImpl implements AuthService {
         Usuario usuario = usuarioRepository.findByNombreOrCorreo(username, username)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado: " + username));
 
-        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPassword())) {
+        if (!passwordEncoder.matches(request.passwordActual(), usuario.getPassword())) {
             throw new ReglaNegocioException("La contraseña actual no es correcta");
         }
 
-        if (!request.getNuevoPassword().equals(request.getConfirmarPassword())) {
+        if (!request.nuevoPassword().equals(request.confirmarPassword())) {
             throw new ReglaNegocioException("La nueva contraseña y su confirmación no coinciden");
         }
 
-        if (request.getNuevoPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+        if (request.nuevoPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new ReglaNegocioException("La contraseña no puede superar los 72 bytes");
         }
 
-        if (passwordEncoder.matches(request.getNuevoPassword(), usuario.getPassword())) {
+        if (passwordEncoder.matches(request.nuevoPassword(), usuario.getPassword())) {
             throw new ReglaNegocioException("La nueva contraseña no puede ser igual a la anterior");
         }
 
-        usuario.setPassword(passwordEncoder.encode(request.getNuevoPassword()));
+        usuario.setPassword(passwordEncoder.encode(request.nuevoPassword()));
         usuarioRepository.save(usuario);
         usuarioLogService.registrar(usuario, TipoLogEnum.CAMBIO_PASSWORD);
 
@@ -228,7 +228,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public void solicitarRecuperacionPassword(RecuperarPasswordRequestDTO request) {
-        String correo = request.getCorreo().trim().toLowerCase();
+        String correo = request.correo().trim().toLowerCase();
         log.info("Solicitud de recuperación de contraseña para correo: {}", correo);
 
         Usuario usuario = usuarioRepository.findByCorreo(correo)
@@ -254,17 +254,17 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void restablecerPassword(ResetPasswordRequestDTO request) {
-        String token = request.getToken().trim();
+        String token = request.token().trim();
 
         if (!jwtService.validarTokenRecuperacion(token)) {
             throw new ReglaNegocioException("El token de recuperación no es válido o ha expirado");
         }
 
-        if (!request.getNuevoPassword().equals(request.getConfirmarPassword())) {
+        if (!request.nuevoPassword().equals(request.confirmarPassword())) {
             throw new ReglaNegocioException("La nueva contraseña y su confirmación no coinciden");
         }
 
-        if (request.getNuevoPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+        if (request.nuevoPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new ReglaNegocioException("La contraseña no puede superar los 72 bytes");
         }
 
@@ -276,7 +276,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ReglaNegocioException("La cuenta de usuario se encuentra inactiva");
         }
 
-        usuario.setPassword(passwordEncoder.encode(request.getNuevoPassword()));
+        usuario.setPassword(passwordEncoder.encode(request.nuevoPassword()));
         usuarioRepository.save(usuario);
         usuarioLogService.registrar(usuario, TipoLogEnum.CAMBIO_PASSWORD);
 

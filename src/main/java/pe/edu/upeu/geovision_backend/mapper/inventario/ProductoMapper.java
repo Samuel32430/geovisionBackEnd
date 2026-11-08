@@ -98,20 +98,20 @@ public class ProductoMapper {
         }
 
         Boolean estado = true;
-        if (dto.getEstado() != null) {
-            if (dto.getEstado() != 0 && dto.getEstado() != 1) {
+        if (dto.estado() != null) {
+            if (dto.estado() != 0 && dto.estado() != 1) {
                 throw new IllegalArgumentException("El estado debe ser 0 o 1");
             }
-            estado = dto.getEstado() == 1;
+            estado = dto.estado() == 1;
         }
 
         return Producto.builder()
-                .codigo(dto.getCodigo() != null ? dto.getCodigo().trim() : null)
-                .nombre(dto.getNombre() != null ? dto.getNombre().trim() : null)
-                .marca(dto.getMarca() != null ? dto.getMarca().trim() : null)
-                .descripcion(dto.getDescripcion() != null ? dto.getDescripcion().trim() : null)
-                .precio(dto.getPrecio())
-                .stock(dto.getStock() != null ? dto.getStock() : 0)
+                .codigo(dto.codigo() != null ? dto.codigo().trim() : null)
+                .nombre(dto.nombre() != null ? dto.nombre().trim() : null)
+                .marca(dto.marca() != null ? dto.marca().trim() : null)
+                .descripcion(dto.descripcion() != null ? dto.descripcion().trim() : null)
+                .precio(dto.precio())
+                .stock(dto.stock() != null ? dto.stock() : 0)
                 .activo(estado)
                 .categoria(categoria)
                 .build();
@@ -125,9 +125,9 @@ public class ProductoMapper {
         return Montura.builder()
                 .idProducto(producto != null ? producto.getIdProducto() : null)
                 .producto(producto)
-                .color(dto.getColor() != null ? dto.getColor().trim() : null)
-                .modelo(dto.getModelo())
-                .material(dto.getMaterial())
+                .color(dto.color() != null ? dto.color().trim() : null)
+                .modelo(dto.modelo())
+                .material(dto.material())
                 .build();
     }
 }

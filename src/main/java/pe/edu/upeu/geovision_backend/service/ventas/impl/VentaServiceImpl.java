@@ -67,16 +67,16 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public VentaResponseDTO registrarVenta(VentaRegistroRequestDTO request) {
-        log.info("Iniciando registro de venta unificada para total: S/ {}", request.getTotal());
+        log.info("Iniciando registro de venta unificada para total: S/ {}", request.total());
 
         // 1. Determinar el empleado responsable (desde la sesión autenticada o fallback autorizado)
-        Empleado empleado = obtenerEmpleadoResponsable(request.getIdEmpleado());
+        Empleado empleado = obtenerEmpleadoResponsable(request.idEmpleado());
 
         // 2. Validar paciente si se indicó
         Paciente paciente = null;
-        if (request.getIdPaciente() != null) {
-            paciente = pacienteRepository.findById(request.getIdPaciente())
-                    .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado con ID: " + request.getIdPaciente()));
+        if (request.idPaciente() != null) {
+            paciente = pacienteRepository.findById(request.idPaciente())
+                    .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado con ID: " + request.idPaciente()));
             if (!Boolean.TRUE.equals(paciente.getActivo())) {
                 throw new ReglaNegocioException("El paciente indicado no se encuentra en estado activo");
             }
@@ -84,12 +84,12 @@ public class VentaServiceImpl implements VentaService {
 
         // 3. Validar receta (RN-VE02: obligatoria si incluye lentes con receta)
         Receta receta = null;
-        if (request.getIdReceta() != null) {
+        if (request.idReceta() != null) {
             if (paciente == null) {
                 throw new ReglaNegocioException("Toda venta con receta debe estar asociada obligatoriamente a un paciente (RN-VE02)");
             }
-            receta = recetaRepository.findByIdForUpdate(request.getIdReceta())
-                    .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada con ID: " + request.getIdReceta()));
+            receta = recetaRepository.findByIdForUpdate(request.idReceta())
+                    .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada con ID: " + request.idReceta()));
 
             if (receta.getPaciente() == null ||
                     !receta.getPaciente().getIdPersona().equals(paciente.getIdPersona())) {
@@ -99,25 +99,25 @@ public class VentaServiceImpl implements VentaService {
 
         // 4. Validar y descontar stock de productos físicos (RN-VE05)
         List<ProductoVendido> productosParaGuardar = new ArrayList<>();
-        if (request.getProductos() != null && !request.getProductos().isEmpty()) {
-            for (ProductoVendidoDTO prodDTO : request.getProductos()) {
-                Producto producto = productoRepository.findById(prodDTO.getIdProducto())
-                        .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.getIdProducto()));
+        if (request.productos() != null && !request.productos().isEmpty()) {
+            for (ProductoVendidoDTO prodDTO : request.productos()) {
+                Producto producto = productoRepository.findById(prodDTO.idProducto())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.idProducto()));
 
-                if (producto.getStock() < prodDTO.getCantidad()) {
+                if (producto.getStock() < prodDTO.cantidad()) {
                     throw new ReglaNegocioException("Stock insuficiente para el producto '" + producto.getNombre() +
-                            "'. Stock disponible: " + producto.getStock() + ", Solicitado: " + prodDTO.getCantidad() + " (RN-VE05)");
+                            "'. Stock disponible: " + producto.getStock() + ", Solicitado: " + prodDTO.cantidad() + " (RN-VE05)");
                 }
 
                 // Descuento atómico de stock
-                producto.setStock(producto.getStock() - prodDTO.getCantidad());
+                producto.setStock(producto.getStock() - prodDTO.cantidad());
                 productoRepository.save(producto);
 
-                BigDecimal subTotal = prodDTO.getPrecioUnit().multiply(BigDecimal.valueOf(prodDTO.getCantidad()));
+                BigDecimal subTotal = prodDTO.precioUnit().multiply(BigDecimal.valueOf(prodDTO.cantidad()));
                 ProductoVendido pv = ProductoVendido.builder()
                         .producto(producto)
-                        .cantidad(prodDTO.getCantidad())
-                        .precioUnit(prodDTO.getPrecioUnit())
+                        .cantidad(prodDTO.cantidad())
+                        .precioUnit(prodDTO.precioUnit())
                         .subTotal(subTotal)
                         .build();
                 productosParaGuardar.add(pv);
@@ -126,73 +126,73 @@ public class VentaServiceImpl implements VentaService {
 
         // 5. Validar servicios solicitados
         List<ServicioVendido> serviciosParaGuardar = new ArrayList<>();
-        if (request.getServicios() != null && !request.getServicios().isEmpty()) {
-            for (ServicioVendidoDTO servDTO : request.getServicios()) {
-                Servicio servicio = servicioRepository.findById(servDTO.getIdServicio())
-                        .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.getIdServicio()));
+        if (request.servicios() != null && !request.servicios().isEmpty()) {
+            for (ServicioVendidoDTO servDTO : request.servicios()) {
+                Servicio servicio = servicioRepository.findById(servDTO.idServicio())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.idServicio()));
 
                 ServicioVendido sv = ServicioVendido.builder()
                         .servicio(servicio)
-                        .precio(servDTO.getPrecio())
+                        .precio(servDTO.precio())
                         .build();
                 serviciosParaGuardar.add(sv);
             }
         }
 
         // 6. Validar pagos, adelantos y métodos de pago (RN-VE06, RN-VE07, RN-VE08, RN-VE12, RN-VE13)
-        if (request.getPagos() == null || request.getPagos().isEmpty()) {
+        if (request.pagos() == null || request.pagos().isEmpty()) {
             throw new ReglaNegocioException("Debe registrar al menos un pago inicial o completo para la venta");
         }
 
         BigDecimal totalPagado = BigDecimal.ZERO;
-        for (PagoRegistroRequestDTO pagoDTO : request.getPagos()) {
-            if (pagoDTO.getMonto() == null || pagoDTO.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
+        for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
+            if (pagoDTO.monto() == null || pagoDTO.monto().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new ReglaNegocioException("El monto de cada pago debe ser mayor a cero (RN-VE13)");
             }
 
             // RN-VE12: voucher obligatorio si es tarjeta o transferencia
-            boolean requiereVoucher = pagoDTO.getMetodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
-                    pagoDTO.getMetodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
-                    pagoDTO.getMetodoPago() == MetodoPagoEnum.TRANSFERENCIA;
+            boolean requiereVoucher = pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
+                    pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
+                    pagoDTO.metodoPago() == MetodoPagoEnum.TRANSFERENCIA;
 
-            if (requiereVoucher && (pagoDTO.getNumeroOperacion() == null || pagoDTO.getNumeroOperacion().trim().isEmpty())) {
+            if (requiereVoucher && (pagoDTO.numeroOperacion() == null || pagoDTO.numeroOperacion().trim().isEmpty())) {
                 throw new ReglaNegocioException("Es obligatorio ingresar el número de voucher/operación para pagos con tarjeta o transferencia (RN-VE12)");
             }
 
-            totalPagado = totalPagado.add(pagoDTO.getMonto());
+            totalPagado = totalPagado.add(pagoDTO.monto());
         }
 
-        if (totalPagado.compareTo(request.getTotal()) > 0) {
-            throw new ReglaNegocioException("El total pagado (S/ " + totalPagado + ") no puede ser superior al total de la venta (S/ " + request.getTotal() + ") (RN-VE13)");
+        if (totalPagado.compareTo(request.total()) > 0) {
+            throw new ReglaNegocioException("El total pagado (S/ " + totalPagado + ") no puede ser superior al total de la venta (S/ " + request.total() + ") (RN-VE13)");
         }
 
         // RN-VE06: si es venta sin receta, se debe cobrar el 100%
         if (receta == null) {
-            if (totalPagado.compareTo(request.getTotal()) < 0) {
+            if (totalPagado.compareTo(request.total()) < 0) {
                 throw new ReglaNegocioException("En ventas de productos o servicios directos sin receta, el pago debe registrarse por el 100% del monto total (RN-VE06)");
             }
         } else {
             // RN-VE07: venta con receta permite adelanto pero no menor al 25%
-            BigDecimal adelantoMinimo = request.getTotal().multiply(new BigDecimal("0.25"));
+            BigDecimal adelantoMinimo = request.total().multiply(new BigDecimal("0.25"));
             if (totalPagado.compareTo(adelantoMinimo) < 0) {
                 throw new ReglaNegocioException("En ventas con receta médica, el adelanto inicial no puede ser menor al 25% del total de la orden (Mínimo: S/ " + adelantoMinimo + ") (RN-VE07)");
             }
 
             // RN-VE08: si se registra con adelanto, es obligatoria la fecha de entrega estimada
-            if (totalPagado.compareTo(request.getTotal()) < 0 && request.getFechaEntregaEstimada() == null) {
+            if (totalPagado.compareTo(request.total()) < 0 && request.fechaEntregaEstimada() == null) {
                 throw new ReglaNegocioException("Si la venta se registra con adelanto, debe consignarse de forma obligatoria la fecha estimada de entrega (RN-VE08)");
             }
         }
 
         // 7. Determinar estado inicial de la venta (RN-VE09)
-        EstadoVentaEnum estadoInicial = (totalPagado.compareTo(request.getTotal()) >= 0)
+        EstadoVentaEnum estadoInicial = (totalPagado.compareTo(request.total()) >= 0)
                 ? EstadoVentaEnum.PAGADA
                 : EstadoVentaEnum.PENDIENTE;
 
         // 8. Generar número de comprobante si no se proporcionó
-        String numeroComprobante = request.getNumeroComprobante();
+        String numeroComprobante = request.numeroComprobante();
         if (numeroComprobante == null || numeroComprobante.trim().isEmpty()) {
-            numeroComprobante = generarNumeroComprobante(request.getTipoComprobante());
+            numeroComprobante = generarNumeroComprobante(request.tipoComprobante());
         } else {
             numeroComprobante = numeroComprobante.trim();
             if (ventaRepository.existsByNumeroComprobante(numeroComprobante)) {
@@ -205,9 +205,9 @@ public class VentaServiceImpl implements VentaService {
                 .empleado(empleado)
                 .paciente(paciente)
                 .receta(receta)
-                .tipoComprobante(request.getTipoComprobante())
+                .tipoComprobante(request.tipoComprobante())
                 .numeroComprobante(numeroComprobante)
-                .total(request.getTotal())
+                .total(request.total())
                 .estado(estadoInicial)
                 .fechaRegistro(LocalDateTime.now())
                 .build();
@@ -228,12 +228,12 @@ public class VentaServiceImpl implements VentaService {
 
         // 12. Persistir pagos realizados
         List<Pago> pagosGuardados = new ArrayList<>();
-        for (PagoRegistroRequestDTO pagoDTO : request.getPagos()) {
+        for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
             Pago pago = pagoMapper.toEntity(pagoDTO, ventaGuardada);
             pagosGuardados.add(pagoRepository.save(pago));
         }
 
-        BigDecimal saldoPendiente = request.getTotal().subtract(totalPagado);
+        BigDecimal saldoPendiente = request.total().subtract(totalPagado);
 
         log.info("Venta registrada exitosamente con ID: {}, comprobante: {}, estado: {}, saldo pendiente: S/ {}",
                 ventaGuardada.getIdVenta(), numeroComprobante, estadoInicial, saldoPendiente);

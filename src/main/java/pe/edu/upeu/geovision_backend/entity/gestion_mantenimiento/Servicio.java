@@ -13,8 +13,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 
@@ -41,7 +39,6 @@ public class Servicio {
     @Column(name = "precio", nullable = false, precision = 12, scale = 2)
     private BigDecimal precio;
 
-    @JdbcTypeCode(SqlTypes.INTEGER)
     @Column(name = "estado", nullable = false)
     @Builder.Default
     private Boolean activo = true;

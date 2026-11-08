@@ -8,13 +8,13 @@ import pe.edu.upeu.geovision_backend.entity.gestion_configuracion.ConfiguracionE
 public class ConfiguracionEmpresaMapper {
     public void actualizar(ConfiguracionEmpresaDTO source, ConfiguracionEmpresa target) {
         // El identificador del cuerpo nunca controla qué registro se modifica.
-        target.setNombreLegal(source.getNombreLegal().trim());
-        target.setNombreComercial(limpiar(source.getNombreComercial()));
-        target.setRuc(source.getRuc());
-        target.setDireccion(limpiar(source.getDireccion()));
-        target.setTelefono(limpiar(source.getTelefono()));
-        target.setCorreo(limpiar(source.getCorreo()));
-        target.setLogo(limpiar(source.getLogo()));
+        target.setNombreLegal(source.nombreLegal().trim());
+        target.setNombreComercial(limpiar(source.nombreComercial()));
+        target.setRuc(source.ruc());
+        target.setDireccion(limpiar(source.direccion()));
+        target.setTelefono(limpiar(source.telefono()));
+        target.setCorreo(limpiar(source.correo()));
+        target.setLogo(limpiar(source.logo()));
     }
 
     public ConfiguracionEmpresaDTO toDTO(ConfiguracionEmpresa source) {

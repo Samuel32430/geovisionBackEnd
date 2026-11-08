@@ -42,20 +42,20 @@ public class RecetaMapper {
 
     public MedidaOjo toMedidaOjo(MedidaOjoDTO request) {
         return MedidaOjo.builder()
-                .agudezaVisual(request.getAgudezaVisual())
-                .esfera(request.getEsfera())
-                .cilindro(request.getCilindro())
-                .eje(request.getEje())
-                .adicion(request.getAdicion())
+                .agudezaVisual(request.agudezaVisual())
+                .esfera(request.esfera())
+                .cilindro(request.cilindro())
+                .eje(request.eje())
+                .adicion(request.adicion())
                 .build();
     }
 
     public Medida toMedida(MedidaRequestDTO request, Receta receta, MedidaOjo derecha, MedidaOjo izquierda) {
         return Medida.builder()
-                .tipoMedida(request.getTipoMedida())
-                .distanciaPupilar(request.getDistanciaPupilar())
-                .prisma(request.getPrisma())
-                .observaciones(request.getObservaciones())
+                .tipoMedida(request.tipoMedida())
+                .distanciaPupilar(request.distanciaPupilar())
+                .prisma(request.prisma())
+                .observaciones(request.observaciones())
                 .receta(receta)
                 .medidaOjoDerecha(derecha)
                 .medidaOjoIzquierda(izquierda)

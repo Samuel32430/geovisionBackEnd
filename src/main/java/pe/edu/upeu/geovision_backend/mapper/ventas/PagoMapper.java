@@ -24,9 +24,9 @@ public class PagoMapper {
 
         return Pago.builder()
                 .venta(venta)
-                .monto(dto.getMonto())
-                .metodoPago(dto.getMetodoPago())
-                .numeroOperacion(dto.getNumeroOperacion() != null ? dto.getNumeroOperacion().trim() : null)
+                .monto(dto.monto())
+                .metodoPago(dto.metodoPago())
+                .numeroOperacion(dto.numeroOperacion() != null ? dto.numeroOperacion().trim() : null)
                 .fechaRegistro(LocalDateTime.now())
                 .build();
     }
