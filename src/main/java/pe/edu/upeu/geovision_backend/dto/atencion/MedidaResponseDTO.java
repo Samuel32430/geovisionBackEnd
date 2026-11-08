@@ -1,0 +1,26 @@
+package pe.edu.upeu.geovision_backend.dto.atencion;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
+
+import java.math.BigDecimal;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class MedidaResponseDTO {
+
+    private Long idMedida;
+    private TipoMedidaEnum tipoMedida;
+    private BigDecimal distanciaPupilar;
+    private BigDecimal prisma;
+    private String observaciones;
+    private Long idReceta;
+    private MedidaOjoDTO ojoDerecho;
+    private MedidaOjoDTO ojoIzquierdo;
+    private Long idEnvioLaboratorio;
+}
