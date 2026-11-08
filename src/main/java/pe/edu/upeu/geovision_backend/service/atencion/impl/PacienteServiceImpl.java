@@ -15,7 +15,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Paciente;
 import pe.edu.upeu.geovision_backend.entity.atencion.PacienteLog;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.atencion.PacienteMapper;
@@ -49,7 +48,7 @@ public class PacienteServiceImpl implements PacienteService {
     }
 
     @Override
-    public Page<PacienteResponseDTO> listarPacientes(String termino, EstadoGeneralEnum estado, Pageable pageable) {
+    public Page<PacienteResponseDTO> listarPacientes(String termino, Boolean estado, Pageable pageable) {
         if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100
                 || pageable.getOffset() > Integer.MAX_VALUE) {
             throw new ReglaNegocioException("La consulta debe estar paginada con un máximo de 100 pacientes");
@@ -110,7 +109,7 @@ public class PacienteServiceImpl implements PacienteService {
             guardarPersona(persona);
         }
         Paciente paciente = Paciente.builder().persona(persona).usuario(actor)
-                .estado(estado(request.getEstado() == null ? 1 : request.getEstado())).build();
+                .activo(estado(request.getEstado() == null ? 1 : request.getEstado())).build();
         pacienteRepository.saveAndFlush(paciente);
         auditar(paciente, actor);
         return pacienteMapper.toPacienteResponse(paciente);
@@ -143,12 +142,12 @@ public class PacienteServiceImpl implements PacienteService {
     @Override
     @Transactional
     public PacienteResponseDTO cambiarEstadoPaciente(Long idPaciente, Integer nuevoEstado, String usernameAuditoria) {
-        EstadoGeneralEnum estado = estado(nuevoEstado);
+        Boolean estado = estado(nuevoEstado);
         Usuario actor = obtenerActor(usernameAuditoria, null);
         bloquearPersona(idPaciente);
         Paciente paciente = buscarPaciente(idPaciente);
-        if (paciente.getEstado() != estado) {
-            paciente.setEstado(estado);
+        if (!java.util.Objects.equals(paciente.getActivo(), estado)) {
+            paciente.setActivo(estado);
             pacienteRepository.saveAndFlush(paciente);
             auditar(paciente, actor);
         }
@@ -170,7 +169,7 @@ public class PacienteServiceImpl implements PacienteService {
             throw new AccessDeniedException("Se requiere un usuario autenticado");
         }
         Usuario actor = usuarioRepository.findByNombre(username)
-                .filter(usuario -> usuario.getEstado() == EstadoGeneralEnum.ACTIVO)
+                .filter(usuario -> Boolean.TRUE.equals(usuario.getActivo()))
                 .orElseThrow(() -> new AccessDeniedException("Usuario no habilitado"));
         if (idSolicitado != null && !idSolicitado.equals(actor.getIdUsuario())) {
             throw new AccessDeniedException("El usuario de auditoría debe ser el usuario autenticado");
@@ -178,11 +177,11 @@ public class PacienteServiceImpl implements PacienteService {
         return actor;
     }
 
-    private EstadoGeneralEnum estado(Integer codigo) {
+    private Boolean estado(Integer codigo) {
         if (codigo == null || (codigo != 0 && codigo != 1)) {
             throw new ReglaNegocioException("El estado debe ser 0 o 1");
         }
-        return EstadoGeneralEnum.fromCodigo(codigo);
+        return codigo == 1;
     }
 
     private void guardarPersona(Persona persona) {

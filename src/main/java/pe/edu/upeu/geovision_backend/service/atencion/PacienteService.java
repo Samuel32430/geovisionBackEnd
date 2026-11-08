@@ -6,11 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import pe.edu.upeu.geovision_backend.dto.atencion.PacienteRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.atencion.PacienteResponseDTO;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 public interface PacienteService {
 
-    Page<PacienteResponseDTO> listarPacientes(String termino, EstadoGeneralEnum estado, Pageable pageable);
+    Page<PacienteResponseDTO> listarPacientes(String termino, Boolean estado, Pageable pageable);
 
     PacienteResponseDTO obtenerPorId(Long idPaciente);
 

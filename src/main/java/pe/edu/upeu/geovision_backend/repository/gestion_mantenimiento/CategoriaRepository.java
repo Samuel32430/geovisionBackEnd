@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Categoria;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,9 +19,9 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long>, Jpa
 
     boolean existsByNombreIgnoreCaseAndIdCategoriaNot(String nombre, Long idCategoria);
 
-    List<Categoria> findByEstado(EstadoGeneralEnum estado);
+    List<Categoria> findByActivo(Boolean estado);
 
-    Page<Categoria> findByEstado(EstadoGeneralEnum estado, Pageable pageable);
+    Page<Categoria> findByActivo(Boolean estado, Pageable pageable);
 
     Page<Categoria> findByNombreContainingIgnoreCase(String termino, Pageable pageable);
 }

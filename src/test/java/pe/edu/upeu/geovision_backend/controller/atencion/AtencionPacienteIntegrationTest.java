@@ -31,7 +31,6 @@ import pe.edu.upeu.geovision_backend.entity.security.UsuarioRol;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
 import pe.edu.upeu.geovision_backend.dto.atencion.PacienteRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.atencion.PersonaRequestDTO;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
@@ -223,7 +222,7 @@ class AtencionPacienteIntegrationTest {
         rolePermissions.delete(assignment);
         rolePermissions.flush();
         mvc.perform(get("/api/v1/pacientes").header("Authorization", bearer)).andExpect(status().isForbidden());
-        actor.setEstado(EstadoGeneralEnum.INACTIVO);
+        actor.setActivo(false);
         users.saveAndFlush(actor);
         mvc.perform(get("/api/v1/pacientes").header("Authorization", bearer)).andExpect(status().isUnauthorized());
     }
@@ -231,7 +230,7 @@ class AtencionPacienteIntegrationTest {
     @Test
     void tokenDeEmpleadoInactivoExpiradoOMalformadoSeRechaza() throws Exception {
         String bearer = login();
-        employee.setEstado(EstadoGeneralEnum.INACTIVO);
+        employee.setActivo(false);
         employees.saveAndFlush(employee);
         mvc.perform(get("/api/v1/pacientes").header("Authorization", bearer)).andExpect(status().isUnauthorized());
         var expired = new JwtService(testSecret, -1).generarToken(User.withUsername(actor.getNombre())

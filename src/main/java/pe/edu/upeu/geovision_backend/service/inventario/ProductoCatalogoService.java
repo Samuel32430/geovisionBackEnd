@@ -4,11 +4,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import pe.edu.upeu.geovision_backend.dto.inventario.ProductoRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.inventario.ProductoResponseDTO;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 public interface ProductoCatalogoService {
 
-    Page<ProductoResponseDTO> listarProductos(String termino, Long idCategoria, EstadoGeneralEnum estado, Pageable pageable);
+    Page<ProductoResponseDTO> listarProductos(String termino, Long idCategoria, Boolean estado, Pageable pageable);
 
     ProductoResponseDTO obtenerPorId(Long id);
 

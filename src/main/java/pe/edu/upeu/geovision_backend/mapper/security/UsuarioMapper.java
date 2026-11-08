@@ -5,7 +5,6 @@ import pe.edu.upeu.geovision_backend.dto.security.RolDTO;
 import pe.edu.upeu.geovision_backend.dto.security.UsuarioResponseDTO;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.Collections;
 import java.util.Set;
@@ -31,8 +30,8 @@ public class UsuarioMapper {
             nombreCompleto = (nombres + " " + apellidos).trim();
         }
 
-        Integer estadoCodigo = usuario.getEstadoCodigo();
-        String estadoDesc = (usuario.getEstado() == EstadoGeneralEnum.ACTIVO) ? "Activo" : "Inactivo";
+        Integer estadoCodigo = (usuario.getActivo() == null ? null : Boolean.TRUE.equals(usuario.getActivo()) ? 1 : 0);
+        String estadoDesc = (Boolean.TRUE.equals(usuario.getActivo())) ? "Activo" : "Inactivo";
 
         return UsuarioResponseDTO.builder()
                 .idUsuario(usuario.getIdUsuario())

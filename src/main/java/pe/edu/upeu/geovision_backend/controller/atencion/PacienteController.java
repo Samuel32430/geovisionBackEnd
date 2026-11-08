@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import pe.edu.upeu.geovision_backend.dto.atencion.PacienteRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.atencion.PacienteResponseDTO;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.service.atencion.PacienteService;
 
 import java.util.Map;
@@ -48,7 +47,7 @@ public class PacienteController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La página solicitada excede el límite permitido");
         }
         return ResponseEntity.ok(pacienteService.listarPacientes(termino,
-                EstadoGeneralEnum.fromCodigo(estado), PageRequest.of(page, size)));
+                (estado == null ? null : estado == 1), PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")

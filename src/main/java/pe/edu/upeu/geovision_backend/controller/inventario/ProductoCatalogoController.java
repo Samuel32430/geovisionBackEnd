@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.edu.upeu.geovision_backend.dto.inventario.ProductoRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.inventario.ProductoResponseDTO;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.service.inventario.ProductoCatalogoService;
 
 import java.util.Map;
@@ -45,7 +44,7 @@ public class ProductoCatalogoController {
     public ResponseEntity<Page<ProductoResponseDTO>> listarProductos(
             @RequestParam(required = false) String termino,
             @RequestParam(required = false) Long idCategoria,
-            @RequestParam(required = false) Integer estado,
+            @RequestParam(required = false) @Min(0) @Max(1) Integer estado,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "nombre") String sortBy,
@@ -53,11 +52,12 @@ public class ProductoCatalogoController {
 
         log.debug("REST listar productos: termino={}, categoria={}, estado={}", termino, idCategoria, estado);
 
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        String campoOrden = "estado".equals(sortBy) ? "activo" : sortBy;
+        Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(campoOrden).descending() : Sort.by(campoOrden).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        EstadoGeneralEnum estadoEnum = estado != null ? EstadoGeneralEnum.fromCodigo(estado) : null;
-        Page<ProductoResponseDTO> resultado = productoCatalogoService.listarProductos(termino, idCategoria, estadoEnum, pageable);
+        Boolean activo = estado == null ? null : estado == 1;
+        Page<ProductoResponseDTO> resultado = productoCatalogoService.listarProductos(termino, idCategoria, activo, pageable);
 
         return ResponseEntity.ok(resultado);
     }

@@ -26,7 +26,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.LenteTratamientoCristal;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.MaterialCristal;
 import pe.edu.upeu.geovision_backend.entity.inventario.Montura;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCristal;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.atencion.RecetaMapper;
@@ -190,7 +189,7 @@ public class RecetaServiceImpl implements RecetaService {
         if (request.getIdProducto() != null) {
             montura = monturaRepository.findById(request.getIdProducto())
                     .orElseThrow(() -> new RecursosNoEncontradosException("Montura no encontrada"));
-            if (montura.getProducto().getEstado() != EstadoGeneralEnum.ACTIVO
+            if (!Boolean.TRUE.equals(montura.getProducto().getActivo())
                     || montura.getProducto().getStock() <= 0) {
                 throw new ReglaNegocioException("La montura debe estar activa y tener stock disponible");
             }
@@ -269,7 +268,7 @@ public class RecetaServiceImpl implements RecetaService {
                 .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado"));
         Paciente paciente = pacienteRepository.findByIdWithDetails(request.getIdPaciente())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado"));
-        if (paciente.getEstado() != EstadoGeneralEnum.ACTIVO) {
+        if (!Boolean.TRUE.equals(paciente.getActivo())) {
             throw new ReglaNegocioException("El paciente debe estar activo para registrar una receta");
         }
 
@@ -291,10 +290,10 @@ public class RecetaServiceImpl implements RecetaService {
             throw new AccessDeniedException("Se requiere un usuario autenticado");
         }
         Usuario usuario = usuarioRepository.findByNombre(username)
-                .filter(actual -> actual.getEstado() == EstadoGeneralEnum.ACTIVO)
+                .filter(actual -> Boolean.TRUE.equals(actual.getActivo()))
                 .orElseThrow(() -> new AccessDeniedException("Usuario no habilitado"));
         Empleado empleado = empleadoRepository.findByUsuarioIdUsuario(usuario.getIdUsuario())
-                .filter(actual -> actual.getEstado() == EstadoGeneralEnum.ACTIVO)
+                .filter(actual -> Boolean.TRUE.equals(actual.getActivo()))
                 .orElseThrow(() -> new AccessDeniedException("Se requiere un empleado activo vinculado al usuario"));
         if (!empleado.getIdPersona().equals(idSolicitado)) {
             throw new AccessDeniedException("El empleado debe corresponder al usuario autenticado");

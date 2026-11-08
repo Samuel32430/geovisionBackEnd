@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.atencion.Paciente;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,11 +16,11 @@ import java.util.Optional;
 @Repository
 public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSpecificationExecutor<Paciente> {
 
-    Optional<Paciente> findByIdPersonaAndEstado(Long idPersona, EstadoGeneralEnum estado);
+    Optional<Paciente> findByIdPersonaAndActivo(Long idPersona, Boolean estado);
 
     Optional<Paciente> findByUsuarioIdUsuario(Long idUsuario);
 
-    List<Paciente> findByEstado(EstadoGeneralEnum estado);
+    List<Paciente> findByActivo(Boolean estado);
 
     @EntityGraph(attributePaths = "persona")
     Optional<Paciente> findByPersonaNumeroDocumento(String numeroDocumento);
@@ -31,9 +30,9 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSp
     Optional<Paciente> findByIdWithDetails(@Param("id") Long id);
 
     @EntityGraph(attributePaths = "persona")
-    @Query("SELECT p FROM Paciente p JOIN p.persona per WHERE (:estado IS NULL OR p.estado = :estado) " +
+    @Query("SELECT p FROM Paciente p JOIN p.persona per WHERE (:estado IS NULL OR p.activo = :estado) " +
            "AND (:termino IS NULL OR LOWER(CONCAT(CONCAT(per.nombres, ' '), per.apellidos)) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
            "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') ESCAPE '!' " +
            "OR per.telefono LIKE CONCAT('%', :termino, '%') ESCAPE '!')")
-    Page<Paciente> buscarPacientes(@Param("termino") String termino, @Param("estado") EstadoGeneralEnum estado, Pageable pageable);
+    Page<Paciente> buscarPacientes(@Param("termino") String termino, @Param("estado") Boolean estado, Pageable pageable);
 }

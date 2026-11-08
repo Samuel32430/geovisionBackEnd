@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.inventario.Montura;
 import pe.edu.upeu.geovision_backend.enums.inventario.MaterialMonturaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 
 import java.util.List;
 
@@ -18,20 +17,20 @@ import java.util.List;
 public interface MonturaRepository extends JpaRepository<Montura, Long> {
 
     @EntityGraph(attributePaths = "producto")
-    Page<Montura> findByProductoEstadoAndProductoStockGreaterThan(
-            EstadoGeneralEnum estado, Integer stockMinimo, Pageable pageable);
+    Page<Montura> findByProductoActivoAndProductoStockGreaterThan(
+            Boolean estado, Integer stockMinimo, Pageable pageable);
 
     List<Montura> findByModelo(ModeloMonturaEnum modelo);
 
     List<Montura> findByMaterial(MaterialMonturaEnum material);
 
-    @Query("SELECT m FROM Montura m JOIN FETCH m.producto p WHERE p.estado = pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.ACTIVO")
+    @Query("SELECT m FROM Montura m JOIN FETCH m.producto p WHERE p.activo = true")
     List<Montura> findAllActivas();
 
     @Query("SELECT m FROM Montura m JOIN FETCH m.producto p " +
            "WHERE (:modelo IS NULL OR m.modelo = :modelo) " +
            "AND (:material IS NULL OR m.material = :material) " +
-           "AND p.estado = pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.ACTIVO")
+           "AND p.activo = true")
     Page<Montura> buscarMonturasFiltro(
             @Param("modelo") ModeloMonturaEnum modelo,
             @Param("material") MaterialMonturaEnum material,

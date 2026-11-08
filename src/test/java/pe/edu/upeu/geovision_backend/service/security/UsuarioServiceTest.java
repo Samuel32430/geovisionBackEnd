@@ -14,7 +14,6 @@ import pe.edu.upeu.geovision_backend.entity.security.Empleado;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.security.Rol;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.security.PermisoMapper;
 import pe.edu.upeu.geovision_backend.mapper.security.RolMapper;
@@ -97,7 +96,7 @@ class UsuarioServiceTest {
                 .nombre("admin")
                 .correo("admin@geovision.com")
                 .password("$2a$10$hash")
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .persona(personaAdmin)
                 .build();
 
@@ -106,7 +105,7 @@ class UsuarioServiceTest {
                 .nombre("carlos.vendedor")
                 .correo("carlos@geovision.com")
                 .password("$2a$10$hash")
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .persona(personaVendedor)
                 .build();
     }
@@ -132,7 +131,7 @@ class UsuarioServiceTest {
         when(usuarioRepository.saveAndFlush(any(Usuario.class))).thenReturn(vendedorUser);
         Empleado empleadoVendedor = Empleado.builder()
                 .idPersona(2L)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .persona(personaVendedor)
                 .build();
         when(empleadoRepository.findById(2L)).thenReturn(Optional.of(empleadoVendedor));

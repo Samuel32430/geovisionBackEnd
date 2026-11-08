@@ -27,7 +27,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCristal;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
@@ -215,7 +214,7 @@ class HistorialClinicoControllerTest {
     @Test
     void pacientesInactivosConservanAccesoAlHistorial() throws Exception {
         var recipe = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 0);
-        patient.setEstado(EstadoGeneralEnum.INACTIVO);
+        patient.setActivo(false);
         patients.saveAndFlush(patient);
         mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getIdPersona()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].idReceta").value(recipe.getIdReceta()));

@@ -29,7 +29,6 @@ import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCristal;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
@@ -79,6 +78,30 @@ class PatientFoundationRepositoryTest {
         return r;
     }
 
+    @Test void booleanActivoRoundTripsThroughTheExistingNumericEstadoColumn() {
+        var patient = patient();
+        em.flush();
+        Long id = patient.getIdPersona();
+        assertEquals(1, jdbc.queryForObject("select estado from PACIENTE where id_persona = ?", Integer.class, id));
+
+        patient.setActivo(false);
+        em.flush();
+        assertEquals(0, jdbc.queryForObject("select estado from PACIENTE where id_persona = ?", Integer.class, id));
+        em.clear();
+        assertEquals(Boolean.FALSE, patients.findById(id).orElseThrow().getActivo());
+
+        jdbc.update("update PACIENTE set estado = 1 where id_persona = ?", id);
+        em.clear();
+        assertEquals(Boolean.TRUE, patients.findById(id).orElseThrow().getActivo());
+
+        var unspecified = Paciente.builder().persona(person("Predeterminado")).activo(null).build();
+        em.persist(unspecified);
+        em.flush();
+        assertEquals(Boolean.TRUE, unspecified.getActivo());
+        assertEquals(1, jdbc.queryForObject("select estado from PACIENTE where id_persona = ?",
+                Integer.class, unspecified.getIdPersona()));
+    }
+
     @Test void explicitMeasurementCodesPersistAndDefaultToLejos() {
         for (var type : TipoMedidaEnum.values()) {
             var measure = Medida.builder().tipoMedida(type).build();
@@ -107,15 +130,15 @@ class PatientFoundationRepositoryTest {
         assertEquals(id, found.getIdPersona());
         assertTrue(Hibernate.isInitialized(found.getPersona()));
         em.clear();
-        var page = patients.buscarPacientes(document, EstadoGeneralEnum.ACTIVO, PageRequest.of(0, 10));
+        var page = patients.buscarPacientes(document, true, PageRequest.of(0, 10));
         assertEquals(1, page.getTotalElements());
         assertTrue(Hibernate.isInitialized(page.getContent().getFirst().getPersona()));
-        assertFalse(patients.buscarPacientes(document, EstadoGeneralEnum.INACTIVO, PageRequest.of(0, 10)).hasContent());
+        assertFalse(patients.buscarPacientes(document, false, PageRequest.of(0, 10)).hasContent());
         assertTrue(patients.buscarPacientes("paciente prueba", null, PageRequest.of(0, 10))
                 .stream().anyMatch(p -> p.getIdPersona().equals(id)));
         assertTrue(patients.buscarPacientes("999123456", null, PageRequest.of(0, 10))
                 .stream().anyMatch(p -> p.getIdPersona().equals(id)));
-        assertTrue(patients.buscarPacientes(null, EstadoGeneralEnum.ACTIVO, PageRequest.of(0, 10))
+        assertTrue(patients.buscarPacientes(null, true, PageRequest.of(0, 10))
                 .stream().anyMatch(p -> p.getIdPersona().equals(id)));
     }
 
@@ -163,9 +186,9 @@ class PatientFoundationRepositoryTest {
         assertEquals(1, measures.findByRecetaIdRecetaOrderByIdMedidaAsc(recipeId).size());
     }
 
-    Montura frame(EstadoGeneralEnum state, int stock) {
+    Montura frame(Boolean state, int stock) {
         var product = Producto.builder().codigo(UUID.randomUUID().toString()).nombre("Montura")
-                .precio(new BigDecimal("100")).stock(stock).estado(state).build();
+                .precio(new BigDecimal("100")).stock(stock).activo(state).build();
         em.persist(product);
         var frame = Montura.builder().producto(product).build();
         em.persist(frame);
@@ -173,14 +196,14 @@ class PatientFoundationRepositoryTest {
     }
 
     @Test void opticalCatalogExcludesInactiveAndOutOfStockFrames() {
-        var available = frame(EstadoGeneralEnum.ACTIVO, 3);
-        frame(EstadoGeneralEnum.ACTIVO, 0);
-        frame(EstadoGeneralEnum.INACTIVO, 3);
+        var available = frame(true, 3);
+        frame(true, 0);
+        frame(false, 3);
         Long id = available.getIdProducto();
         em.flush();
         em.clear();
-        var page = frames.findByProductoEstadoAndProductoStockGreaterThan(
-                EstadoGeneralEnum.ACTIVO, 0, PageRequest.of(0, 10));
+        var page = frames.findByProductoActivoAndProductoStockGreaterThan(
+                true, 0, PageRequest.of(0, 10));
         assertEquals(List.of(id), page.getContent().stream().map(Montura::getIdProducto).toList());
         assertTrue(Hibernate.isInitialized(page.getContent().getFirst().getProducto()));
     }

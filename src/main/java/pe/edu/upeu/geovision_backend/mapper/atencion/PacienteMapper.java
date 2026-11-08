@@ -45,8 +45,8 @@ public class PacienteMapper {
         return PacienteResponseDTO.builder()
                 .idPersona(paciente.getIdPersona())
                 .persona(datos)
-                .estado(paciente.getEstadoCodigo())
-                .estadoDescripcion(paciente.getEstado().getDescripcion())
+                .estado((paciente.getActivo() == null ? null : Boolean.TRUE.equals(paciente.getActivo()) ? 1 : 0))
+                .estadoDescripcion(Boolean.TRUE.equals(paciente.getActivo()) ? "Activo" : "Inactivo")
                 .fechaRegistro(paciente.getFechaRegistro())
                 .idUsuario(paciente.getUsuario() == null ? null : paciente.getUsuario().getIdUsuario())
                 .build();

@@ -22,7 +22,6 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Servicio;
 import pe.edu.upeu.geovision_backend.entity.ventas.ServicioVendido;
 import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
@@ -112,7 +111,7 @@ class VentaServiceTest {
         empleadoTest = Empleado.builder()
                 .idPersona(1L)
                 .persona(personaEmpleado)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
 
         personaPaciente = Persona.builder()
@@ -125,7 +124,7 @@ class VentaServiceTest {
         pacienteTest = Paciente.builder()
                 .idPersona(2L)
                 .persona(personaPaciente)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
 
         productoTest = Producto.builder()
@@ -134,14 +133,14 @@ class VentaServiceTest {
                 .nombre("Montura RayBan")
                 .precio(new BigDecimal("150.00"))
                 .stock(10)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
 
         servicioTest = Servicio.builder()
                 .idServicio(20L)
                 .nombre("Medida de vista")
                 .precio(new BigDecimal("30.00"))
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
     }
 
@@ -164,7 +163,7 @@ class VentaServiceTest {
                         .build()))
                 .build();
 
-        when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
+        when(empleadoRepository.findByIdPersonaAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
@@ -219,7 +218,7 @@ class VentaServiceTest {
                         .build()))
                 .build();
 
-        when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
+        when(empleadoRepository.findByIdPersonaAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(productoRepository.findById(10L))
                 .thenReturn(Optional.of(productoTest));
@@ -249,7 +248,7 @@ class VentaServiceTest {
                         .build()))
                 .build();
 
-        when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
+        when(empleadoRepository.findByIdPersonaAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(productoRepository.findById(10L))
                 .thenReturn(Optional.of(productoTest));
@@ -286,7 +285,7 @@ class VentaServiceTest {
                         .build()))
                 .build();
 
-        when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
+        when(empleadoRepository.findByIdPersonaAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
@@ -336,7 +335,7 @@ class VentaServiceTest {
                         .build()))
                 .build();
 
-        when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
+        when(empleadoRepository.findByIdPersonaAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
@@ -371,7 +370,7 @@ class VentaServiceTest {
                         .build()))
                 .build();
 
-        when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
+        when(empleadoRepository.findByIdPersonaAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(pacienteRepository.findById(2L))
                 .thenReturn(Optional.of(pacienteTest));
@@ -402,7 +401,7 @@ class VentaServiceTest {
                         .build()))
                 .build();
 
-        when(empleadoRepository.findByIdPersonaAndEstado(1L, EstadoGeneralEnum.ACTIVO))
+        when(empleadoRepository.findByIdPersonaAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(productoRepository.findById(10L))
                 .thenReturn(Optional.of(productoTest));

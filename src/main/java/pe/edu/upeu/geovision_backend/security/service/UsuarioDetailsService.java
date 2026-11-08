@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.geovision_backend.entity.security.Empleado;
 import pe.edu.upeu.geovision_backend.entity.security.Usuario;
 import pe.edu.upeu.geovision_backend.entity.security.UsuarioRol;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.security.RolPermisoRepository;
 import pe.edu.upeu.geovision_backend.repository.security.UsuarioRepository;
@@ -55,8 +54,8 @@ public class UsuarioDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con: " + termino));
 
         Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
-        boolean empleadoActivo = empleadoOpt.map(e -> e.getEstado() == EstadoGeneralEnum.ACTIVO).orElse(true);
-        boolean cuentaHabilitada = (usuario.getEstado() == EstadoGeneralEnum.ACTIVO) && empleadoActivo;
+        boolean empleadoActivo = empleadoOpt.map(e -> Boolean.TRUE.equals(e.getActivo())).orElse(true);
+        boolean cuentaHabilitada = (Boolean.TRUE.equals(usuario.getActivo())) && empleadoActivo;
 
         List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioIdUsuario(usuario.getIdUsuario());
         Set<GrantedAuthority> authorities = new HashSet<>();

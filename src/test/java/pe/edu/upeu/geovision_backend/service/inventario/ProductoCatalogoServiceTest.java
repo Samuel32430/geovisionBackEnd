@@ -18,7 +18,6 @@ import pe.edu.upeu.geovision_backend.dto.inventario.ProductoResponseDTO;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Categoria;
 import pe.edu.upeu.geovision_backend.entity.inventario.Montura;
 import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.MaterialMonturaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
@@ -69,7 +68,7 @@ class ProductoCatalogoServiceTest {
         categoriaMonturas = Categoria.builder()
                 .idCategoria(1L)
                 .nombre("MONTURAS")
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .build();
 
         productoBase = Producto.builder()
@@ -79,7 +78,7 @@ class ProductoCatalogoServiceTest {
                 .marca("Ray-Ban")
                 .precio(new BigDecimal("450.00"))
                 .stock(15)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .fechaRegistro(LocalDateTime.now())
                 .categoria(categoriaMonturas)
                 .build();
@@ -116,7 +115,7 @@ class ProductoCatalogoServiceTest {
                 .marca("OptiClean")
                 .precio(new BigDecimal("25.00"))
                 .stock(50)
-                .estado(EstadoGeneralEnum.ACTIVO)
+                .activo(true)
                 .fechaRegistro(LocalDateTime.now())
                 .categoria(categoriaMonturas)
                 .build();
@@ -220,14 +219,14 @@ class ProductoCatalogoServiceTest {
         ProductoResponseDTO response = productoCatalogoService.cambiarEstado(10L, 0);
 
         assertThat(response).isNotNull();
-        assertThat(productoBase.getEstado()).isEqualTo(EstadoGeneralEnum.INACTIVO);
+        assertThat(productoBase.getActivo()).isEqualTo(false);
     }
 
     @Test
     @DisplayName("CU514 / RF-80: Listar productos disponibles para venta con stock > 0")
     void listarDisponiblesParaVenta() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(productoRepository.findByEstadoAndStockGreaterThan(EstadoGeneralEnum.ACTIVO, 0, pageable))
+        when(productoRepository.findByActivoAndStockGreaterThan(true, 0, pageable))
                 .thenReturn(new PageImpl<>(List.of(productoBase), pageable, 1));
         when(monturaRepository.findById(10L)).thenReturn(Optional.of(monturaBase));
 

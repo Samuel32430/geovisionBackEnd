@@ -8,7 +8,6 @@ import pe.edu.upeu.geovision_backend.dto.inventario.ProductoStockResponseDTO;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Categoria;
 import pe.edu.upeu.geovision_backend.entity.inventario.Montura;
 import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
-import pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.MaterialMonturaEnum;
 import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
 
@@ -33,8 +32,8 @@ public class ProductoMapper {
                 .descripcion(producto.getDescripcion())
                 .precio(producto.getPrecio())
                 .stock(producto.getStock())
-                .estado(producto.getEstadoCodigo())
-                .estadoDescripcion(producto.getEstado() != null ? producto.getEstado().name() : null)
+                .estado((producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0))
+                .estadoDescripcion(producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO")
                 .fechaRegistro(producto.getFechaRegistro())
                 .idCategoria(producto.getCategoria() != null ? producto.getCategoria().getIdCategoria() : null)
                 .nombreCategoria(producto.getCategoria() != null ? producto.getCategoria().getNombre() : null)
@@ -78,7 +77,7 @@ public class ProductoMapper {
         }
 
         boolean disponible = (producto.getStock() != null && producto.getStock() > 0)
-                && (producto.getEstado() == EstadoGeneralEnum.ACTIVO);
+                && (Boolean.TRUE.equals(producto.getActivo()));
 
         return ProductoStockResponseDTO.builder()
                 .idProducto(producto.getIdProducto())
@@ -88,8 +87,8 @@ public class ProductoMapper {
                 .stockMinimoReferencial(umbralStockMinimo != null ? umbralStockMinimo : 5)
                 .precio(producto.getPrecio())
                 .disponible(disponible)
-                .estado(producto.getEstadoCodigo())
-                .estadoDescripcion(producto.getEstado() != null ? producto.getEstado().name() : null)
+                .estado((producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? 1 : 0))
+                .estadoDescripcion(producto.getActivo() == null ? null : Boolean.TRUE.equals(producto.getActivo()) ? "ACTIVO" : "INACTIVO")
                 .build();
     }
 
@@ -98,9 +97,12 @@ public class ProductoMapper {
             return null;
         }
 
-        EstadoGeneralEnum estado = EstadoGeneralEnum.ACTIVO;
+        Boolean estado = true;
         if (dto.getEstado() != null) {
-            estado = EstadoGeneralEnum.fromCodigo(dto.getEstado());
+            if (dto.getEstado() != 0 && dto.getEstado() != 1) {
+                throw new IllegalArgumentException("El estado debe ser 0 o 1");
+            }
+            estado = dto.getEstado() == 1;
         }
 
         return Producto.builder()
@@ -110,7 +112,7 @@ public class ProductoMapper {
                 .descripcion(dto.getDescripcion() != null ? dto.getDescripcion().trim() : null)
                 .precio(dto.getPrecio())
                 .stock(dto.getStock() != null ? dto.getStock() : 0)
-                .estado(estado)
+                .activo(estado)
                 .categoria(categoria)
                 .build();
     }

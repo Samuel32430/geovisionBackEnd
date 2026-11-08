@@ -17,14 +17,14 @@ public class MantenimientoMapper {
     public void actualizar(CategoriaDTO source, Categoria target) {
         target.setNombre(limpiar(source.getNombre()));
         target.setDescripcion(limpiar(source.getDescripcion()));
-        target.setEstado(pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.fromCodigo(source.getEstado()));
+        target.setActivo((source.getEstado() == null ? null : source.getEstado() == 1));
     }
 
     public CategoriaDTO toDTO(Categoria source) {
         return CategoriaDTO.builder().idCategoria(source.getIdCategoria())
                 .nombre(source.getNombre())
                 .descripcion(source.getDescripcion())
-                .estado(source.getEstadoCodigo())
+                .estado((source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0))
                 .fechaRegistro(source.getFechaRegistro()).build();
     }
 
@@ -50,7 +50,7 @@ public class MantenimientoMapper {
         target.setNombre(limpiar(source.getNombre()));
         target.setDescripcion(limpiar(source.getDescripcion()));
         target.setPrecio(source.getPrecio());
-        target.setEstado(pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.fromCodigo(source.getEstado()));
+        target.setActivo((source.getEstado() == null ? null : source.getEstado() == 1));
     }
 
     public ServicioDTO toDTO(Servicio source) {
@@ -58,7 +58,7 @@ public class MantenimientoMapper {
                 .nombre(source.getNombre())
                 .descripcion(source.getDescripcion())
                 .precio(source.getPrecio())
-                .estado(source.getEstadoCodigo()).build();
+                .estado((source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0)).build();
     }
 
     public void actualizar(LaboratorioDTO source, Laboratorio target) {
@@ -67,7 +67,7 @@ public class MantenimientoMapper {
         target.setTelefono(limpiar(source.getTelefono()));
         target.setDireccion(limpiar(source.getDireccion()));
         target.setCorreo(limpiar(source.getCorreo()));
-        target.setEstado(pe.edu.upeu.geovision_backend.enums.EstadoGeneralEnum.fromCodigo(source.getEstado()));
+        target.setActivo((source.getEstado() == null ? null : source.getEstado() == 1));
     }
 
     public LaboratorioDTO toDTO(Laboratorio source) {
@@ -77,7 +77,7 @@ public class MantenimientoMapper {
                 .telefono(source.getTelefono())
                 .direccion(source.getDireccion())
                 .correo(source.getCorreo())
-                .estado(source.getEstadoCodigo()).build();
+                .estado((source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0)).build();
     }
 
     private String limpiar(String value) {
