@@ -18,28 +18,26 @@ import pe.edu.upeu.geovision_backend.repository.security.RolRepository;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Inicializador de datos de seguridad para desarrollo y pruebas.
- * Asegura la existencia de los roles y permisos iniciales de catálogo.
- */
 @Component
-@Profile("!prod")
+@Profile({"dev", "test"})
 @RequiredArgsConstructor
 public class SecurityDataInitializer implements CommandLineRunner {
 
+    // >>>> CONSTANTS
     private static final Logger log = LoggerFactory.getLogger(SecurityDataInitializer.class);
 
+    // >>>> DEPENDENCIES
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
     private final RolPermisoRepository rolPermisoRepository;
 
+    // >>>> OPERATIONS
     @Override
     @Transactional
     public void run(String... args) {
         try {
             log.info("Verificando catálogo base de roles y permisos...");
 
-            // 1. Permisos base por módulo
             List<Permiso> permisosCreados = new ArrayList<>();
 
             permisosCreados.add(crearPermisoSiNoExiste("SEGURIDAD_ADMINISTRAR", ModuloEnum.SEGURIDAD));
@@ -70,14 +68,12 @@ public class SecurityDataInitializer implements CommandLineRunner {
             permisosCreados.add(crearPermisoSiNoExiste("MANTENIMIENTO_GESTIONAR", ModuloEnum.GESTION_MANTENIMIENTO));
             permisosCreados.add(crearPermisoSiNoExiste("REPORTES_VER", ModuloEnum.REPORTES));
 
-            // 2. Roles base
             Rol admin = crearRolSiNoExiste("ADMINISTRADOR");
             Rol vendedor = crearRolSiNoExiste("VENDEDOR");
             Rol optometra = crearRolSiNoExiste("OPTOMETRA");
             Rol tecnico = crearRolSiNoExiste("TECNICO");
             Rol recepcionista = crearRolSiNoExiste("RECEPCIONISTA");
 
-            // 3. Asignación inicial de permisos a ADMINISTRADOR si no tiene
             if (admin != null) {
                 for (Permiso p : permisosCreados) {
                     if (p != null && !rolPermisoRepository.existsByRolIdAndPermisoId(admin.getId(), p.getId())) {
@@ -86,7 +82,6 @@ public class SecurityDataInitializer implements CommandLineRunner {
                 }
             }
 
-            // 4. Asignación inicial de ejemplo para VENDEDOR (Ventas + Registrar Paciente)
             if (vendedor != null) {
                 asignarPermisoARol(vendedor, "VENTAS_LEER");
                 asignarPermisoARol(vendedor, "VENTAS_REGISTRAR");
@@ -103,6 +98,7 @@ public class SecurityDataInitializer implements CommandLineRunner {
         }
     }
 
+    // >>>> HELPERS
     private Permiso crearPermisoSiNoExiste(String nombre, ModuloEnum modulo) {
         return permisoRepository.findByNombreIgnoreCase(nombre)
                 .orElseGet(() -> permisoRepository.save(new Permiso(null, nombre, modulo)));
@@ -118,6 +114,7 @@ public class SecurityDataInitializer implements CommandLineRunner {
             if (!rolPermisoRepository.existsByRolIdAndPermisoId(rol.getId(), p.getId())) {
                 rolPermisoRepository.save(new RolPermiso(null, rol, p));
             }
-        });
+        }
+        );
     }
 }

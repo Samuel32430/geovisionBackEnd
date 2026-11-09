@@ -5,10 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pe.edu.upeu.geovision_backend.service.security.EmailService;
 
-/**
- * Simulador de servicio de correo para entorno de desarrollo.
- * Registra en consola el enlace y token de recuperación sin requerir servidor SMTP activo.
- */
 @Service
 public class EmailServiceImpl implements EmailService {
 

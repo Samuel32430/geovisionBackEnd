@@ -9,16 +9,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "ROL_PERMISO", uniqueConstraints = {
-        @UniqueConstraint(name = "ROL_PERMISO_uq", columnNames = {"id_rol", "id_permiso"})
-})
+@Table(name = "ROL_PERMISO")
 @Getter
 @Setter
 @NoArgsConstructor

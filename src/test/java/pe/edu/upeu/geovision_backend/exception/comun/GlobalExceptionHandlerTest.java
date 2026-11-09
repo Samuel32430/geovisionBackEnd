@@ -24,8 +24,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class GlobalExceptionHandlerTest {
 
+    // >>>> FIXTURES
     private MockMvc mvc;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         mvc = MockMvcBuilders.standaloneSetup(new ExampleController())
@@ -33,6 +35,7 @@ class GlobalExceptionHandlerTest {
                 .build();
     }
 
+    // >>>> TESTS
     @Test
     void invalidParametersReturnCustomJsonAndFieldErrors() throws Exception {
         mvc.perform(get("/test/validated").param("page", "-1"))

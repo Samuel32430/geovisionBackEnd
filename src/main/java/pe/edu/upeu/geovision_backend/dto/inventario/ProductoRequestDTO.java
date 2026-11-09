@@ -24,11 +24,7 @@ public record ProductoRequestDTO(
     BigDecimal precio,
     @NotNull(message = "El stock es obligatorio")
     @PositiveOrZero(message = "El stock debe ser mayor o igual a cero")
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.Zero.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.Zero.class)
     Integer stock,
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.One.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.One.class)
     Integer estado,
     @NotNull(message = "El ID de la categoría es obligatorio")
     Long idCategoria,

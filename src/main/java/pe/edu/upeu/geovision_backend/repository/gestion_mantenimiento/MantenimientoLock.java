@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** Bloqueos Oracle transaccionales; nunca se interpolan nombres recibidos del cliente. */
 @Repository
 @RequiredArgsConstructor
 public class MantenimientoLock {
@@ -12,8 +11,9 @@ public class MantenimientoLock {
 
     private final JdbcTemplate jdbcTemplate;
 
+    // >>>> LOCKING
     public void bloquear(Catalogo catalogo, boolean desactivando) {
-        // Bloquear dependencias antes de comprobarlas evita que cambien durante la decisión.
+
         if (desactivando) {
             switch (catalogo) {
                 case CATEGORIA -> bloquearTabla("PRODUCTO", "SHARE");
@@ -28,7 +28,9 @@ public class MantenimientoLock {
         bloquearTabla(catalogo.name(), "EXCLUSIVE");
     }
 
+    // >>>> HELPERS
     private void bloquearTabla(String tabla, String modo) {
         jdbcTemplate.execute("LOCK TABLE " + tabla + " IN " + modo + " MODE WAIT 10");
     }
+
 }

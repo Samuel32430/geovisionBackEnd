@@ -30,12 +30,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RolServiceImpl implements RolService {
 
+    // >>>> CONSTANTS
     private static final Logger log = LoggerFactory.getLogger(RolServiceImpl.class);
 
+    // >>>> DEPENDENCIES
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
     private final RolPermisoRepository rolPermisoRepository;
 
+    // >>>> QUERIES
     @Override
     @Transactional(readOnly = true)
     public List<RolDTO> listar() {
@@ -53,6 +56,7 @@ public class RolServiceImpl implements RolService {
         return cargarRolConPermisos(rol);
     }
 
+    // >>>> CREATION
     @Override
     @Transactional
     public RolDTO crear(RolDTO request) {
@@ -69,6 +73,7 @@ public class RolServiceImpl implements RolService {
         return RolMapper.toDTO(guardado, Collections.emptySet());
     }
 
+    // >>>> UPDATES
     @Override
     @Transactional
     public RolDTO asignarPermisos(Long idRol, Set<Long> permisoIds) {
@@ -103,6 +108,7 @@ public class RolServiceImpl implements RolService {
         return RolMapper.toDTO(rol, permisoDTOs);
     }
 
+    // >>>> HELPERS
     private RolDTO cargarRolConPermisos(Rol rol) {
         List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
         Set<PermisoDTO> permisos = rolPermisos.stream()
@@ -110,4 +116,5 @@ public class RolServiceImpl implements RolService {
                 .collect(Collectors.toSet());
         return RolMapper.toDTO(rol, permisos);
     }
+
 }

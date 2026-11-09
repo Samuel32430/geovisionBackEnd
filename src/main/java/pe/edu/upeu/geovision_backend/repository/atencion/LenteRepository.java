@@ -1,5 +1,8 @@
 package pe.edu.upeu.geovision_backend.repository.atencion;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,10 +17,7 @@ import java.util.Optional;
 @Repository
 public interface LenteRepository extends JpaRepository<Lente, Long> {
 
-    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT l FROM Lente l WHERE l.id = :id")
-    Optional<Lente> findByIdForUpdate(@Param("id") Long id);
-
+    // >>>> QUERIES
     List<Lente> findByRecetaId(Long idReceta);
 
     @EntityGraph(attributePaths = {"materialCristal", "tratamientosCristal", "montura.producto", "medidas.medidaOjoDerecha", "medidas.medidaOjoIzquierda"})
@@ -33,4 +33,10 @@ public interface LenteRepository extends JpaRepository<Lente, Long> {
     @EntityGraph(attributePaths = {"receta", "materialCristal", "tratamientosCristal", "montura.producto", "medidas.medidaOjoDerecha", "medidas.medidaOjoIzquierda"})
     @Query("SELECT l FROM Lente l WHERE l.id = :id")
     Optional<Lente> findByIdWithDetails(@Param("id") Long id);
+
+    // >>>> LOCKING
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM Lente l WHERE l.id = :id")
+    Optional<Lente> findByIdForUpdate(@Param("id") Long id);
+
 }

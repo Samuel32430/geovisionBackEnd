@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.dto.orden_trabajo;
 
+import jakarta.validation.constraints.Positive;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -7,10 +9,10 @@ import java.time.LocalDate;
 
 public record EnvioLaboratorioRequestDTO(
     @NotNull(message = "El ID de la orden de trabajo es obligatorio")
-    @jakarta.validation.constraints.Positive
+    @Positive
     Long idOrdenTrabajo,
     @NotNull(message = "El ID del laboratorio es obligatorio")
-    @jakarta.validation.constraints.Positive
+    @Positive
     Long idLaboratorio,
     LocalDate fechaRecepcionEstimada,
     @Size(max = 500, message = "Las observaciones no deben superar los 500 caracteres")

@@ -10,9 +10,11 @@ import java.util.List;
 
 public interface CatalogoOpticoService {
 
+    // >>>> QUERIES
     List<MaterialCristalDTO> listarMaterialesCristal();
 
     List<TratamientoCristalDTO> listarTratamientosCristal();
 
     Page<MonturaDTO> listarMonturasDisponibles(Pageable pageable);
+
 }

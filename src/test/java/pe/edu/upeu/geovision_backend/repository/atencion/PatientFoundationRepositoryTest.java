@@ -1,13 +1,14 @@
 package pe.edu.upeu.geovision_backend.repository.atencion;
 
+import java.util.LinkedHashSet;
+
+import lombok.RequiredArgsConstructor;
 import pe.edu.upeu.geovision_backend.repository.inventario.MonturaRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.VentaRepository;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -41,16 +42,20 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@RequiredArgsConstructor
 class PatientFoundationRepositoryTest {
-    @PersistenceContext EntityManager em;
-    @Autowired JdbcTemplate jdbc;
-    @Autowired MedidaRepository measures;
-    @Autowired PacienteRepository patients;
-    @Autowired RecetaRepository prescriptions;
-    @Autowired MonturaRepository frames;
-    @Autowired VentaRepository sales;
-    @Autowired LenteRepository lenses;
 
+    // >>>> FIXTURES
+    private final EntityManager em;
+    private final JdbcTemplate jdbc;
+    private final MedidaRepository measures;
+    private final PacienteRepository patients;
+    private final RecetaRepository prescriptions;
+    private final MonturaRepository frames;
+    private final VentaRepository sales;
+    private final LenteRepository lenses;
+
+    // >>>> HELPERS
     Persona person(String names) {
         var p = new Persona(null, names, "Prueba", "999123456", null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI);
         em.persist(p);
@@ -72,6 +77,7 @@ class PatientFoundationRepositoryTest {
         return r;
     }
 
+    // >>>> TESTS
     @Test void booleanActivoRoundTripsThroughTheExistingNumericEstadoColumn() {
         var patient = patient();
         em.flush();
@@ -93,7 +99,9 @@ class PatientFoundationRepositoryTest {
         em.flush();
         assertEquals(Boolean.TRUE, unspecified.getActivo());
         assertEquals(1, jdbc.queryForObject("select estado from PACIENTE where id_persona = ?",
-                Integer.class, unspecified.getId()));
+                Integer.class, unspecified.getId()
+            )
+        );
     }
 
     @Test void explicitMeasurementCodesPersistAndDefaultToLejos() {
@@ -102,16 +110,20 @@ class PatientFoundationRepositoryTest {
             em.persist(measure);
             em.flush();
             assertEquals(type.getCodigo(), jdbc.queryForObject(
-                    "select tipo_medida from MEDIDA where id_medida = ?", Integer.class, measure.getId()));
+                    "select tipo_medida from MEDIDA where id_medida = ?", Integer.class, measure.getId()
+                )
+            );
             em.clear();
             assertEquals(type, measures.findById(measure.getId()).orElseThrow().getTipoMedida());
         }
-        var defaultMeasure = new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, null, null, null, null);
+        var defaultMeasure = new Medida(null, TipoMedidaEnum.LEJOS, null, null, null, null, null, null, null);
         defaultMeasure.setTipoMedida(null);
         em.persist(defaultMeasure);
         em.flush();
         assertEquals(1, jdbc.queryForObject("select tipo_medida from MEDIDA where id_medida = ?",
-                Integer.class, defaultMeasure.getId()));
+                Integer.class, defaultMeasure.getId()
+            )
+        );
     }
 
     @Test void retrievesPatientByDocumentAndSearchFetchesPerson() {
@@ -129,11 +141,14 @@ class PatientFoundationRepositoryTest {
         assertTrue(Hibernate.isInitialized(page.getContent().getFirst().getPersona()));
         assertFalse(patients.buscarPacientes(document, false, PageRequest.of(0, 10)).hasContent());
         assertTrue(patients.buscarPacientes("paciente prueba", null, PageRequest.of(0, 10))
-                .stream().anyMatch(p -> p.getId().equals(id)));
+                .stream().anyMatch(p -> p.getId().equals(id))
+        );
         assertTrue(patients.buscarPacientes("999123456", null, PageRequest.of(0, 10))
-                .stream().anyMatch(p -> p.getId().equals(id)));
+                .stream().anyMatch(p -> p.getId().equals(id))
+        );
         assertTrue(patients.buscarPacientes(null, true, PageRequest.of(0, 10))
-                .stream().anyMatch(p -> p.getId().equals(id)));
+                .stream().anyMatch(p -> p.getId().equals(id))
+        );
     }
 
     @Test void prescriptionHistoryHasStableOrderAndReadyToMapNames() {
@@ -150,7 +165,8 @@ class PatientFoundationRepositoryTest {
         assertTrue(Hibernate.isInitialized(history.getFirst().getPaciente().getPersona()));
         assertTrue(Hibernate.isInitialized(history.getFirst().getEmpleado().getPersona()));
         var page = prescriptions.findByPacienteId(id,
-                PageRequest.of(0, 1, Sort.by(Sort.Order.desc("fechaRegistro"), Sort.Order.desc("id"))));
+                PageRequest.of(0, 1, Sort.by(Sort.Order.desc("fechaRegistro"), Sort.Order.desc("id")))
+        );
         assertEquals(2, page.getTotalElements());
         assertEquals(secondId, page.getContent().getFirst().getId());
     }
@@ -165,7 +181,7 @@ class PatientFoundationRepositoryTest {
         em.persist(right);
         em.persist(left);
         var own = new Medida(null, TipoMedidaEnum.MEDIO, null, null, null, recipe, right, left, null);
-        var foreign = new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, other, null, null, null);
+        var foreign = new Medida(null, TipoMedidaEnum.LEJOS, null, null, null, other, null, null, null);
         em.persist(own);
         em.persist(foreign);
         Long recipeId = recipe.getId(), ownId = own.getId(), foreignId = foreign.getId();
@@ -179,6 +195,7 @@ class PatientFoundationRepositoryTest {
         assertEquals(1, measures.findByRecetaIdOrderByIdAsc(recipeId).size());
     }
 
+    // >>>> HELPERS
     Montura frame(Boolean state, int stock) {
         var product = new Producto(null, UUID.randomUUID().toString(), "Montura", null, null, new BigDecimal("100"), stock, state, null, null);
         em.persist(product);
@@ -187,6 +204,7 @@ class PatientFoundationRepositoryTest {
         return frame;
     }
 
+    // >>>> TESTS
     @Test void opticalCatalogExcludesInactiveAndOutOfStockFrames() {
         var available = frame(true, 3);
         frame(true, 0);
@@ -195,7 +213,8 @@ class PatientFoundationRepositoryTest {
         em.flush();
         em.clear();
         var page = frames.findByProductoActivoAndProductoStockGreaterThan(
-                true, 0, PageRequest.of(0, 10));
+                true, 0, PageRequest.of(0, 10)
+        );
         assertEquals(List.of(id), page.getContent().stream().map(Montura::getId).toList());
         assertTrue(Hibernate.isInitialized(page.getContent().getFirst().getProducto()));
     }
@@ -217,11 +236,11 @@ class PatientFoundationRepositoryTest {
         var treatment = new TratamientoCristal(null, "Filtro de prueba");
         em.persist(material);
         em.persist(treatment);
-        var lens = new Lente(null, BigDecimal.ZERO, recipe, material, null, new java.util.LinkedHashSet<>(), new java.util.LinkedHashSet<>());
+        var lens = new Lente(null, BigDecimal.ZERO, recipe, material, null, new LinkedHashSet<>(), new LinkedHashSet<>());
         em.persist(lens);
         var eye = new MedidaOjo(null, "20/20", null, null, null, null);
         em.persist(eye);
-        var measure = new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, recipe, eye, null, null);
+        var measure = new Medida(null, TipoMedidaEnum.LEJOS, null, null, null, recipe, eye, null, null);
         em.persist(measure);
         lens.getMedidas().add(measure);
         lens.getTratamientosCristal().add(treatment);
@@ -245,9 +264,11 @@ class PatientFoundationRepositoryTest {
         em.persist(far);
         em.persist(near);
         var first = new Lente(null, BigDecimal.ZERO, recipe, material, null,
-                new java.util.LinkedHashSet<>(List.of(near, far)), new java.util.LinkedHashSet<>());
+                new LinkedHashSet<>(List.of(near, far)), new LinkedHashSet<>()
+        );
         var second = new Lente(null, BigDecimal.ZERO, recipe, material, null,
-                new java.util.LinkedHashSet<>(List.of(far)), new java.util.LinkedHashSet<>());
+                new LinkedHashSet<>(List.of(far)), new LinkedHashSet<>()
+        );
         em.persist(first);
         em.persist(second);
         em.flush();
@@ -283,10 +304,12 @@ class PatientFoundationRepositoryTest {
         em.persist(firstTreatment);
         em.persist(secondTreatment);
         var first = new Lente(null, BigDecimal.ZERO, recipe, material, null,
-                new java.util.LinkedHashSet<>(),
-                new java.util.LinkedHashSet<>(List.of(secondTreatment, firstTreatment)));
+                new LinkedHashSet<>(),
+                new LinkedHashSet<>(List.of(secondTreatment, firstTreatment))
+        );
         var second = new Lente(null, BigDecimal.ZERO, recipe, material, null,
-                new java.util.LinkedHashSet<>(), new java.util.LinkedHashSet<>(List.of(firstTreatment)));
+                new LinkedHashSet<>(), new LinkedHashSet<>(List.of(firstTreatment))
+        );
         em.persist(first);
         em.persist(second);
         em.flush();
@@ -296,7 +319,8 @@ class PatientFoundationRepositoryTest {
         assertFalse(Hibernate.isInitialized(lenses.findById(firstId).orElseThrow().getTratamientosCristal()));
         var detail = lenses.findByIdWithDetails(firstId).orElseThrow();
         assertEquals(List.of(treatmentId, otherId), detail.getTratamientosCristal().stream()
-                .map(TratamientoCristal::getId).toList());
+                .map(TratamientoCristal::getId).toList()
+        );
         assertFalse(detail.getTratamientosCristal().add(em.getReference(TratamientoCristal.class, treatmentId)));
         detail.getTratamientosCristal().clear();
         em.remove(lenses.findById(secondId).orElseThrow());

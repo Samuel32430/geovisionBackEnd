@@ -49,6 +49,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private AuthenticationManager authenticationManager;
 
@@ -83,6 +84,7 @@ class AuthServiceTest {
     private Persona testPersona;
     private Rol testRol;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         testPersona = new Persona(1L, "Juan", "Pérez", null, null, null, null, null, null);
@@ -92,6 +94,7 @@ class AuthServiceTest {
         testRol = new Rol(1L, "VENDEDOR");
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CUS15: Login exitoso retorna token y roles")
     void loginExitoso() {
@@ -168,7 +171,7 @@ class AuthServiceTest {
     @Test
     @DisplayName("CUS19: Flujo de recuperación y restablecimiento de contraseña")
     void recuperacionYRestablecimientoPassword() {
-        // 1. Solicitud de recuperación
+
         RecuperarPasswordRequestDTO solRequest = new RecuperarPasswordRequestDTO("juan@geovision.com");
         when(usuarioRepository.findByCorreo("juan@geovision.com")).thenReturn(Optional.of(testUser));
         when(jwtService.generarTokenRecuperacion("juan@geovision.com", 15)).thenReturn("recovery.jwt.token");
@@ -176,11 +179,9 @@ class AuthServiceTest {
         authService.solicitarRecuperacionPassword(solRequest);
         verify(emailService).enviarRecuperacionPassword("juan@geovision.com", "recovery.jwt.token", "juan.perez");
 
-        // 2. Validación de token
         when(jwtService.validarTokenRecuperacion("recovery.jwt.token")).thenReturn(true);
         assertThat(authService.validarTokenRecuperacion("recovery.jwt.token")).isTrue();
 
-        // 3. Reset de contraseña
         ResetPasswordRequestDTO resetRequest = new ResetPasswordRequestDTO("recovery.jwt.token", "brandNewPass1", "brandNewPass1");
         when(jwtService.extraerEmailRecuperacion("recovery.jwt.token")).thenReturn("juan@geovision.com");
         when(passwordEncoder.encode("brandNewPass1")).thenReturn("$2a$10$brandNewHash");

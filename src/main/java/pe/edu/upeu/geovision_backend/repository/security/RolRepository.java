@@ -13,13 +13,17 @@ import java.util.Optional;
 @Repository
 public interface RolRepository extends JpaRepository<Rol, Long> {
 
+    // >>>> QUERIES
+    Optional<Rol> findByNombreIgnoreCase(String nombre);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByNombreIgnoreCase(String nombre);
+
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idRol);
+
+    // >>>> LOCKING
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM Rol e WHERE e.id = :id")
     Optional<Rol> findByIdForUpdate(@Param("id") Long id);
 
-    Optional<Rol> findByNombreIgnoreCase(String nombre);
-
-    boolean existsByNombreIgnoreCase(String nombre);
-
-    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idRol);
 }

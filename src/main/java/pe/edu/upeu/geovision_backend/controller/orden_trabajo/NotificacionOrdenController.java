@@ -13,24 +13,39 @@ import pe.edu.upeu.geovision_backend.service.orden_trabajo.NotificacionOrdenServ
 @RestController @RequiredArgsConstructor
 @RequestMapping("/api/v1/ordenes-trabajo/{idOrden}/notificaciones")
 public class NotificacionOrdenController {
+
+    // >>>> DEPENDENCIES
     private final NotificacionOrdenService servicio;
+
+    // >>>> QUERIES
     @GetMapping @PreAuthorize("hasAuthority('ORDENES_TRABAJO_LEER')")
     public EstadoNotificacionOrdenDTO estado(@PathVariable @Positive Long idOrden) {
         return servicio.consultarEstado(idOrden);
     }
+
+    // >>>> CREATION
     @PostMapping("/whatsapp") @PreAuthorize("hasAuthority('ORDENES_TRABAJO_GESTIONAR')")
-    public NotificacionOrdenResponseDTO whatsapp(@PathVariable @Positive Long idOrden,
-            @Valid @RequestBody NotificacionOrdenRequestDTO request,Authentication auth) {
+    public NotificacionOrdenResponseDTO whatsapp(
+        @PathVariable @Positive Long idOrden,
+        @Valid @RequestBody NotificacionOrdenRequestDTO request,Authentication auth
+    ) {
         return servicio.prepararWhatsApp(idOrden,request.telefono(),auth.getName());
     }
+
     @PostMapping("/whatsapp/confirmar") @PreAuthorize("hasAuthority('ORDENES_TRABAJO_GESTIONAR')")
-    public NotificacionOrdenResponseDTO confirmar(@PathVariable @Positive Long idOrden,
-            @Valid @RequestBody NotificacionOrdenRequestDTO request,Authentication auth) {
+    public NotificacionOrdenResponseDTO confirmar(
+        @PathVariable @Positive Long idOrden,
+        @Valid @RequestBody NotificacionOrdenRequestDTO request,Authentication auth
+    ) {
         return servicio.confirmarWhatsApp(idOrden,request.telefono(),auth.getName());
     }
+
     @PostMapping("/sms") @PreAuthorize("hasAuthority('ORDENES_TRABAJO_GESTIONAR')")
-    public NotificacionOrdenResponseDTO sms(@PathVariable @Positive Long idOrden,
-            @Valid @RequestBody NotificacionOrdenRequestDTO request,Authentication auth) {
+    public NotificacionOrdenResponseDTO sms(
+        @PathVariable @Positive Long idOrden,
+        @Valid @RequestBody NotificacionOrdenRequestDTO request,Authentication auth
+    ) {
         return servicio.enviarSms(idOrden,request.telefono(),auth.getName());
     }
+
 }

@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RepositoryStructureTest {
 
+    // >>>> FIXTURES
     private final List<Class<?>> repositories = List.of(
             ConfiguracionEmpresaRepository.class,
             CategoriaRepository.class,
@@ -79,6 +80,7 @@ class RepositoryStructureTest {
             EnvioLaboratorioRepository.class
     );
 
+    // >>>> TESTS
     @Test
     @DisplayName("Debe contener exactamente 31 repositorios")
     void testTotalRepositoriesCount() {

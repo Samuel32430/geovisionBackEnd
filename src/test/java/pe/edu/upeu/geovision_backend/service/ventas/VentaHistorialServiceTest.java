@@ -41,6 +41,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class VentaHistorialServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private VentaRepository ventaRepository;
 
@@ -58,6 +59,7 @@ class VentaHistorialServiceTest {
 
     private Venta ventaTest;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         Persona persona = new Persona(null, "Ana", "Torres", null, null, null, null, "77889900", null);
@@ -69,6 +71,7 @@ class VentaHistorialServiceTest {
         ventaTest = new Venta(200L, LocalDateTime.now(), new BigDecimal("250.00"), EstadoVentaEnum.PAGADA, "B001-00000200", TipoComprobanteEnum.BOLETA, empleado, paciente, null);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CUS08: Buscar historial de ventas paginado con filtros")
     void buscarHistorialVentas_paginado_retornaPaginaDTO() {

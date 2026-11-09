@@ -16,15 +16,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JwtServiceTest {
 
-    // 256-bit secret key in Base64
+    // >>>> FIXTURES
     private static final String SECRET_BASE64 = "w9Z6dP/dzykNH/uiI3Z/KGjBlP0H4Ji+Tuq4fm2cTNuLD4jWafu1gBL74V2SJEvy";
     private JwtService jwtService;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         jwtService = new JwtService(SECRET_BASE64, 60);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("Debe generar token válido y extraer username correctamente")
     void generarYExtraerToken() {

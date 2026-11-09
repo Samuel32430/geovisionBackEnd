@@ -16,6 +16,7 @@ import java.util.Optional;
 @Repository
 public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSpecificationExecutor<Paciente> {
 
+    // >>>> QUERIES
     Optional<Paciente> findByIdAndActivo(Long idPersona, Boolean estado);
 
     Optional<Paciente> findByUsuarioId(Long idUsuario);
@@ -33,6 +34,8 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSp
     @Query("SELECT p FROM Paciente p JOIN p.persona per WHERE (:estado IS NULL OR p.activo = :estado) " +
            "AND (:termino IS NULL OR LOWER(CONCAT(CONCAT(per.nombres, ' '), per.apellidos)) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
            "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') ESCAPE '!' " +
-           "OR per.telefono LIKE CONCAT('%', :termino, '%') ESCAPE '!')")
+           "OR per.telefono LIKE CONCAT('%', :termino, '%') ESCAPE '!')"
+    )
     Page<Paciente> buscarPacientes(@Param("termino") String termino, @Param("estado") Boolean estado, Pageable pageable);
+
 }

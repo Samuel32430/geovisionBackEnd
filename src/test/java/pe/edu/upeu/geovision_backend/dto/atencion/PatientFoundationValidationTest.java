@@ -12,14 +12,19 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PatientFoundationValidationTest {
+
+    // >>>> FIXTURES
     static final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 
+    // >>>> CLEANUP
     @AfterAll static void close() { factory.close(); }
 
+    // >>>> HELPERS
     MedidaRequestDTO validMeasure() {
-        return new MedidaRequestDTO(pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, new BigDecimal("62.50"), null, null, null, new MedidaOjoDTO(null, null, new BigDecimal("-1.25"), null, 90, null), new MedidaOjoDTO(null, null, new BigDecimal("1.50"), null, 85, null), null);
+        return new MedidaRequestDTO(TipoMedidaEnum.LEJOS, new BigDecimal("62.50"), null, null, null, new MedidaOjoDTO(null, null, new BigDecimal("-1.25"), null, 90, null), new MedidaOjoDTO(null, null, new BigDecimal("1.50"), null, 85, null), null);
     }
 
+    // >>>> TESTS
     @Test void validClinicalInputUsesLejosByDefaultAndAllowsTextVisualAcuity() {
         var request = validMeasure();
         request = new MedidaRequestDTO(request.tipoMedida(), request.distanciaPupilar(), BigDecimal.ZERO, request.observaciones(), request.idReceta(), new MedidaOjoDTO(request.ojoDerecho().id(), "20/20", request.ojoDerecho().esfera(), request.ojoDerecho().cilindro(), request.ojoDerecho().eje(), request.ojoDerecho().adicion()), request.ojoIzquierdo(), request.idEnvioLaboratorio());

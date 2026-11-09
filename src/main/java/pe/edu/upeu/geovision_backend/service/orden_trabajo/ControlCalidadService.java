@@ -8,9 +8,13 @@ import pe.edu.upeu.geovision_backend.dto.orden_trabajo.OrdenTrabajoResponseDTO;
 import pe.edu.upeu.geovision_backend.dto.orden_trabajo.PoliticaCalidadDTO;
 
 public interface ControlCalidadService {
+
+    // >>>> QUERIES
     Page<OrdenTrabajoResponseDTO> pendientes(Pageable pageable);
 
+    PoliticaCalidadDTO politica();
+
+    // >>>> QUALITY CONTROL
     EnvioLaboratorioResponseDTO registrar(ControlCalidadRequestDTO request, String usuario);
 
-    PoliticaCalidadDTO politica();
 }

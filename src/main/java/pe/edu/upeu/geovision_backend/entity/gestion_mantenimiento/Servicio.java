@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class Servicio {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_servicio")
@@ -39,6 +40,7 @@ public class Servicio {
     @Column(name = "estado", nullable = false)
     private Boolean activo = true;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.activo == null) {

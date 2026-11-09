@@ -23,8 +23,6 @@ public record UsuarioRequestDTO(
     String correo,
     @Min(0)
     @Max(1)
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.One.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.One.class)
     Integer estado,
     @NotNull(message = "El ID de la persona asociada es obligatorio")
     @Positive

@@ -10,9 +10,6 @@ import pe.edu.upeu.geovision_backend.exception.dto.ErrorResponseDTO;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-/**
- * Utilidad para escribir respuestas de error de seguridad en formato JSON estándar (ErrorResponseDTO).
- */
 public final class RespuestaErrorSeguridad {
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -22,11 +19,12 @@ public final class RespuestaErrorSeguridad {
     }
 
     public static void escribir(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            int status,
-            String error,
-            String mensaje) throws IOException {
+        HttpServletRequest request,
+        HttpServletResponse response,
+        int status,
+        String error,
+        String mensaje
+    ) throws IOException {
 
         ErrorResponseDTO dto = new ErrorResponseDTO(
                 LocalDateTime.now(),

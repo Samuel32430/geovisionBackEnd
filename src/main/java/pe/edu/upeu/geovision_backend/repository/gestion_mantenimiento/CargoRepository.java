@@ -9,9 +9,12 @@ import java.util.Optional;
 @Repository
 public interface CargoRepository extends JpaRepository<Cargo, Long> {
 
+    // >>>> QUERIES
     Optional<Cargo> findByNombreIgnoreCase(String nombre);
 
+    // >>>> EXISTENCE CHECKS
     boolean existsByNombreIgnoreCase(String nombre);
 
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idCargo);
+
 }

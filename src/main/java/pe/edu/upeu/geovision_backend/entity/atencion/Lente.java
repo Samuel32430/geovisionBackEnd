@@ -15,7 +15,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.OrderBy;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -57,16 +56,16 @@ public class Lente {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "LENTE_MEDIDA",
             joinColumns = @JoinColumn(name = "id_lente", nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "id_medida", nullable = false),
-            uniqueConstraints = @UniqueConstraint(name = "LENTE_MEDIDAS_uq", columnNames = {"id_lente", "id_medida"}))
+            inverseJoinColumns = @JoinColumn(name = "id_medida", nullable = false)
+    )
     @OrderBy("id ASC")
     private Set<Medida> medidas = new LinkedHashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "LENTE_TRATAMIENTO_CRISTAL",
             joinColumns = @JoinColumn(name = "id_lente", nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "id_tratamiento_cristal", nullable = false),
-            uniqueConstraints = @UniqueConstraint(name = "LENTE_TRAT_uq", columnNames = {"id_lente", "id_tratamiento_cristal"}))
+            inverseJoinColumns = @JoinColumn(name = "id_tratamiento_cristal", nullable = false)
+    )
     @OrderBy("id ASC")
     private Set<TratamientoCristal> tratamientosCristal = new LinkedHashSet<>();
 }

@@ -103,10 +103,15 @@ El DTO de errores también es un record. Los consumidores usan accesores como
 Los DTO se instancian únicamente mediante el constructor canónico implícito del
 record, sin builders, `toBuilder()` ni constructores adicionales.
 
-Las restricciones Jakarta Validation permanecen en los componentes. Los DTO con
-valores predeterminados usan deserializadores externos en `DtoDefaultsJackson2`
-y `DtoDefaultsJackson3` para conservar la
-diferencia entre campo omitido y `null` explícito, con soporte para Jackson 2 y 3.
+Las restricciones Jakarta Validation permanecen en los componentes. Los DTO usan
+la deserialización estándar de records, sin helpers de defaults ni anotaciones
+de deserialización por componente. Los campos de referencia omitidos o enviados
+como `null` reciben `null`; las restricciones existentes siguen validándose.
+Se eliminaron los dos helpers Jackson de defaults y sus anotaciones en los 12
+records afectados. Los fixtures de catálogos envían `estado` explícitamente.
+Verificación de esta eliminación: `./mvnw.cmd -o test`, **245 pruebas, 0 fallos
+y 0 errores**, tras limpiar los binarios antiguos con `clean`.
+Log: `target/remove-dto-defaults-tests.log`.
 Se mantienen los campos JSON calculados, la proyección de selección de empleados
 y la exclusión de contraseñas de `UsuarioRequestDTO.toString()`.
 

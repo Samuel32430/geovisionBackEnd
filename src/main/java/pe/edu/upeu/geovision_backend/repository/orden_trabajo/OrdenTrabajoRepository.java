@@ -20,9 +20,8 @@ import java.util.Optional;
 @Repository
 public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Long>, JpaSpecificationExecutor<OrdenTrabajo> {
 
+    // >>>> QUERIES
     Optional<OrdenTrabajo> findByLenteId(Long idLente);
-
-    boolean existsByLenteId(Long idLente);
 
     List<OrdenTrabajo> findByEstado(EstadoOrdenTrabajoEnum estado);
 
@@ -30,11 +29,16 @@ public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Long
 
     Page<OrdenTrabajo> findByFechaRegistroBetween(LocalDateTime desde, LocalDateTime hasta, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"lente.receta.paciente.persona", "lente.montura.producto", "lente.materialCristal"})
+    @Query("SELECT o FROM OrdenTrabajo o WHERE o.id = :id")
+    Optional<OrdenTrabajo> findByIdWithDetails(@Param("id") Long id);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByLenteId(Long idLente);
+
+    // >>>> LOCKING
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM OrdenTrabajo o WHERE o.id = :id")
     Optional<OrdenTrabajo> findByIdForUpdate(@Param("id") Long id);
 
-    @EntityGraph(attributePaths = {"lente.receta.paciente.persona", "lente.montura.producto", "lente.materialCristal"})
-    @Query("SELECT o FROM OrdenTrabajo o WHERE o.id = :id")
-    Optional<OrdenTrabajo> findByIdWithDetails(@Param("id") Long id);
 }

@@ -15,10 +15,14 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCri
 import java.util.List;
 
 public final class RecetaMapper {
-    private RecetaMapper() {}
+    private RecetaMapper() {
+    }
 
-    public static LenteResponseDTO toLenteResponse(Lente lente, List<Medida> medidas,
-                                           List<TratamientoCristal> tratamientos) {
+    // >>>> MAPPING
+    public static LenteResponseDTO toLenteResponse(
+        Lente lente, List<Medida> medidas,
+        List<TratamientoCristal> tratamientos
+    ) {
         return new LenteResponseDTO(lente.getId(), lente.getReceta().getId(), lente.getSubTotal(), lente.getMaterialCristal().getId(), lente.getMaterialCristal().getNombre(), lente.getMontura() == null ? null : lente.getMontura().getId(), lente.getMontura() == null ? null : lente.getMontura().getProducto().getCodigo(), lente.getMontura() == null ? null : lente.getMontura().getProducto().getNombre(), tratamientos.stream().map(CatalogoOpticoMapper::toTratamientoCristalDTO).toList(), medidas.stream().map(RecetaMapper::toMedidaResponse).toList());
     }
 
@@ -42,9 +46,11 @@ public final class RecetaMapper {
 
     public static MedidaResponseDTO toMedidaResponse(Medida medida) {
         return new MedidaResponseDTO(medida.getId(), medida.getTipoMedida(), medida.getDistanciaPupilar(), medida.getPrisma(), medida.getObservaciones(), medida.getReceta() == null ? null : medida.getReceta().getId(), toMedidaOjoDTO(medida.getMedidaOjoDerecha()), toMedidaOjoDTO(medida.getMedidaOjoIzquierda()), medida.getEnvioLaboratorio() == null
-                        ? null : medida.getEnvioLaboratorio().getId());
+                ? null : medida.getEnvioLaboratorio().getId()
+        );
     }
 
+    // >>>> HELPERS
     private static MedidaOjoDTO toMedidaOjoDTO(MedidaOjo ojo) {
         if (ojo == null) {
             return null;

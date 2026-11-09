@@ -12,16 +12,20 @@ import java.util.Optional;
 @Repository
 public interface RolPermisoRepository extends JpaRepository<RolPermiso, Long> {
 
+    // >>>> QUERIES
     List<RolPermiso> findByRolId(Long idRol);
 
     List<RolPermiso> findByPermisoId(Long idPermiso);
 
     Optional<RolPermiso> findByRolIdAndPermisoId(Long idRol, Long idPermiso);
 
-    boolean existsByRolIdAndPermisoId(Long idRol, Long idPermiso);
-
-    void deleteByRolId(Long idRol);
-
     @Query("SELECT rp.permiso.nombre FROM RolPermiso rp WHERE rp.rol.id = :idRol")
     List<String> findNombresPermisosByRolId(@Param("idRol") Long idRol);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByRolIdAndPermisoId(Long idRol, Long idPermiso);
+
+    // >>>> DELETIONS
+    void deleteByRolId(Long idRol);
+
 }

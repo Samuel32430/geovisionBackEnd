@@ -12,9 +12,11 @@ import java.util.List;
 @Repository
 public interface EmpleadoLogRepository extends JpaRepository<EmpleadoLog, Long> {
 
+    // >>>> QUERIES
     List<EmpleadoLog> findByEmpleadoIdOrderByFechaLogDesc(Long idPersona);
 
     Page<EmpleadoLog> findByEmpleadoIdOrderByFechaLogDesc(Long idPersona, Pageable pageable);
 
     Page<EmpleadoLog> findByFechaLogBetween(LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+
 }

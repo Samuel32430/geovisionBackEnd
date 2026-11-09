@@ -13,11 +13,14 @@ import java.util.Optional;
 @Repository
 public interface ServicioRepository extends JpaRepository<Servicio, Long>, JpaSpecificationExecutor<Servicio> {
 
+    // >>>> QUERIES
     Optional<Servicio> findByNombreIgnoreCase(String nombre);
-
-    boolean existsByNombreIgnoreCase(String nombre);
 
     List<Servicio> findByActivo(Boolean estado);
 
     Page<Servicio> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByNombreIgnoreCase(String nombre);
+
 }

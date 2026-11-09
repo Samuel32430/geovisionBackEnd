@@ -1,5 +1,8 @@
 package pe.edu.upeu.geovision_backend.dto;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,7 +17,6 @@ import pe.edu.upeu.geovision_backend.dto.security.PersonaUsuarioResumenDTO;
 import pe.edu.upeu.geovision_backend.dto.security.UsuarioRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.ProductoVendidoDTO;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
-import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -42,28 +44,32 @@ class DtoRecordJsonContractTest {
         @Override public String toString() { return name; }
     }
 
+    // >>>> HELPERS
     static Stream<Codec> codecs() {
-        var jackson2 = new com.fasterxml.jackson.databind.ObjectMapper();
-        var jackson3 = tools.jackson.databind.json.JsonMapper.builder().build();
+        var jackson2 = new ObjectMapper();
+        var jackson3 = JsonMapper.builder().build();
         return Stream.of(
                 new Codec("Jackson 2", jackson2::readValue, jackson2::writeValueAsString),
-                new Codec("Jackson 3", jackson3::readValue, jackson3::writeValueAsString));
+                new Codec("Jackson 3", jackson3::readValue, jackson3::writeValueAsString)
+        );
     }
 
+    // >>>> TESTS
     @ParameterizedTest
     @MethodSource("codecs")
-    void omittedDefaultsAndExplicitNullRemainDifferent(Codec codec) throws Exception {
+    void omittedAndExplicitNullFieldsUseStandardRecordDeserialization(Codec codec) throws Exception {
         var category = codec.reader.read("{\"nombre\":\"Categoria\"}", CategoriaDTO.class);
         var explicitNull = codec.reader.read("{\"nombre\":\"Categoria\",\"estado\":null}", CategoriaDTO.class);
-        assertThat(category.estado()).isEqualTo(1);
+        assertThat(category.estado()).isNull();
         assertThat(explicitNull.estado()).isNull();
         try (var factory = Validation.buildDefaultValidatorFactory()) {
-            assertThat(factory.getValidator().validate(category)).isEmpty();
+            assertThat(factory.getValidator().validate(category))
+                    .anyMatch(error -> error.getPropertyPath().toString().equals("estado"));
             assertThat(factory.getValidator().validate(explicitNull))
                     .anyMatch(error -> error.getPropertyPath().toString().equals("estado"));
         }
 
-        assertThat(codec.reader.read("{}", MedidaRequestDTO.class).tipoMedida()).isEqualTo(TipoMedidaEnum.LEJOS);
+        assertThat(codec.reader.read("{}", MedidaRequestDTO.class).tipoMedida()).isNull();
         assertThat(codec.reader.read("{\"tipoMedida\":null}", MedidaRequestDTO.class).tipoMedida()).isNull();
     }
 
@@ -71,11 +77,14 @@ class DtoRecordJsonContractTest {
     @MethodSource("codecs")
     void computedPropertiesKeepTheirJsonNamesAndValues(Codec codec) throws Exception {
         assertThat(codec.properties(new PersonaResponseDTO(null, "Ana", "Perez", null, null, null, null, null, null, null, null, null))
-                .get("nombreCompleto")).isEqualTo("Ana Perez");
+                .get("nombreCompleto")
+        ).isEqualTo("Ana Perez");
         assertThat(codec.properties(new RecetaResponseDTO(null, null, 1, null, null, null, null, null, null, null, null))
-                .get("esRecetaExterna")).isEqualTo(true);
+                .get("esRecetaExterna")
+        ).isEqualTo(true);
         assertThat(codec.properties(new ProductoResponseDTO(null, null, null, null, null, null, null, null, null, null, null, null, new MonturaDTO(null, null, null, null, null, null, null, null, null, null), null))
-                .get("esMontura")).isEqualTo(true);
+                .get("esMontura")
+        ).isEqualTo(true);
         var item = new ProductoVendidoDTO(null, null, null, null, 2, new BigDecimal("7.50"), null);
         assertThat(new BigDecimal(codec.properties(item).get("subTotal").toString()))
                 .isEqualByComparingTo("15.00");
@@ -85,7 +94,8 @@ class DtoRecordJsonContractTest {
     @MethodSource("codecs")
     void employeeSelectionProjectionPreservesNumericAndComputedFields(Codec codec) throws Exception {
         var projection = new PersonaUsuarioResumenDTO(1L, "Ana", "Perez", TipoDocumentoEnum.DNI,
-                "12345678", 2L, "ana", 1, true, true);
+                "12345678", 2L, "ana", 1, true, true
+        );
         var properties = codec.properties(projection);
         assertThat(properties.get("estadoUsuario")).isEqualTo(1);
         assertThat(properties.get("nombreCompleto")).isEqualTo("Ana Perez");

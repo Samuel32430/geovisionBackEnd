@@ -43,6 +43,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProductoCatalogoServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private ProductoRepository productoRepository;
 
@@ -59,6 +60,7 @@ class ProductoCatalogoServiceTest {
     private Producto productoBase;
     private Montura monturaBase;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         categoriaMonturas = new Categoria(1L, "MONTURAS", null, true, null);
@@ -68,6 +70,7 @@ class ProductoCatalogoServiceTest {
         monturaBase = new Montura(10L, productoBase, "Dorado", ModeloMonturaEnum.ARO_COMPLETO, MaterialMonturaEnum.METAL);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CU512 / RF-68, RF-69: Registrar producto simple exitosamente")
     void registrarProductoSimpleExitoso() {

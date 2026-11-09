@@ -10,9 +10,12 @@ import java.util.List;
 @Repository
 public interface ServicioVendidoRepository extends JpaRepository<ServicioVendido, Long> {
 
+    // >>>> QUERIES
     List<ServicioVendido> findByVentaId(Long idVenta);
 
     List<ServicioVendido> findByServicioId(Long idServicio);
 
+    // >>>> EXISTENCE CHECKS
     boolean existsByServicioIdAndVentaEstado(Long idServicio, EstadoVentaEnum estado);
+
 }

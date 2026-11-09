@@ -38,6 +38,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PagoPendienteServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private VentaRepository ventaRepository;
 
@@ -52,6 +53,7 @@ class PagoPendienteServiceTest {
     private Paciente paciente;
     private Persona personaPaciente;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         personaPaciente = new Persona(10L, "Maria", "Gomez", "987654321", null, null, null, "87654321", null);
@@ -63,6 +65,7 @@ class PagoPendienteServiceTest {
         ventaPendiente = new Venta(100L, LocalDateTime.now(), new BigDecimal("300.00"), EstadoVentaEnum.PENDIENTE, "B001-00000100", TipoComprobanteEnum.BOLETA, empleado, paciente, null);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CUS07: Listar ventas con saldo pendiente aplicando filtro de búsqueda")
     void listarVentasConPagosPendientes_conFiltro_retornaLista() {
@@ -100,7 +103,7 @@ class PagoPendienteServiceTest {
         PagoRegistroRequestDTO request = new PagoRegistroRequestDTO(100L, new BigDecimal("100.00"), MetodoPagoEnum.EFECTIVO, null);
 
         when(ventaRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(ventaPendiente));
-        when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00")); // total 300 - 100 = saldo 200
+        when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00"));
 
         Pago pagoGuardado = new Pago(50L, null, null, new BigDecimal("100.00"), null, null);
         when(pagoRepository.save(any())).thenReturn(pagoGuardado);
@@ -121,7 +124,7 @@ class PagoPendienteServiceTest {
         PagoRegistroRequestDTO request = new PagoRegistroRequestDTO(100L, new BigDecimal("200.00"), MetodoPagoEnum.EFECTIVO, null);
 
         when(ventaRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(ventaPendiente));
-        when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00")); // saldo 200
+        when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00"));
 
         Pago pagoGuardado = new Pago(51L, null, null, new BigDecimal("200.00"), null, null);
         when(pagoRepository.save(any())).thenReturn(pagoGuardado);
@@ -141,7 +144,7 @@ class PagoPendienteServiceTest {
         PagoRegistroRequestDTO request = new PagoRegistroRequestDTO(100L, new BigDecimal("250.00"), MetodoPagoEnum.EFECTIVO, null);
 
         when(ventaRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(ventaPendiente));
-        when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00")); // Saldo 200
+        when(pagoRepository.sumMontoPagadoByVentaId(100L)).thenReturn(new BigDecimal("100.00"));
 
         assertThatThrownBy(() -> pagoPendienteService.registrarPagoPendiente(request))
                 .isInstanceOf(ReglaNegocioException.class)

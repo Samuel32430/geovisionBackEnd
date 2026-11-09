@@ -21,30 +21,35 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
 
+    // >>>> DEPENDENCIES
     private final MaterialCristalRepository materialCristalRepository;
     private final TratamientoCristalRepository tratamientoCristalRepository;
     private final MonturaRepository monturaRepository;
 
+    // >>>> QUERIES
     @Override
+    @Transactional(readOnly = true)
     public List<MaterialCristalDTO> listarMaterialesCristal() {
         return materialCristalRepository.findAll(Sort.by("nombre", "id")).stream()
                 .map(CatalogoOpticoMapper::toMaterialCristalDTO).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TratamientoCristalDTO> listarTratamientosCristal() {
         return tratamientoCristalRepository.findAll(Sort.by("nombre", "id")).stream()
                 .map(CatalogoOpticoMapper::toTratamientoCristalDTO).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<MonturaDTO> listarMonturasDisponibles(Pageable pageable) {
         if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100
-                || pageable.getOffset() > Integer.MAX_VALUE) {
+                || pageable.getOffset() > Integer.MAX_VALUE
+        ) {
             throw new ReglaNegocioException("La consulta debe estar paginada con un máximo de 100 monturas");
         }
         Sort orden = pageable.getSort();
@@ -57,7 +62,9 @@ public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
             orden = orden.and(Sort.by("id"));
         }
         return monturaRepository.findByProductoActivoAndProductoStockGreaterThan(true, 0,
-                        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden))
+                        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden)
+        )
                 .map(CatalogoOpticoMapper::toMonturaDTO);
     }
+
 }

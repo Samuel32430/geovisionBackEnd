@@ -1,11 +1,12 @@
 package pe.edu.upeu.geovision_backend.controller.inventario;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,33 +34,59 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/inventario")
 @RequiredArgsConstructor
-@Slf4j
 public class InventarioStockController {
 
+    // >>>> CONSTANTS
+    private static final Logger log = LoggerFactory.getLogger(InventarioStockController.class);
+
+    // >>>> DEPENDENCIES
     private final InventarioStockService inventarioStockService;
 
-    /**
-     * RF-72, RF-73 / CU513: Consultar el stock actual, precio y disponibilidad de un producto.
-     */
+    // >>>> QUERIES
     @GetMapping("/stock/{idProducto}")
     @PreAuthorize("hasAnyAuthority('INVENTARIO_LEER', 'PRODUCTOS_LEER', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<ProductoStockResponseDTO> consultarStockActual(
-            @PathVariable("idProducto") @Positive Long idProducto,
-            @RequestParam(value = "umbralStockMinimo", required = false, defaultValue = "5") Integer umbralStockMinimo) {
+        @PathVariable("idProducto") @Positive Long idProducto,
+        @RequestParam(value = "umbralStockMinimo", required = false, defaultValue = "5") Integer umbralStockMinimo
+    ) {
 
         log.debug("REST consultar stock actual producto ID: {}", idProducto);
         ProductoStockResponseDTO response = inventarioStockService.consultarStockActual(idProducto, umbralStockMinimo);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * RF-74, RF-76, RF-78, RF-79 / CU513: Registrar entrada de productos al stock (Kardex).
-     */
+    @GetMapping("/alertas/bajo-stock")
+    @PreAuthorize("hasAnyAuthority('INVENTARIO_LEER', 'PRODUCTOS_LEER', 'ROLE_ADMINISTRADOR')")
+    public ResponseEntity<List<ProductoResponseDTO>> listarAlertasBajoStock(
+        @RequestParam(value = "umbral", required = false, defaultValue = "5") Integer umbral
+    ) {
+
+        log.debug("REST consultar alertas de bajo stock con umbral: {}", umbral);
+        List<ProductoResponseDTO> response = inventarioStockService.listarAlertasBajoStock(umbral);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/movimientos/{idProducto}")
+    @PreAuthorize("hasAnyAuthority('INVENTARIO_LEER', 'PRODUCTOS_LEER', 'ROLE_ADMINISTRADOR')")
+    public ResponseEntity<Page<MovimientoStockResponseDTO>> listarMovimientosKardex(
+        @PathVariable("idProducto") @Positive Long idProducto,
+        @RequestParam(defaultValue = "0") @Min(0) int page,
+        @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
+    ) {
+
+        log.debug("REST consultar historial Kardex producto ID: {}", idProducto);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaRegistro").descending());
+        Page<MovimientoStockResponseDTO> response = inventarioStockService.listarMovimientosKardex(idProducto, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    // >>>> CREATION
     @PostMapping("/entradas")
     @PreAuthorize("hasAnyAuthority('INVENTARIO_REGISTRAR', 'INVENTARIO_GESTIONAR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<MovimientoStockResponseDTO> registrarEntradaStock(
-            @Valid @RequestBody EntradaStockRequestDTO request,
-            Authentication authentication) {
+        @Valid @RequestBody EntradaStockRequestDTO request,
+        Authentication authentication
+    ) {
 
         String username = authentication != null ? authentication.getName() : "SISTEMA";
         log.info("REST registrar entrada de stock para producto ID: {} por usuario: {}", request.idProducto(), username);
@@ -68,14 +95,12 @@ public class InventarioStockController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * RF-75, RF-76, RF-77, RF-78, RF-79 / CU513: Registrar ajuste de stock por diferencia, daño o pérdida (Kardex).
-     */
     @PostMapping("/ajustes")
     @PreAuthorize("hasAnyAuthority('INVENTARIO_AJUSTAR', 'INVENTARIO_GESTIONAR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<MovimientoStockResponseDTO> registrarAjusteStock(
-            @Valid @RequestBody AjusteStockRequestDTO request,
-            Authentication authentication) {
+        @Valid @RequestBody AjusteStockRequestDTO request,
+        Authentication authentication
+    ) {
 
         String username = authentication != null ? authentication.getName() : "SISTEMA";
         log.info("REST registrar ajuste de stock para producto ID: {} por usuario: {}", request.idProducto(), username);
@@ -84,32 +109,4 @@ public class InventarioStockController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * RF-82 / CU514: Consultar productos con stock bajo o agotado según umbral referencial.
-     */
-    @GetMapping("/alertas/bajo-stock")
-    @PreAuthorize("hasAnyAuthority('INVENTARIO_LEER', 'PRODUCTOS_LEER', 'ROLE_ADMINISTRADOR')")
-    public ResponseEntity<List<ProductoResponseDTO>> listarAlertasBajoStock(
-            @RequestParam(value = "umbral", required = false, defaultValue = "5") Integer umbral) {
-
-        log.debug("REST consultar alertas de bajo stock con umbral: {}", umbral);
-        List<ProductoResponseDTO> response = inventarioStockService.listarAlertasBajoStock(umbral);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * RF-83 / CU514: Consultar el historial de movimientos (Kardex) de un producto.
-     */
-    @GetMapping("/movimientos/{idProducto}")
-    @PreAuthorize("hasAnyAuthority('INVENTARIO_LEER', 'PRODUCTOS_LEER', 'ROLE_ADMINISTRADOR')")
-    public ResponseEntity<Page<MovimientoStockResponseDTO>> listarMovimientosKardex(
-            @PathVariable("idProducto") @Positive Long idProducto,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
-
-        log.debug("REST consultar historial Kardex producto ID: {}", idProducto);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaRegistro").descending());
-        Page<MovimientoStockResponseDTO> response = inventarioStockService.listarMovimientosKardex(idProducto, pageable);
-        return ResponseEntity.ok(response);
-    }
 }

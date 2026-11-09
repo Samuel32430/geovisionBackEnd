@@ -1,9 +1,7 @@
 package pe.edu.upeu.geovision_backend.entity.ventas;
 
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -30,6 +28,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Pago {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_pago")
@@ -44,7 +43,7 @@ public class Pago {
     @Column(name = "monto", nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
 
-    @Convert(converter = MetodoPagoConverter.class)
+    @Convert(converter = MetodoPagoEnum.PersistenceConverter.class)
     @Column(name = "metodo_pago", nullable = false)
     private MetodoPagoEnum metodoPago;
 
@@ -52,6 +51,7 @@ public class Pago {
     @JoinColumn(name = "id_venta", nullable = false)
     private Venta venta;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {
@@ -59,6 +59,7 @@ public class Pago {
         }
     }
 
+    // >>>> OPERATIONS
     public Integer getMetodoPagoCodigo() {
         return this.metodoPago != null ? this.metodoPago.getCodigo() : null;
     }
@@ -67,16 +68,4 @@ public class Pago {
         this.metodoPago = MetodoPagoEnum.fromCodigo(codigo);
     }
 
-    @Converter
-    public static class MetodoPagoConverter implements AttributeConverter<MetodoPagoEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(MetodoPagoEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public MetodoPagoEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? MetodoPagoEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

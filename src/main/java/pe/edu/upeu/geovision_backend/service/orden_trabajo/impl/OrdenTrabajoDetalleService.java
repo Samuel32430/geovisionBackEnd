@@ -16,13 +16,16 @@ import pe.edu.upeu.geovision_backend.util.orden_trabajo.VentaOrdenTrabajo;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class OrdenTrabajoDetalleService {
+
+    // >>>> DEPENDENCIES
     private final EnvioLaboratorioRepository envios;
     private final MedidaRepository medidas;
     private final PagoRepository pagos;
     private final VentaOrdenTrabajo ventasOrden;
 
+    // >>>> QUERIES
+    @Transactional(readOnly = true)
     public OrdenTrabajoResponseDTO orden(OrdenTrabajo orden) {
         var venta = ventasOrden.consultar(orden.getLente().getReceta().getId()).orElse(null);
         var saldo = venta == null ? null : venta.getTotal().subtract(pagos.sumMontoPagadoByVentaId(venta.getId()));
@@ -31,9 +34,11 @@ public class OrdenTrabajoDetalleService {
         return OrdenTrabajoMapper.orden(orden, venta, saldo, detalleEnvios);
     }
 
+    @Transactional(readOnly = true)
     public EnvioLaboratorioResponseDTO envio(EnvioLaboratorio envio) {
         var detalleMedidas = medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId())
                 .stream().map(RecetaMapper::toMedidaResponse).toList();
         return OrdenTrabajoMapper.envio(envio, detalleMedidas);
     }
+
 }
