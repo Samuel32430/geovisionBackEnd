@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Producto {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_producto")
@@ -61,6 +62,7 @@ public class Producto {
     @JoinColumn(name = "id_categoria")
     private Categoria categoria;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {

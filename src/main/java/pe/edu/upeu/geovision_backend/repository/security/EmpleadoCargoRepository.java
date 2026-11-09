@@ -12,16 +12,20 @@ import java.util.Optional;
 @Repository
 public interface EmpleadoCargoRepository extends JpaRepository<EmpleadoCargo, Long> {
 
+    // >>>> QUERIES
     List<EmpleadoCargo> findByEmpleadoId(Long idPersona);
 
     List<EmpleadoCargo> findByCargoId(Long idCargo);
 
     Optional<EmpleadoCargo> findByEmpleadoIdAndCargoId(Long idPersona, Long idCargo);
 
-    boolean existsByEmpleadoIdAndCargoId(Long idPersona, Long idCargo);
-
-    void deleteByEmpleadoId(Long idPersona);
-
     @Query("SELECT ec.cargo.nombre FROM EmpleadoCargo ec WHERE ec.empleado.id = :idPersona")
     List<String> findNombresCargosByEmpleadoId(@Param("idPersona") Long idPersona);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByEmpleadoIdAndCargoId(Long idPersona, Long idCargo);
+
+    // >>>> DELETIONS
+    void deleteByEmpleadoId(Long idPersona);
+
 }

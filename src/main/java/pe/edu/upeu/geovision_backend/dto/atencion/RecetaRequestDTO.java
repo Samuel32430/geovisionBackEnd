@@ -20,8 +20,6 @@ public record RecetaRequestDTO(
     @NotNull(message = "El indicador externo es obligatorio")
     @Min(value = 0, message = "El indicador externo debe ser 0 o 1")
     @Max(value = 1, message = "El indicador externo debe ser 0 o 1")
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.Zero.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.Zero.class)
     Integer esExterno,
     LocalDateTime fechaRegistro,
     @NotEmpty(message = "Debe registrar al menos una medida clínica")

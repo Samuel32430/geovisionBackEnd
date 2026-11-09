@@ -1,7 +1,8 @@
 package pe.edu.upeu.geovision_backend.service.ventas.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,25 +28,31 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class VentaHistorialServiceImpl implements VentaHistorialService {
 
+    // >>>> CONSTANTS
+    private static final Logger log = LoggerFactory.getLogger(VentaHistorialServiceImpl.class);
+
+    // >>>> DEPENDENCIES
     private final VentaRepository ventaRepository;
     private final PagoRepository pagoRepository;
     private final ProductoVendidoRepository productoVendidoRepository;
     private final ServicioVendidoRepository servicioVendidoRepository;
 
+    // >>>> QUERIES
     @Override
     @Transactional(readOnly = true)
     public Page<VentaHistorialResponseDTO> buscarHistorialVentas(
-            String termino,
-            EstadoVentaEnum estado,
-            LocalDateTime fechaInicio,
-            LocalDateTime fechaFin,
-            Pageable pageable) {
+        String termino,
+        EstadoVentaEnum estado,
+        LocalDateTime fechaInicio,
+        LocalDateTime fechaFin,
+        Pageable pageable
+    ) {
 
         log.info("Consultando historial de ventas: termino='{}', estado={}, fechaInicio={}, fechaFin={}",
-                termino, estado, fechaInicio, fechaFin);
+                termino, estado, fechaInicio, fechaFin
+        );
 
         String terminoLimpio = (termino != null && !termino.trim().isEmpty()) ? termino.trim() : null;
 
@@ -69,7 +76,8 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
             int cantidadItems = cantidadProductos + cantidadServicios + (venta.getReceta() != null ? 1 : 0);
 
             return VentaMapper.toHistorialResponseDTO(venta, totalPagado, saldoPendiente, cantidadItems);
-        });
+        }
+        );
     }
 
     @Override
@@ -91,4 +99,5 @@ public class VentaHistorialServiceImpl implements VentaHistorialService {
 
         return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
     }
+
 }

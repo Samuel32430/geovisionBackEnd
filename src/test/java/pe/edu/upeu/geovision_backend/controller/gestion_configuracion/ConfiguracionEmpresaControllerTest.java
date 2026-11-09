@@ -1,8 +1,10 @@
 package pe.edu.upeu.geovision_backend.controller.gestion_configuracion;
 
+import jakarta.validation.ConstraintViolationException;
+
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -26,7 +28,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @WithMockUser(authorities = "MANTENIMIENTO_GESTIONAR")
+@RequiredArgsConstructor
 class ConfiguracionEmpresaControllerTest {
+
+    // >>>> FIXTURES
     private static final String URL = "/api/v1/configuracion/empresa";
     private static final String BODY = """
             {"idConfiguracionEmpresa":999,"nombreLegal":" Óptica Geo Visión ",
@@ -35,18 +40,20 @@ class ConfiguracionEmpresaControllerTest {
              "correo":"contacto@example.com","logo":" /imagenes/logo.png "}
             """;
 
-    @Autowired MockMvc mvc;
-    @Autowired ConfiguracionEmpresaRepository repository;
-    @Autowired ConfiguracionEmpresaService service;
-    // H2 no implementa LOCK TABLE de Oracle. Su comportamiento no se simula como prueba Oracle.
+    private final MockMvc mvc;
+    private final ConfiguracionEmpresaRepository repository;
+    private final ConfiguracionEmpresaService service;
+    // Oracle table locks are not verified by this H2 test.
     @MockitoBean ConfiguracionEmpresaLock lock;
 
+    // >>>> SETUP
     @BeforeEach
     void limpiar() {
         repository.deleteAll();
         clearInvocations(lock);
     }
 
+    // >>>> TESTS
     @Test
     void registraConsultaActualizaSinCambiarIdentidad() throws Exception {
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(BODY))
@@ -62,7 +69,9 @@ class ConfiguracionEmpresaControllerTest {
                 .andExpect(jsonPath("$.id").value(id));
         mvc.perform(put(URL).contentType(MediaType.APPLICATION_JSON)
                         .content(BODY.replace("20123456789", "20987654321")
-                                .replace("contacto@example.com", "nuevo@example.com")))
+                                .replace("contacto@example.com", "nuevo@example.com")
+                        )
+        )
                 .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.ruc").value("20987654321"))
                 .andExpect(jsonPath("$.correo").value("nuevo@example.com"));
@@ -74,7 +83,8 @@ class ConfiguracionEmpresaControllerTest {
     void rechazaSegundaEmpresaAunqueTengaOtroRuc() throws Exception {
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(BODY)).andExpect(status().isCreated());
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON)
-                        .content(BODY.replace("20123456789", "20987654321")))
+                        .content(BODY.replace("20123456789", "20987654321"))
+        )
                 .andExpect(status().isConflict());
         assertThat(repository.count()).isEqualTo(1);
     }
@@ -94,7 +104,8 @@ class ConfiguracionEmpresaControllerTest {
                 BODY.replace(" Lima ", "x".repeat(201)),
                 BODY.replace(" Geo Visión ", "x".repeat(201)),
                 BODY.replace(" 999123456 ", "x".repeat(51)),
-                BODY.replace(" /imagenes/logo.png ", "x".repeat(201))}) {
+                BODY.replace(" /imagenes/logo.png ", "x".repeat(201))}
+        ) {
             mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(invalid)).andExpect(status().isBadRequest());
             mvc.perform(put(URL).contentType(MediaType.APPLICATION_JSON).content(invalid)).andExpect(status().isBadRequest());
         }
@@ -105,7 +116,7 @@ class ConfiguracionEmpresaControllerTest {
     @Test
     void validaTambienInvocacionesDirectasDelServicio() {
         assertThatThrownBy(() -> service.registrar(new ConfiguracionEmpresaDTO(null, "Empresa", null, "123", null, null, null, null)))
-                .isInstanceOf(jakarta.validation.ConstraintViolationException.class);
+                .isInstanceOf(ConstraintViolationException.class);
         verifyNoInteractions(lock);
     }
 
@@ -113,7 +124,8 @@ class ConfiguracionEmpresaControllerTest {
     void permiteOpcionalesNulosYActualizacionLosLimpia() throws Exception {
         mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(BODY)).andExpect(status().isCreated());
         mvc.perform(put(URL).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombreLegal\":\"Empresa\",\"ruc\":\"20123456789\",\"logo\":\" \"}"))
+                        .content("{\"nombreLegal\":\"Empresa\",\"ruc\":\"20123456789\",\"logo\":\" \"}")
+        )
                 .andExpect(status().isOk()).andExpect(jsonPath("$.nombreLegal").value("Empresa"));
         var empresa = repository.findAll().getFirst();
         assertThat(empresa.getLogo()).isNull();

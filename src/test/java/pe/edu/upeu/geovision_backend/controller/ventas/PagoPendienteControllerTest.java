@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class PagoPendienteControllerTest {
 
+    // >>>> FIXTURES
     private MockMvc mockMvc;
 
     private ObjectMapper objectMapper;
@@ -43,6 +44,7 @@ class PagoPendienteControllerTest {
     @InjectMocks
     private PagoPendienteController pagoPendienteController;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
@@ -53,6 +55,7 @@ class PagoPendienteControllerTest {
                 .build();
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("GET /api/v1/ventas/pagos-pendientes: Retorna 200 OK con lista de ventas adeudadas")
     void listarVentasConSaldoPendiente_retorna200OK() throws Exception {
@@ -61,7 +64,8 @@ class PagoPendienteControllerTest {
         when(pagoPendienteService.listarVentasConPagosPendientes(null)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/v1/ventas/pagos-pendientes")
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(100L))
                 .andExpect(jsonPath("$[0].saldoPendiente").value(200.00));
@@ -75,7 +79,8 @@ class PagoPendienteControllerTest {
         when(pagoPendienteService.obtenerSaldoPendientePorVenta(100L)).thenReturn(dto);
 
         mockMvc.perform(get("/api/v1/ventas/pagos-pendientes/100")
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(100L))
                 .andExpect(jsonPath("$.saldoPendiente").value(200.00));
@@ -92,7 +97,8 @@ class PagoPendienteControllerTest {
 
         mockMvc.perform(post("/api/v1/ventas/pagos-pendientes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10L))
                 .andExpect(jsonPath("$.monto").value(50.00));
@@ -105,7 +111,8 @@ class PagoPendienteControllerTest {
 
         mockMvc.perform(post("/api/v1/ventas/pagos-pendientes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+        )
                 .andExpect(status().isBadRequest());
     }
 }

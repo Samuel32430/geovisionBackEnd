@@ -9,23 +9,22 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * Manejador para respuestas 403 Forbidden cuando el usuario autenticado no tiene permisos suficientes.
- */
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
     @Override
     public void handle(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AccessDeniedException accessDeniedException) throws IOException {
+        HttpServletRequest request,
+        HttpServletResponse response,
+        AccessDeniedException accessDeniedException
+    ) throws IOException {
 
         RespuestaErrorSeguridad.escribir(
                 request,
                 response,
                 HttpStatus.FORBIDDEN.value(),
                 "Forbidden",
-                "No tiene permisos para realizar esta operación");
+                "No tiene permisos para realizar esta operación"
+        );
     }
 }

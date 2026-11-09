@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.controller.inventario;
 
+import org.springframework.data.domain.PageRequest;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class InventarioStockControllerTest {
 
+    // >>>> FIXTURES
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
@@ -55,6 +58,7 @@ class InventarioStockControllerTest {
     private MovimientoStockResponseDTO movimientoResponse;
     private ProductoStockResponseDTO stockResponse;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
@@ -70,6 +74,7 @@ class InventarioStockControllerTest {
         stockResponse = new ProductoStockResponseDTO(1L, "MONT-001", "Montura Ray-Ban", 15, 5, new BigDecimal("350.00"), true, 1, null);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("GET /api/v1/inventario/stock/{idProducto}: Retorna 200 OK con stock actual")
     void consultarStockActual_retorna200() throws Exception {
@@ -77,7 +82,8 @@ class InventarioStockControllerTest {
 
         mockMvc.perform(get("/api/v1/inventario/stock/1")
                         .param("umbralStockMinimo", "5")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.stockActual").value(15))
@@ -94,7 +100,8 @@ class InventarioStockControllerTest {
 
         mockMvc.perform(post("/api/v1/inventario/entradas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(100L))
                 .andExpect(jsonPath("$.stockPosterior").value(15));
@@ -112,7 +119,8 @@ class InventarioStockControllerTest {
 
         mockMvc.perform(post("/api/v1/inventario/ajustes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(101L))
                 .andExpect(jsonPath("$.stockPosterior").value(13));
@@ -127,7 +135,8 @@ class InventarioStockControllerTest {
 
         mockMvc.perform(get("/api/v1/inventario/alertas/bajo-stock")
                         .param("umbral", "5")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].codigo").value("MONT-002"))
                 .andExpect(jsonPath("$[0].stock").value(1));
@@ -137,10 +146,11 @@ class InventarioStockControllerTest {
     @DisplayName("GET /api/v1/inventario/movimientos/{idProducto}: Retorna 200 OK con Kardex paginado")
     void listarMovimientosKardex_retorna200() throws Exception {
         when(inventarioStockService.listarMovimientosKardex(eq(1L), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(movimientoResponse), org.springframework.data.domain.PageRequest.of(0, 10), 1));
+                .thenReturn(new PageImpl<>(List.of(movimientoResponse), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/v1/inventario/movimientos/1")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].codigoProducto").value("MONT-001"))
                 .andExpect(jsonPath("$.content[0].stockPosterior").value(15));

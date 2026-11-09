@@ -7,9 +7,11 @@ import java.util.List;
 
 public interface PermisoService {
 
+    // >>>> QUERIES
     List<PermisoDTO> listar();
 
     List<PermisoDTO> listarPorModulo(ModuloEnum modulo);
 
     PermisoDTO obtenerPorId(Long id);
+
 }

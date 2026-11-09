@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.mapper.ventas;
 
+import pe.edu.upeu.geovision_backend.entity.ventas.Pago;
+
 import pe.edu.upeu.geovision_backend.dto.ventas.ProductoVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.ServicioVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.VentaHistorialResponseDTO;
@@ -24,11 +26,12 @@ public final class VentaMapper {
     private VentaMapper() {}
 
     public static Venta toEntity(
-            VentaRegistroRequestDTO dto,
-            Empleado empleado,
-            Paciente paciente,
-            Receta receta,
-            EstadoVentaEnum estado) {
+        VentaRegistroRequestDTO dto,
+        Empleado empleado,
+        Paciente paciente,
+        Receta receta,
+        EstadoVentaEnum estado
+    ) {
 
         if (dto == null) {
             return null;
@@ -38,12 +41,13 @@ public final class VentaMapper {
     }
 
     public static VentaResponseDTO toResponseDTO(
-            Venta venta,
-            BigDecimal totalPagado,
-            BigDecimal saldoPendiente,
-            List<ProductoVendido> productos,
-            List<ServicioVendido> servicios,
-            List<pe.edu.upeu.geovision_backend.entity.ventas.Pago> pagos) {
+        Venta venta,
+        BigDecimal totalPagado,
+        BigDecimal saldoPendiente,
+        List<ProductoVendido> productos,
+        List<ServicioVendido> servicios,
+        List<Pago> pagos
+    ) {
 
         if (venta == null) {
             return null;
@@ -77,10 +81,11 @@ public final class VentaMapper {
     }
 
     public static VentaHistorialResponseDTO toHistorialResponseDTO(
-            Venta venta,
-            BigDecimal totalPagado,
-            BigDecimal saldoPendiente,
-            Integer cantidadItems) {
+        Venta venta,
+        BigDecimal totalPagado,
+        BigDecimal saldoPendiente,
+        Integer cantidadItems
+    ) {
 
         if (venta == null) {
             return null;

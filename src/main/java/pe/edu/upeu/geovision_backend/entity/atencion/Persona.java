@@ -1,9 +1,7 @@
 package pe.edu.upeu.geovision_backend.entity.atencion;
 
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -26,6 +24,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class Persona {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_persona")
@@ -43,7 +42,7 @@ public class Persona {
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
 
-    @Convert(converter = SexoConverter.class)
+    @Convert(converter = SexoEnum.PersistenceConverter.class)
     @Column(name = "sexo")
     private SexoEnum sexo;
 
@@ -53,10 +52,11 @@ public class Persona {
     @Column(name = "numero_documento", nullable = false, unique = true, length = 50)
     private String numeroDocumento;
 
-    @Convert(converter = TipoDocumentoConverter.class)
+    @Convert(converter = TipoDocumentoEnum.PersistenceConverter.class)
     @Column(name = "tipo_documento", nullable = false)
     private TipoDocumentoEnum tipoDocumento;
 
+    // >>>> OPERATIONS
     public Integer getSexoCodigo() {
         return this.sexo != null ? this.sexo.getCodigo() : null;
     }
@@ -73,29 +73,4 @@ public class Persona {
         this.tipoDocumento = TipoDocumentoEnum.fromCodigo(codigo);
     }
 
-    @Converter
-    public static class SexoConverter implements AttributeConverter<SexoEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(SexoEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public SexoEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? SexoEnum.fromCodigo(dbData) : null;
-        }
-    }
-
-    @Converter
-    public static class TipoDocumentoConverter implements AttributeConverter<TipoDocumentoEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(TipoDocumentoEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public TipoDocumentoEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? TipoDocumentoEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

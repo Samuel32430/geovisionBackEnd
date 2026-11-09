@@ -1,7 +1,8 @@
 package pe.edu.upeu.geovision_backend.service.inventario.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,23 +24,29 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
 
+    // >>>> CONSTANTS
+    private static final Logger log = LoggerFactory.getLogger(ProductoCatalogoServiceImpl.class);
+
+    // >>>> DEPENDENCIES
     private final ProductoRepository productoRepository;
     private final MonturaRepository monturaRepository;
     private final CategoriaRepository categoriaRepository;
 
+    // >>>> QUERIES
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoResponseDTO> listarProductos(
-            String termino,
-            Long idCategoria,
-            Boolean estado,
-            Pageable pageable) {
+        String termino,
+        Long idCategoria,
+        Boolean estado,
+        Pageable pageable
+    ) {
 
         log.debug("Consultando productos con filtros: termino='{}', categoria={}, estado={}",
-                termino, idCategoria, estado);
+                termino, idCategoria, estado
+        );
 
         String terminoFiltrado = (termino != null && !termino.trim().isEmpty()) ? termino.trim() : null;
 
@@ -74,6 +81,28 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<ProductoResponseDTO> listarDisponiblesParaVenta(Pageable pageable) {
+        log.debug("Listando productos disponibles para venta (activos y con stock > 0)");
+        return productoRepository.findByActivoAndStockGreaterThan(true, 0, pageable)
+                .map(this::construirResponseDTO);
+    }
+
+    // >>>> AVAILABILITY CHECKS
+    @Override
+    @Transactional(readOnly = true)
+    public boolean validarDisponibilidad(Long idProducto, Integer cantidad) {
+        if (idProducto == null || idProducto <= 0 || cantidad == null || cantidad <= 0) {
+            return false;
+        }
+
+        return productoRepository.findById(idProducto)
+                .map(p -> Boolean.TRUE.equals(p.getActivo()) && p.getStock() != null && p.getStock() >= cantidad)
+                .orElse(false);
+    }
+
+    // >>>> CREATION
+    @Override
     @Transactional
     public ProductoResponseDTO registrarProducto(ProductoRequestDTO request) {
         log.info("Registrando nuevo producto con código: {}", request.codigo());
@@ -103,6 +132,7 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         return ProductoMapper.toResponseDTO(productoGuardado, monturaGuardada);
     }
 
+    // >>>> UPDATES
     @Override
     @Transactional
     public ProductoResponseDTO actualizarProducto(Long id, ProductoRequestDTO request) {
@@ -186,28 +216,10 @@ public class ProductoCatalogoServiceImpl implements ProductoCatalogoService {
         return construirResponseDTO(guardado);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<ProductoResponseDTO> listarDisponiblesParaVenta(Pageable pageable) {
-        log.debug("Listando productos disponibles para venta (activos y con stock > 0)");
-        return productoRepository.findByActivoAndStockGreaterThan(true, 0, pageable)
-                .map(this::construirResponseDTO);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean validarDisponibilidad(Long idProducto, Integer cantidad) {
-        if (idProducto == null || idProducto <= 0 || cantidad == null || cantidad <= 0) {
-            return false;
-        }
-
-        return productoRepository.findById(idProducto)
-                .map(p -> Boolean.TRUE.equals(p.getActivo()) && p.getStock() != null && p.getStock() >= cantidad)
-                .orElse(false);
-    }
-
+    // >>>> HELPERS
     private ProductoResponseDTO construirResponseDTO(Producto producto) {
         Montura montura = monturaRepository.findById(producto.getId()).orElse(null);
         return ProductoMapper.toResponseDTO(producto, montura);
     }
+
 }

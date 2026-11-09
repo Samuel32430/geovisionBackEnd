@@ -15,8 +15,6 @@ public record NotificacionPacienteDTO(
     @NotBlank(message = "El mensaje a enviar es obligatorio")
     @Size(max = 500, message = "El mensaje no debe superar los 500 caracteres")
     String mensaje,
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.Whatsapp.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.Whatsapp.class)
     String canal,
     Boolean exitoso,
     LocalDateTime fechaEnvio

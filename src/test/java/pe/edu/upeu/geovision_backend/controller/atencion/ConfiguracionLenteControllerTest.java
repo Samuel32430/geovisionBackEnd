@@ -1,8 +1,10 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import jakarta.persistence.EntityManager;
+
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -65,25 +67,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @WithMockUser(authorities = {"RECETAS_REGISTRAR", "PACIENTES_LEER"})
+@RequiredArgsConstructor
 class ConfiguracionLenteControllerTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired ObjectMapper json;
-    @Autowired JdbcTemplate jdbc;
-    @Autowired jakarta.persistence.EntityManager em;
-    @Autowired RecetaService service;
-    @Autowired RecetaRepository prescriptions;
-    @Autowired PacienteRepository patients;
-    @Autowired EmpleadoRepository employees;
-    @Autowired PersonaRepository people;
-    @Autowired MedidaRepository measures;
-    @Autowired MedidaOjoRepository eyes;
-    @Autowired MaterialCristalRepository materials;
-    @Autowired TratamientoCristalRepository treatments;
-    @Autowired MonturaRepository frames;
-    @Autowired ProductoRepository products;
+    // >>>> FIXTURES
+    private final MockMvc mvc;
+    private final ObjectMapper json;
+    private final JdbcTemplate jdbc;
+    private final EntityManager em;
+    private final RecetaService service;
+    private final RecetaRepository prescriptions;
+    private final PacienteRepository patients;
+    private final EmpleadoRepository employees;
+    private final PersonaRepository people;
+    private final MedidaRepository measures;
+    private final MedidaOjoRepository eyes;
+    private final MaterialCristalRepository materials;
+    private final TratamientoCristalRepository treatments;
+    private final MonturaRepository frames;
+    private final ProductoRepository products;
     @MockitoSpyBean LenteRepository lenses;
-    @Autowired VentaRepository sales;
+    private final VentaRepository sales;
     Paciente patient;
     Empleado employee;
     Receta recipe;
@@ -92,6 +96,7 @@ class ConfiguracionLenteControllerTest {
     Montura frame;
     List<Medida> clinical;
 
+    // >>>> HELPERS
     Persona person(String name) {
         return people.saveAndFlush(new Persona(null, name, "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
@@ -107,6 +112,7 @@ class ConfiguracionLenteControllerTest {
         return measures.saveAndFlush(new Medida(null, type, new BigDecimal("62.50"), null, null, recipe, right, left, null));
     }
 
+    // >>>> SETUP
     @BeforeEach
     void fixture() {
         patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
@@ -118,20 +124,24 @@ class ConfiguracionLenteControllerTest {
         frame = frame(5, true);
     }
 
+    // >>>> HELPERS
     LenteRequestDTO request() {
         return new LenteRequestDTO(recipe.getId(), material.getId(), null, new BigDecimal("380.00"), List.of(treatment.getId()), null);
     }
 
     void expectPost(Long recipeId, LenteRequestDTO request, int status) throws Exception {
         mvc.perform(post("/api/v1/recetas/{id}/lentes", recipeId).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request))).andExpect(status().is(status));
+                .content(json.writeValueAsString(request))
+        ).andExpect(status().is(status));
     }
 
+    // >>>> TESTS
     @Test
     void monturaPropiaPersisteNullYAsociaTodasLasMedidasSinCambiarDatosClinicos() throws Exception {
         long eyeCount = eyes.count();
         String response = mvc.perform(post("/api/v1/recetas/{id}/lentes", recipe.getId())
-                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request())))
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request()))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idReceta").value(recipe.getId()))
                 .andExpect(jsonPath("$.idProductoMontura").doesNotExist())
@@ -158,7 +168,8 @@ class ConfiguracionLenteControllerTest {
         request = new LenteRequestDTO(request.idReceta(), request.idMaterialCristal(), frame.getId(), request.subTotal(), request.tratamientosCristalIds(), request.medidasIds());
         request = new LenteRequestDTO(request.idReceta(), request.idMaterialCristal(), request.idProducto(), request.subTotal(), request.tratamientosCristalIds(), List.of(clinical.getLast().getId()));
         mvc.perform(post("/api/v1/recetas/{id}/lentes", recipe.getId()).contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(request)))
+                        .content(json.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idProductoMontura").value(frame.getId()))
                 .andExpect(jsonPath("$.codigoMontura").value(frame.getProducto().getCodigo()))
@@ -166,7 +177,7 @@ class ConfiguracionLenteControllerTest {
                 .andExpect(jsonPath("$.medidas.length()").value(1))
                 .andExpect(jsonPath("$.medidas[0].tipoMedida").value("CERCA"));
         assertThat(products.findById(frame.getId()).orElseThrow().getStock()).isEqualTo(5);
-        // La receta admite otro lente antes de estar vinculada a una venta.
+
         request = new LenteRequestDTO(request.idReceta(), request.idMaterialCristal(), request.idProducto(), request.subTotal(), request.tratamientosCristalIds(), List.of());
         request = new LenteRequestDTO(request.idReceta(), request.idMaterialCristal(), request.idProducto(), request.subTotal(), null, request.medidasIds());
         expectPost(recipe.getId(), request, 201);
@@ -248,7 +259,8 @@ class ConfiguracionLenteControllerTest {
         assertThat(lenses.findByRecetaIdOrderByIdAsc(recipe.getId()))
                 .extracting(Lente::getId).containsExactly(first.id());
         mvc.perform(put("/api/v1/recetas/{id}/lentes", recipe.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request()))).andExpect(status().isMethodNotAllowed());
+                .content(json.writeValueAsString(request()))
+        ).andExpect(status().isMethodNotAllowed());
         mvc.perform(delete("/api/v1/recetas/{id}/lentes", recipe.getId()))
                 .andExpect(status().isMethodNotAllowed());
     }
@@ -343,7 +355,8 @@ class ConfiguracionLenteControllerTest {
             assertThat(contarVinculosMedida()).isEqualTo(beforeLinks + 2);
             assertThat(contarVinculosTratamiento()).isEqualTo(beforeTreatments + 1);
             throw new DataAccessResourceFailureException("Fallo simulado en tratamientos");
-        }).when(lenses).saveAndFlush(any());
+        }
+        ).when(lenses).saveAndFlush(any());
         try {
             assertThatThrownBy(() -> service.configurarLente(recipe.getId(), request()))
                     .isInstanceOf(DataAccessResourceFailureException.class);
@@ -355,7 +368,10 @@ class ConfiguracionLenteControllerTest {
         } finally {
             measures.deleteAllById(clinical.stream().map(Medida::getId).toList());
             eyes.deleteAllById(clinical.stream().flatMap(m -> List.of(m.getMedidaOjoDerecha().getId(),
-                    m.getMedidaOjoIzquierda().getId()).stream()).toList());
+                    m.getMedidaOjoIzquierda().getId()
+                    ).stream()
+                ).toList()
+            );
             prescriptions.deleteById(recipe.getId());
             patients.deleteById(patient.getId());
             employees.deleteById(employee.getId());
@@ -367,6 +383,7 @@ class ConfiguracionLenteControllerTest {
         }
     }
 
+    // >>>> HELPERS
     private long contarVinculosTratamiento() {
         return jdbc.queryForObject("SELECT COUNT(*) FROM LENTE_TRATAMIENTO_CRISTAL", Long.class);
     }

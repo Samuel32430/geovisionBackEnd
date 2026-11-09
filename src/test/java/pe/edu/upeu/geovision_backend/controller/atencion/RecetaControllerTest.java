@@ -1,12 +1,11 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -56,27 +55,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @WithMockUser(username = "optometra.prueba", authorities = {"EXAMENES_REGISTRAR", "RECETAS_REGISTRAR"})
+@RequiredArgsConstructor
 class RecetaControllerTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired ObjectMapper json;
-    @Autowired RecetaService service;
-    @Autowired RecetaRepository prescriptions;
-    @Autowired MedidaRepository measures;
+    // >>>> FIXTURES
+    private final MockMvc mvc;
+    private final ObjectMapper json;
+    private final RecetaService service;
+    private final RecetaRepository prescriptions;
+    private final MedidaRepository measures;
     @MockitoSpyBean MedidaOjoRepository eyes;
-    @Autowired PacienteRepository patients;
-    @Autowired PersonaRepository people;
-    @Autowired UsuarioRepository users;
-    @Autowired EmpleadoRepository employees;
-    @PersistenceContext EntityManager em;
+    private final PacienteRepository patients;
+    private final PersonaRepository people;
+    private final UsuarioRepository users;
+    private final EmpleadoRepository employees;
+    private final EntityManager em;
     Usuario actor;
     Empleado employee;
     Paciente patient;
 
+    // >>>> HELPERS
     Persona person(String name) {
         return people.saveAndFlush(new Persona(null, name, "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
+    // >>>> SETUP
     @BeforeEach
     void fixture() {
         Persona professional = person("Profesional");
@@ -85,6 +88,7 @@ class RecetaControllerTest {
         patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
     }
 
+    // >>>> HELPERS
     MedidaRequestDTO measure(TipoMedidaEnum type) {
         return new MedidaRequestDTO(type, new BigDecimal("62.50"), new BigDecimal("0.30"), "Material recomendado: policarbonato", null, new MedidaOjoDTO(null, "20/20", new BigDecimal("-1.25"), new BigDecimal("-0.50"), 0, new BigDecimal("1.00")), new MedidaOjoDTO(null, "20/25", new BigDecimal("2.50"), BigDecimal.ZERO, 180, null), null);
     }
@@ -95,9 +99,11 @@ class RecetaControllerTest {
 
     void expectPost(String endpoint, RecetaRequestDTO request, int status) throws Exception {
         mvc.perform(post("/api/v1/recetas/" + endpoint).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request))).andExpect(status().is(status));
+                .content(json.writeValueAsString(request))
+        ).andExpect(status().is(status));
     }
 
+    // >>>> TESTS
     @Test
     void examenPersisteTresTiposAmbosOjosYRespuestaCompleta() throws Exception {
         long beforeEyes = eyes.count();
@@ -105,7 +111,8 @@ class RecetaControllerTest {
         request.medidas().add(measure(TipoMedidaEnum.MEDIO));
         request.medidas().add(measure(TipoMedidaEnum.CERCA));
         String response = mvc.perform(post("/api/v1/recetas/examen-visual").contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(request)))
+                        .content(json.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.esExterno").value(0))
                 .andExpect(jsonPath("$.esRecetaExterna").value(false))
@@ -127,7 +134,8 @@ class RecetaControllerTest {
             assertThat(measure.getMedidaOjoDerecha().getId())
                     .isNotEqualTo(measure.getMedidaOjoIzquierda().getId());
             assertThat(measure.getReceta().getPaciente().getId()).isEqualTo(patient.getId());
-        });
+        }
+        );
     }
 
     @Test
@@ -135,7 +143,8 @@ class RecetaControllerTest {
         var request = request();
         request = new RecetaRequestDTO(request.idPaciente(), request.idEmpleado(), request.esExterno(), LocalDateTime.of(2026, 10, 30, 10, 15, 0, 123456789), request.medidas());
         mvc.perform(post("/api/v1/recetas/externa").contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(request)))
+                        .content(json.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.esExterno").value(1))
                 .andExpect(jsonPath("$.esRecetaExterna").value(true))
                 .andExpect(jsonPath("$.fechaRegistro").value("2026-10-30T10:15:00"));
@@ -155,7 +164,8 @@ class RecetaControllerTest {
             }
             var measure = request.medidas().getFirst();
             request.medidas().set(0, field < 3 ? new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), eye, measure.ojoIzquierdo(), measure.idEnvioLaboratorio())
-                    : new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), measure.ojoDerecho(), eye, measure.idEnvioLaboratorio()));
+                    : new MedidaRequestDTO(measure.tipoMedida(), measure.distanciaPupilar(), measure.prisma(), measure.observaciones(), measure.idReceta(), measure.ojoDerecho(), eye, measure.idEnvioLaboratorio())
+            );
             expectPost("examen-visual", request, 409);
         }
         assertThat(prescriptions.count()).isEqualTo(count);
@@ -181,10 +191,12 @@ class RecetaControllerTest {
         request.medidas().add(null);
         expectPost("examen-visual", request, 400);
         mvc.perform(post("/api/v1/recetas/examen-visual").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request()).replace("LEJOS", "INVALIDO")))
+                .content(json.writeValueAsString(request()).replace("LEJOS", "INVALIDO"))
+        )
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/api/v1/recetas/examen-visual").contentType(MediaType.APPLICATION_JSON)
-                .content("{")).andExpect(status().isBadRequest());
+                .content("{")
+        ).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -270,12 +282,13 @@ class RecetaControllerTest {
             if (writes.incrementAndGet() == failingWrite) {
                 throw new DataAccessResourceFailureException("Fallo simulado al guardar un ojo");
             }
-            // Inserciones SQL reales dentro de la transacción del servicio antes del fallo simulado.
+
             MedidaOjo eye = invocation.getArgument(0);
             em.persist(eye);
             em.flush();
             return eye;
-        }).when(eyes).saveAndFlush(any(MedidaOjo.class));
+        }
+        ).when(eyes).saveAndFlush(any(MedidaOjo.class));
         try {
             var request = request();
             request.medidas().add(measure(TipoMedidaEnum.CERCA));

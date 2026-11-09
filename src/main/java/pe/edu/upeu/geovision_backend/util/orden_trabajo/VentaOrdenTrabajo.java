@@ -9,11 +9,14 @@ import pe.edu.upeu.geovision_backend.repository.ventas.VentaRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.RecetaRepository;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 
-/** El esquema original relaciona la OT con la venta exclusivamente a traves de su receta. */
 @Component @RequiredArgsConstructor
 public class VentaOrdenTrabajo {
+
+    // >>>> DEPENDENCIES
     private final VentaRepository ventas;
     private final RecetaRepository recetas;
+
+    // >>>> OPERATIONS
     public Optional<Venta> consultar(Long idReceta) {
         var candidatas=ventas.findByRecetaId(idReceta);
         return candidatas.size()==1 ? Optional.of(candidatas.getFirst()) : Optional.empty();

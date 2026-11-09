@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class EnvioLaboratorio {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_envio_laboratorio")
@@ -63,6 +64,7 @@ public class EnvioLaboratorio {
     @JoinColumn(name = "id_laboratorio", nullable = false)
     private Laboratorio laboratorio;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaEnvio == null) {

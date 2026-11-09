@@ -12,13 +12,17 @@ import java.util.List;
 
 public interface InventarioStockService {
 
+    // >>>> QUERIES
     ProductoStockResponseDTO consultarStockActual(Long idProducto, Integer umbralStockMinimo);
-
-    MovimientoStockResponseDTO registrarEntradaStock(EntradaStockRequestDTO request, String username);
-
-    MovimientoStockResponseDTO registrarAjusteStock(AjusteStockRequestDTO request, String username);
 
     Page<MovimientoStockResponseDTO> listarMovimientosKardex(Long idProducto, Pageable pageable);
 
     List<ProductoResponseDTO> listarAlertasBajoStock(Integer umbral);
+
+    // >>>> STOCK ENTRIES
+    MovimientoStockResponseDTO registrarEntradaStock(EntradaStockRequestDTO request, String username);
+
+    // >>>> STOCK ADJUSTMENTS
+    MovimientoStockResponseDTO registrarAjusteStock(AjusteStockRequestDTO request, String username);
+
 }

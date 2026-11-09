@@ -21,15 +21,12 @@ import pe.edu.upeu.geovision_backend.security.service.JwtService;
 import pe.edu.upeu.geovision_backend.security.RestAccessDeniedHandler;
 import pe.edu.upeu.geovision_backend.security.RestAuthenticationEntryPoint;
 
-/**
- * Configuración central de Spring Security.
- * Arquitectura sin estado (Stateless) mediante tokens JWT y control CORS integrado.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    // >>>> CONSTANTS
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/login",
             "/api/v1/auth/recuperar-password",
@@ -42,33 +39,36 @@ public class SecurityConfig {
             "/error"
     };
 
+    // >>>> BEANS
     @Bean
     public SecurityFilterChain filterChain(
-            HttpSecurity http,
-            JwtService jwtService,
-            UserDetailsService userDetailsService,
-            CorsConfigurationSource corsConfigurationSource,
-            RestAuthenticationEntryPoint authenticationEntryPoint,
-            RestAccessDeniedHandler accessDeniedHandler) throws Exception {
-
-        JwtAuthenticationFilter jwtFilter =
-                new JwtAuthenticationFilter(jwtService, userDetailsService);
+        HttpSecurity http,
+        JwtService jwtService,
+        UserDetailsService userDetailsService,
+        CorsConfigurationSource corsConfigurationSource,
+        RestAuthenticationEntryPoint authenticationEntryPoint,
+        RestAccessDeniedHandler accessDeniedHandler
+    ) throws Exception {
+        var jwtFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(sesion ->
-                        sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(RUTAS_PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/usuarios/**", "/api/v1/roles/**", "/api/v1/permisos/**")
                         .hasAnyAuthority("SEGURIDAD_ADMINISTRAR", "ROLE_ADMINISTRADOR", "ROLE_ADMIN")
-                        .anyRequest().authenticated())
+                        .anyRequest().authenticated()
+                )
                 .exceptionHandling(errores -> errores
                         .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler))
+                        .accessDeniedHandler(accessDeniedHandler)
+                )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -81,7 +81,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration) throws Exception {
+        AuthenticationConfiguration configuration
+    ) throws Exception {
         return configuration.getAuthenticationManager();
     }
 }

@@ -10,21 +10,15 @@ import java.time.LocalDateTime;
 
 public interface VentaHistorialService {
 
-    /**
-     * CUS08: Consultar Historial de Ventas
-     * Búsqueda paginada con filtros dinámicos por término (comprobante, DNI o cliente),
-     * estado de venta y rango de fechas.
-     */
+    // >>>> QUERIES
     Page<VentaHistorialResponseDTO> buscarHistorialVentas(
-            String termino,
-            EstadoVentaEnum estado,
-            LocalDateTime fechaInicio,
-            LocalDateTime fechaFin,
-            Pageable pageable
+        String termino,
+        EstadoVentaEnum estado,
+        LocalDateTime fechaInicio,
+        LocalDateTime fechaFin,
+        Pageable pageable
     );
 
-    /**
-     * CUS08: Detalle exhaustivo de la venta para modal informativo.
-     */
     VentaResponseDTO obtenerDetalleModalVenta(Long idVenta);
+
 }

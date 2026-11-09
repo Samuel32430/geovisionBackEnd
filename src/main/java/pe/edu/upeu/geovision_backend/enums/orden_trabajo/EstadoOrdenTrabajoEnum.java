@@ -1,10 +1,11 @@
 package pe.edu.upeu.geovision_backend.enums.orden_trabajo;
 
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Converter;
+
+import jakarta.persistence.AttributeConverter;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public enum EstadoOrdenTrabajoEnum {
     PENDIENTE(1, "Pendiente de Procesar"),
     ENVIADO_LABORATORIO(2, "Enviado a Laboratorio"),
@@ -18,6 +19,12 @@ public enum EstadoOrdenTrabajoEnum {
     private final Integer codigo;
     private final String descripcion;
 
+    // >>>> CONSTRUCTOR
+    EstadoOrdenTrabajoEnum(Integer codigo, String descripcion) {
+        this.codigo = codigo;
+        this.descripcion = descripcion;
+    }
+
     public static EstadoOrdenTrabajoEnum fromCodigo(Integer codigo) {
         if (codigo == null) return null;
         for (EstadoOrdenTrabajoEnum e : values()) {
@@ -26,5 +33,19 @@ public enum EstadoOrdenTrabajoEnum {
             }
         }
         throw new IllegalArgumentException("Código de estado de orden de trabajo no válido: " + codigo);
+    }
+
+    // >>>> CONVERTER
+    @Converter
+    public static class PersistenceConverter implements AttributeConverter<EstadoOrdenTrabajoEnum, Integer> {
+        @Override
+        public Integer convertToDatabaseColumn(EstadoOrdenTrabajoEnum attribute) {
+            return attribute != null ? attribute.getCodigo() : null;
+        }
+
+        @Override
+        public EstadoOrdenTrabajoEnum convertToEntityAttribute(Integer dbData) {
+            return dbData != null ? EstadoOrdenTrabajoEnum.fromCodigo(dbData) : null;
+        }
     }
 }

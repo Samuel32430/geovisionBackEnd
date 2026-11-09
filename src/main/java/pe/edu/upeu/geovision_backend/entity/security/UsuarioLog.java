@@ -1,9 +1,7 @@
 package pe.edu.upeu.geovision_backend.entity.security;
 
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -29,6 +27,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UsuarioLog {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario_log")
@@ -37,7 +36,7 @@ public class UsuarioLog {
     @Column(name = "fecha_log", nullable = false)
     private LocalDateTime fechaLog;
 
-    @Convert(converter = TipoLogConverter.class)
+    @Convert(converter = TipoLogEnum.PersistenceConverter.class)
     @Column(name = "tipo_log")
     private TipoLogEnum tipoLog;
 
@@ -45,6 +44,7 @@ public class UsuarioLog {
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaLog == null) {
@@ -52,6 +52,7 @@ public class UsuarioLog {
         }
     }
 
+    // >>>> OPERATIONS
     public Integer getTipoLogCodigo() {
         return this.tipoLog != null ? this.tipoLog.getCodigo() : null;
     }
@@ -60,16 +61,4 @@ public class UsuarioLog {
         this.tipoLog = TipoLogEnum.fromCodigo(codigo);
     }
 
-    @Converter
-    public static class TipoLogConverter implements AttributeConverter<TipoLogEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(TipoLogEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public TipoLogEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? TipoLogEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

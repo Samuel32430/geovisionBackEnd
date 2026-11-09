@@ -12,13 +12,15 @@ import java.util.List;
 @Repository
 public interface MovimientoStockLogRepository extends JpaRepository<MovimientoStockLog, Long> {
 
+    // >>>> QUERIES
     Page<MovimientoStockLog> findByProductoIdOrderByFechaRegistroDesc(Long idProducto, Pageable pageable);
 
     List<MovimientoStockLog> findByProductoIdOrderByFechaRegistroDesc(Long idProducto);
 
     Page<MovimientoStockLog> findByFechaRegistroBetweenOrderByFechaRegistroDesc(
-            LocalDateTime desde,
-            LocalDateTime hasta,
-            Pageable pageable
+        LocalDateTime desde,
+        LocalDateTime hasta,
+        Pageable pageable
     );
+
 }

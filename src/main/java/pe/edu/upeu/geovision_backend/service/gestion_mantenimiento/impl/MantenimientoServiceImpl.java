@@ -1,5 +1,8 @@
 package pe.edu.upeu.geovision_backend.service.gestion_mantenimiento.impl;
 
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,8 +44,9 @@ import java.util.function.Function;
 @Service
 @Validated
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MantenimientoServiceImpl implements MantenimientoService {
+
+    // >>>> DEPENDENCIES
     private final CategoriaRepository categoriaRepository;
     private final MaterialCristalRepository materialCristalRepository;
     private final TratamientoCristalRepository tratamientoCristalRepository;
@@ -54,16 +58,68 @@ public class MantenimientoServiceImpl implements MantenimientoService {
 
     private final MantenimientoLock lock;
 
+    // >>>> QUERIES
     @Override
+    @Transactional(readOnly = true)
     public Page<CategoriaDTO> listarCategoria(String termino, Integer estado, Pageable pageable) {
         return listar(categoriaRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CategoriaDTO obtenerCategoria(Long id) {
         return MantenimientoMapper.toDTO(obtener(categoriaRepository, id, "Categoria"));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MaterialCristalDTO> listarMaterialCristal(String termino, Pageable pageable) {
+        return listar(materialCristalRepository, termino, null, pageable, MantenimientoMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MaterialCristalDTO obtenerMaterialCristal(Long id) {
+        return MantenimientoMapper.toDTO(obtener(materialCristalRepository, id, "MaterialCristal"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TratamientoCristalDTO> listarTratamientoCristal(String termino, Pageable pageable) {
+        return listar(tratamientoCristalRepository, termino, null, pageable, MantenimientoMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TratamientoCristalDTO obtenerTratamientoCristal(Long id) {
+        return MantenimientoMapper.toDTO(obtener(tratamientoCristalRepository, id, "TratamientoCristal"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ServicioDTO> listarServicio(String termino, Integer estado, Pageable pageable) {
+        return listar(servicioRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ServicioDTO obtenerServicio(Long id) {
+        return MantenimientoMapper.toDTO(obtener(servicioRepository, id, "Servicio"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LaboratorioDTO> listarLaboratorio(String termino, Integer estado, Pageable pageable) {
+        return listar(laboratorioRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LaboratorioDTO obtenerLaboratorio(Long id) {
+        return MantenimientoMapper.toDTO(obtener(laboratorioRepository, id, "Laboratorio"));
+    }
+
+    // >>>> CREATION
     @Override
     @Transactional
     public CategoriaDTO registrarCategoria(CategoriaDTO request) {
@@ -72,27 +128,6 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         Categoria entity = new Categoria(null, null, null, true, null);
         MantenimientoMapper.actualizar(request, entity);
         return MantenimientoMapper.toDTO(categoriaRepository.saveAndFlush(entity));
-    }
-
-    @Override
-    @Transactional
-    public CategoriaDTO actualizarCategoria(Long id, CategoriaDTO request) {
-        lock.bloquear(MantenimientoLock.Catalogo.CATEGORIA, Integer.valueOf(0).equals(request.estado()));
-        Categoria entity = obtener(categoriaRepository, id, "Categoria");
-        validarNombre(categoriaRepository, request.nombre(), "id", id, "Categoria");
-        if (Integer.valueOf(0).equals(request.estado())) validarDependenciasCategoria(id);
-        MantenimientoMapper.actualizar(request, entity);
-        return MantenimientoMapper.toDTO(categoriaRepository.saveAndFlush(entity));
-    }
-
-    @Override
-    public Page<MaterialCristalDTO> listarMaterialCristal(String termino, Pageable pageable) {
-        return listar(materialCristalRepository, termino, null, pageable, MantenimientoMapper::toDTO);
-    }
-
-    @Override
-    public MaterialCristalDTO obtenerMaterialCristal(Long id) {
-        return MantenimientoMapper.toDTO(obtener(materialCristalRepository, id, "MaterialCristal"));
     }
 
     @Override
@@ -107,52 +142,12 @@ public class MantenimientoServiceImpl implements MantenimientoService {
 
     @Override
     @Transactional
-    public MaterialCristalDTO actualizarMaterialCristal(Long id, MaterialCristalDTO request) {
-        lock.bloquear(MantenimientoLock.Catalogo.MATERIAL_CRISTAL, false);
-        MaterialCristal entity = obtener(materialCristalRepository, id, "MaterialCristal");
-        validarNombre(materialCristalRepository, request.nombre(), "id", id, "MaterialCristal");
-        MantenimientoMapper.actualizar(request, entity);
-        return MantenimientoMapper.toDTO(materialCristalRepository.saveAndFlush(entity));
-    }
-
-    @Override
-    public Page<TratamientoCristalDTO> listarTratamientoCristal(String termino, Pageable pageable) {
-        return listar(tratamientoCristalRepository, termino, null, pageable, MantenimientoMapper::toDTO);
-    }
-
-    @Override
-    public TratamientoCristalDTO obtenerTratamientoCristal(Long id) {
-        return MantenimientoMapper.toDTO(obtener(tratamientoCristalRepository, id, "TratamientoCristal"));
-    }
-
-    @Override
-    @Transactional
     public TratamientoCristalDTO registrarTratamientoCristal(TratamientoCristalDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.TRATAMIENTO_CRISTAL, false);
         validarNombre(tratamientoCristalRepository, request.nombre(), "id", null, "TratamientoCristal");
         TratamientoCristal entity = new TratamientoCristal(null, null);
         MantenimientoMapper.actualizar(request, entity);
         return MantenimientoMapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
-    }
-
-    @Override
-    @Transactional
-    public TratamientoCristalDTO actualizarTratamientoCristal(Long id, TratamientoCristalDTO request) {
-        lock.bloquear(MantenimientoLock.Catalogo.TRATAMIENTO_CRISTAL, false);
-        TratamientoCristal entity = obtener(tratamientoCristalRepository, id, "TratamientoCristal");
-        validarNombre(tratamientoCristalRepository, request.nombre(), "id", id, "TratamientoCristal");
-        MantenimientoMapper.actualizar(request, entity);
-        return MantenimientoMapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
-    }
-
-    @Override
-    public Page<ServicioDTO> listarServicio(String termino, Integer estado, Pageable pageable) {
-        return listar(servicioRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
-    }
-
-    @Override
-    public ServicioDTO obtenerServicio(Long id) {
-        return MantenimientoMapper.toDTO(obtener(servicioRepository, id, "Servicio"));
     }
 
     @Override
@@ -167,6 +162,48 @@ public class MantenimientoServiceImpl implements MantenimientoService {
 
     @Override
     @Transactional
+    public LaboratorioDTO registrarLaboratorio(LaboratorioDTO request) {
+        lock.bloquear(MantenimientoLock.Catalogo.LABORATORIO, false);
+        validarNombre(laboratorioRepository, request.nombre(), "id", null, "Laboratorio");
+        Laboratorio entity = new Laboratorio(null, null, null, null, null, null, true);
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(laboratorioRepository.saveAndFlush(entity));
+    }
+
+    // >>>> UPDATES
+    @Override
+    @Transactional
+    public CategoriaDTO actualizarCategoria(Long id, CategoriaDTO request) {
+        lock.bloquear(MantenimientoLock.Catalogo.CATEGORIA, Integer.valueOf(0).equals(request.estado()));
+        Categoria entity = obtener(categoriaRepository, id, "Categoria");
+        validarNombre(categoriaRepository, request.nombre(), "id", id, "Categoria");
+        if (Integer.valueOf(0).equals(request.estado())) validarDependenciasCategoria(id);
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(categoriaRepository.saveAndFlush(entity));
+    }
+
+    @Override
+    @Transactional
+    public MaterialCristalDTO actualizarMaterialCristal(Long id, MaterialCristalDTO request) {
+        lock.bloquear(MantenimientoLock.Catalogo.MATERIAL_CRISTAL, false);
+        MaterialCristal entity = obtener(materialCristalRepository, id, "MaterialCristal");
+        validarNombre(materialCristalRepository, request.nombre(), "id", id, "MaterialCristal");
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(materialCristalRepository.saveAndFlush(entity));
+    }
+
+    @Override
+    @Transactional
+    public TratamientoCristalDTO actualizarTratamientoCristal(Long id, TratamientoCristalDTO request) {
+        lock.bloquear(MantenimientoLock.Catalogo.TRATAMIENTO_CRISTAL, false);
+        TratamientoCristal entity = obtener(tratamientoCristalRepository, id, "TratamientoCristal");
+        validarNombre(tratamientoCristalRepository, request.nombre(), "id", id, "TratamientoCristal");
+        MantenimientoMapper.actualizar(request, entity);
+        return MantenimientoMapper.toDTO(tratamientoCristalRepository.saveAndFlush(entity));
+    }
+
+    @Override
+    @Transactional
     public ServicioDTO actualizarServicio(Long id, ServicioDTO request) {
         lock.bloquear(MantenimientoLock.Catalogo.SERVICIO, Integer.valueOf(0).equals(request.estado()));
         Servicio entity = obtener(servicioRepository, id, "Servicio");
@@ -174,26 +211,6 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         if (Integer.valueOf(0).equals(request.estado())) validarDependenciasServicio(id);
         MantenimientoMapper.actualizar(request, entity);
         return MantenimientoMapper.toDTO(servicioRepository.saveAndFlush(entity));
-    }
-
-    @Override
-    public Page<LaboratorioDTO> listarLaboratorio(String termino, Integer estado, Pageable pageable) {
-        return listar(laboratorioRepository, termino, estado, pageable, MantenimientoMapper::toDTO);
-    }
-
-    @Override
-    public LaboratorioDTO obtenerLaboratorio(Long id) {
-        return MantenimientoMapper.toDTO(obtener(laboratorioRepository, id, "Laboratorio"));
-    }
-
-    @Override
-    @Transactional
-    public LaboratorioDTO registrarLaboratorio(LaboratorioDTO request) {
-        lock.bloquear(MantenimientoLock.Catalogo.LABORATORIO, false);
-        validarNombre(laboratorioRepository, request.nombre(), "id", null, "Laboratorio");
-        Laboratorio entity = new Laboratorio(null, null, null, null, null, null, true);
-        MantenimientoMapper.actualizar(request, entity);
-        return MantenimientoMapper.toDTO(laboratorioRepository.saveAndFlush(entity));
     }
 
     @Override
@@ -207,6 +224,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         return MantenimientoMapper.toDTO(laboratorioRepository.saveAndFlush(entity));
     }
 
+    // >>>> HELPERS
     private void validarDependenciasCategoria(Long id) {
         if (productoRepository.existsByCategoriaIdAndActivo(id, true)) {
             throw new ReglaNegocioException("No se puede desactivar la categoría: tiene productos activos.");
@@ -222,7 +240,8 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     private void validarDependenciasLaboratorio(Long id) {
         Specification<EnvioLaboratorio> pendientes = (root, query, cb) -> cb.and(
                 cb.equal(root.get("laboratorio").get("id"), id),
-                cb.or(cb.isNull(root.get("fechaRecepcion")), cb.isNull(root.get("fechaRevision"))));
+                cb.or(cb.isNull(root.get("fechaRecepcion")), cb.isNull(root.get("fechaRevision")))
+        );
         if (envioLaboratorioRepository.exists(pendientes)) {
             throw new ReglaNegocioException("No se puede desactivar el laboratorio: tiene envíos pendientes de recepción o revisión.");
         }
@@ -230,11 +249,14 @@ public class MantenimientoServiceImpl implements MantenimientoService {
 
     private <E> E obtener(JpaRepository<E, Long> repository, Long id, String catalogo) {
         return repository.findById(id).orElseThrow(
-                () -> new RecursosNoEncontradosException(catalogo + " no encontrado con ID: " + id));
+                () -> new RecursosNoEncontradosException(catalogo + " no encontrado con ID: " + id)
+        );
     }
 
-    private <E> void validarNombre(JpaSpecificationExecutor<E> repository, String nombre,
-                                   String campoId, Long id, String catalogo) {
+    private <E> void validarNombre(
+        JpaSpecificationExecutor<E> repository, String nombre,
+        String campoId, Long id, String catalogo
+    ) {
         String normalizado = nombre.trim().toLowerCase(Locale.ROOT);
         Specification<E> duplicado = (root, query, cb) -> {
             var mismoNombre = cb.equal(cb.lower(cb.trim(root.get("nombre"))), normalizado);
@@ -245,18 +267,21 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         }
     }
 
-    private <E, D> Page<D> listar(JpaSpecificationExecutor<E> repository, String termino, Integer estado,
-                                  Pageable pageable, Function<E, D> convertir) {
+    private <E, D> Page<D> listar(
+        JpaSpecificationExecutor<E> repository, String termino, Integer estado,
+        Pageable pageable, Function<E, D> convertir
+    ) {
         Specification<E> filtro = (root, query, cb) -> {
-            var condiciones = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+            var condiciones = new ArrayList<Predicate>();
             if (termino != null && !termino.isBlank()) {
                 String literal = termino.trim().toLowerCase(Locale.ROOT)
                         .replace("!", "!!").replace("%", "!%").replace("_", "!_");
                 condiciones.add(cb.like(cb.lower(root.get("nombre")), "%" + literal + "%", '!'));
             }
             if (estado != null) condiciones.add(cb.equal(root.get("activo"), (estado == null ? null : estado == 1)));
-            return cb.and(condiciones.toArray(jakarta.persistence.criteria.Predicate[]::new));
+            return cb.and(condiciones.toArray(Predicate[]::new));
         };
         return repository.findAll(filtro, pageable).map(convertir);
     }
+
 }

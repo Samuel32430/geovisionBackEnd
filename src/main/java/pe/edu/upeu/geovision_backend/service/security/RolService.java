@@ -7,11 +7,15 @@ import java.util.Set;
 
 public interface RolService {
 
+    // >>>> QUERIES
     List<RolDTO> listar();
 
     RolDTO obtenerPorId(Long id);
 
+    // >>>> CREATION
     RolDTO crear(RolDTO request);
 
+    // >>>> UPDATES
     RolDTO asignarPermisos(Long idRol, Set<Long> permisoIds);
+
 }

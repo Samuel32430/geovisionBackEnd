@@ -14,16 +14,18 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT e FROM Usuario e WHERE e.id = :id")
-    Optional<Usuario> findByIdForUpdate(@Param("id") Long id);
-
+    // >>>> QUERIES
     Optional<Usuario> findByNombre(String nombre);
 
     Optional<Usuario> findByCorreo(String correo);
 
     Optional<Usuario> findByNombreOrCorreo(String nombre, String correo);
 
+    List<Usuario> findByActivo(Boolean estado);
+
+    Optional<Usuario> findByPersonaId(Long idPersona);
+
+    // >>>> EXISTENCE CHECKS
     boolean existsByNombre(String nombre);
 
     boolean existsByCorreo(String correo);
@@ -32,7 +34,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     boolean existsByCorreoAndIdNot(String correo, Long idUsuario);
 
-    List<Usuario> findByActivo(Boolean estado);
+    // >>>> LOCKING
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM Usuario e WHERE e.id = :id")
+    Optional<Usuario> findByIdForUpdate(@Param("id") Long id);
 
-    Optional<Usuario> findByPersonaId(Long idPersona);
 }

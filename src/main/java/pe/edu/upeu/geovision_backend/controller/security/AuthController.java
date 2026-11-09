@@ -27,75 +27,60 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
+    // >>>> DEPENDENCIES
     private final AuthService authService;
 
-    /**
-     * CUS15: Iniciar Sesión (RF-84).
-     * Endpoint público. Credenciales válidas -> 200 con JWT, roles y permisos.
-     */
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
-        return ResponseEntity.ok(authService.login(request));
-    }
-
-    /**
-     * CUS16: Cerrar Sesión (RF-85).
-     * Endpoint protegido. Registra salida en auditoría de usuario.
-     */
-    @PostMapping("/logout")
-    public ResponseEntity<LogoutResponseDTO> logout(Authentication authentication) {
-        return ResponseEntity.ok(authService.logout(authentication.getName()));
-    }
-
-    /**
-     * Obtener el perfil del usuario autenticado actual.
-     */
+    // >>>> QUERIES
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> me(Authentication authentication) {
         return ResponseEntity.ok(authService.usuarioActual(authentication.getName()));
     }
 
-    /**
-     * Cambio de contraseña para el usuario autenticado.
-     */
+    // >>>> AUTHENTICATION
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<LogoutResponseDTO> logout(Authentication authentication) {
+        return ResponseEntity.ok(authService.logout(authentication.getName()));
+    }
+
+    // >>>> PASSWORD CHANGES
     @PutMapping("/password")
     public ResponseEntity<Void> cambiarPassword(
-            @Valid @RequestBody CambioPasswordRequestDTO request,
-            Authentication authentication) {
+        @Valid @RequestBody CambioPasswordRequestDTO request,
+        Authentication authentication
+    ) {
         authService.cambiarPassword(authentication.getName(), request);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * CUS19: Solicitar Recuperación de Contraseña (RF-91, RF-92).
-     * Endpoint público. Valida cuenta y despacha token temporal de recuperación.
-     */
+    // >>>> PASSWORD RECOVERY
     @PostMapping("/recuperar-password")
     public ResponseEntity<Map<String, String>> recuperarPassword(
-            @Valid @RequestBody RecuperarPasswordRequestDTO request) {
+        @Valid @RequestBody RecuperarPasswordRequestDTO request
+    ) {
         authService.solicitarRecuperacionPassword(request);
         return ResponseEntity.ok(Map.of(
-                "mensaje", "Si el correo corresponde a una cuenta activa, se ha enviado un enlace de recuperación"));
+                "mensaje", "Si el correo corresponde a una cuenta activa, se ha enviado un enlace de recuperación"
+            )
+        );
     }
 
-    /**
-     * CUS19: Validar Token de Recuperación (RF-93).
-     * Endpoint público. Verifica validez y vigencia del token JWT firmado.
-     */
     @GetMapping("/validar-token")
     public ResponseEntity<Map<String, Object>> validarToken(@RequestParam String token) {
         boolean valido = authService.validarTokenRecuperacion(token);
         return ResponseEntity.ok(Map.of("valido", valido));
     }
 
-    /**
-     * CUS19: Restablecer Contraseña (RF-94, RF-95).
-     * Endpoint público. Valida token y actualiza la contraseña del usuario.
-     */
     @PostMapping("/reset-password")
     public ResponseEntity<Map<String, String>> resetPassword(
-            @Valid @RequestBody ResetPasswordRequestDTO request) {
+        @Valid @RequestBody ResetPasswordRequestDTO request
+    ) {
         authService.restablecerPassword(request);
         return ResponseEntity.ok(Map.of("mensaje", "Contraseña restablecida exitosamente"));
     }
+
 }

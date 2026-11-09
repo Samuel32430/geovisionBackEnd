@@ -1,7 +1,8 @@
 package pe.edu.upeu.geovision_backend.service.ventas.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoPendienteResponseDTO;
@@ -25,12 +26,16 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class PagoPendienteServiceImpl implements PagoPendienteService {
 
+    // >>>> CONSTANTS
+    private static final Logger log = LoggerFactory.getLogger(PagoPendienteServiceImpl.class);
+
+    // >>>> DEPENDENCIES
     private final VentaRepository ventaRepository;
     private final PagoRepository pagoRepository;
 
+    // >>>> QUERIES
     @Override
     @Transactional(readOnly = true)
     public List<PagoPendienteResponseDTO> listarVentasConPagosPendientes(String termino) {
@@ -56,7 +61,8 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
                         matchDocumento = p.getNumeroDocumento() != null && p.getNumeroDocumento().contains(termClean);
                     }
                     return matchComprobante || matchCliente || matchDocumento;
-                })
+                }
+                )
                 .map(v -> {
                     BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(v.getId());
                     if (totalPagado == null) {
@@ -65,7 +71,8 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
                     BigDecimal saldo = v.getTotal().subtract(totalPagado);
                     List<Pago> historial = pagoRepository.findByVentaId(v.getId());
                     return PagoMapper.toPagoPendienteResponseDTO(v, totalPagado, saldo, historial);
-                })
+                }
+                )
                 .collect(Collectors.toList());
     }
 
@@ -86,21 +93,23 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         return PagoMapper.toPagoPendienteResponseDTO(venta, totalPagado, saldoPendiente, historial);
     }
 
+    // >>>> CREATION
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PagoResponseDTO registrarPagoPendiente(PagoRegistroRequestDTO request) {
         log.info("Iniciando liquidación o abono para la venta ID: {}, monto: S/ {}",
-                request.idVenta(), request.monto());
+                request.idVenta(), request.monto()
+        );
 
         if (request.idVenta() == null) {
             throw new ReglaNegocioException("El ID de la venta es obligatorio para registrar un pago pendiente");
         }
 
-        // a) Bloqueo pesimista para evitar condiciones de carrera y sobrepagos concurrentes
+        // Sale lock
         Venta venta = ventaRepository.findByIdForUpdate(request.idVenta())
                 .orElseThrow(() -> new RecursosNoEncontradosException("Venta no encontrada con ID: " + request.idVenta()));
 
-        // b) RN-VE10: Validar que la venta admita pagos (no anulada y con estado PENDIENTE)
+        // Sale state
         if (venta.getEstado() == EstadoVentaEnum.ANULADA) {
             throw new ReglaNegocioException("No se pueden registrar pagos en una venta que ha sido anulada");
         }
@@ -111,7 +120,7 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
             throw new ReglaNegocioException("El caso de uso aplica exclusivamente para ventas con saldo pendiente (RN-VE10)");
         }
 
-        // c) RN-VE12: Validar voucher obligatorio en cobros con tarjeta o transferencia
+        // Voucher
         boolean requiereVoucher = request.metodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
                 request.metodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
                 request.metodoPago() == MetodoPagoEnum.TRANSFERENCIA;
@@ -120,27 +129,28 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
             throw new ReglaNegocioException("Es obligatorio ingresar el número de voucher/operación para cobros con tarjeta o transferencia (RN-VE12)");
         }
 
-        // d) Calcular saldo pendiente actual bajo el bloqueo pesimista
+        // Current balance
         BigDecimal totalPagadoActual = pagoRepository.sumMontoPagadoByVentaId(venta.getId());
         if (totalPagadoActual == null) {
             totalPagadoActual = BigDecimal.ZERO;
         }
         BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagadoActual);
 
-        // e) RN-VE13: El monto no puede ser <= 0 ni exceder el saldo adeudado
+        // Payment amount
         if (request.monto() == null || request.monto().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ReglaNegocioException("El monto del abono debe ser mayor a cero (RN-VE13)");
         }
         if (request.monto().compareTo(saldoPendiente) > 0) {
             throw new ReglaNegocioException("El monto a pagar (S/ " + request.monto() +
-                    ") excede el saldo pendiente restante (S/ " + saldoPendiente + ") (RN-VE13)");
+                    ") excede el saldo pendiente restante (S/ " + saldoPendiente + ") (RN-VE13)"
+            );
         }
 
-        // f) Crear y guardar registro de Pago
+        // Payment record
         Pago pago = PagoMapper.toEntity(request, venta);
         Pago pagoGuardado = pagoRepository.save(pago);
 
-        // g) RN-VE14: Si el saldo llega a cero, actualizar automáticamente el estado a PAGADA
+        // Updated balance
         BigDecimal nuevoSaldo = saldoPendiente.subtract(request.monto());
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
             log.info("Venta ID {} liquidada al 100%. Actualizando estado a PAGADA.", venta.getId());
@@ -149,8 +159,10 @@ public class PagoPendienteServiceImpl implements PagoPendienteService {
         }
 
         log.info("Pago registrado exitosamente con ID: {}. Saldo restante de la venta ID {}: S/ {}",
-                pagoGuardado.getId(), venta.getId(), nuevoSaldo);
+                pagoGuardado.getId(), venta.getId(), nuevoSaldo
+        );
 
         return PagoMapper.toDTO(pagoGuardado);
     }
+
 }

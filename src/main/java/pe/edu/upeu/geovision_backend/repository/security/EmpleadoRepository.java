@@ -14,11 +14,10 @@ import java.util.Optional;
 @Repository
 public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
+    // >>>> QUERIES
     Optional<Empleado> findByIdAndActivo(Long idPersona, Boolean estado);
 
     Optional<Empleado> findByUsuarioId(Long idUsuario);
-
-    boolean existsByUsuarioId(Long idUsuario);
 
     List<Empleado> findByActivo(Boolean estado);
 
@@ -29,6 +28,11 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
            "OR LOWER(p.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) " +
            "OR LOWER(p.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) " +
            "OR p.numeroDocumento LIKE CONCAT('%', :termino, '%')) " +
-           "AND (:estado IS NULL OR e.activo = :estado)")
+           "AND (:estado IS NULL OR e.activo = :estado)"
+    )
     Page<Empleado> buscarPaginado(@Param("termino") String termino, @Param("estado") Boolean estado, Pageable pageable);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByUsuarioId(Long idUsuario);
+
 }

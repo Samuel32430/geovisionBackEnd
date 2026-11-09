@@ -40,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class ProductoCatalogoControllerTest {
 
+    // >>>> FIXTURES
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
@@ -51,6 +52,7 @@ class ProductoCatalogoControllerTest {
 
     private ProductoResponseDTO responseDTO;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
@@ -66,6 +68,7 @@ class ProductoCatalogoControllerTest {
         responseDTO = new ProductoResponseDTO(1L, "MONT-001", "Montura Ray-Ban", null, null, new BigDecimal("350.00"), 10, 1, null, null, null, null, monturaDTO, true);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("GET /api/v1/productos: Retorna 200 OK con página de productos")
     void listarProductos_retorna200() throws Exception {
@@ -73,7 +76,8 @@ class ProductoCatalogoControllerTest {
                 .thenReturn(new PageImpl<>(List.of(responseDTO), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/v1/productos")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].codigo").value("MONT-001"))
                 .andExpect(jsonPath("$.content[0].precio").value(350.00));
@@ -85,7 +89,8 @@ class ProductoCatalogoControllerTest {
         when(productoCatalogoService.obtenerPorId(1L)).thenReturn(responseDTO);
 
         mockMvc.perform(get("/api/v1/productos/1")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.nombre").value("Montura Ray-Ban"));
@@ -98,7 +103,8 @@ class ProductoCatalogoControllerTest {
                 .thenReturn(new PageImpl<>(List.of(responseDTO), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/v1/productos/disponibles-venta")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].codigo").value("MONT-001"));
     }
@@ -110,7 +116,8 @@ class ProductoCatalogoControllerTest {
 
         mockMvc.perform(get("/api/v1/productos/1/validar-disponibilidad")
                         .param("cantidad", "5")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.cantidadSolicitada").value(5))
@@ -126,7 +133,8 @@ class ProductoCatalogoControllerTest {
 
         mockMvc.perform(post("/api/v1/productos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.codigo").value("MONT-001"));
     }
@@ -140,7 +148,8 @@ class ProductoCatalogoControllerTest {
 
         mockMvc.perform(put("/api/v1/productos/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L));
     }
@@ -152,7 +161,8 @@ class ProductoCatalogoControllerTest {
 
         mockMvc.perform(patch("/api/v1/productos/1/estado")
                         .param("estado", "0")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk());
     }
 }

@@ -1,8 +1,13 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -39,32 +44,39 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @WithMockUser(username = "operador.pacientes", authorities = {
-        "PACIENTES_LEER", "PACIENTES_REGISTRAR", "PACIENTES_GESTIONAR"})
+        "PACIENTES_LEER", "PACIENTES_REGISTRAR", "PACIENTES_GESTIONAR"}
+)
+@RequiredArgsConstructor
 class PacienteControllerTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired ObjectMapper json;
-    @Autowired PacienteService service;
-    @Autowired PacienteRepository patients;
-    @Autowired PersonaRepository people;
-    @Autowired UsuarioRepository users;
+    // >>>> FIXTURES
+    private final MockMvc mvc;
+    private final ObjectMapper json;
+    private final PacienteService service;
+    private final PacienteRepository patients;
+    private final PersonaRepository people;
+    private final UsuarioRepository users;
     @MockitoSpyBean PacienteLogRepository logs;
     Usuario actor;
 
+    // >>>> SETUP
     @BeforeEach
     void crearActor() {
         actor = users.saveAndFlush(new Usuario(null, "operador.pacientes", "hash-de-prueba", UUID.randomUUID() + "@test.invalid", true, null));
     }
 
+    // >>>> HELPERS
     PacienteRequestDTO request(String document) {
         return new PacienteRequestDTO(null, new PersonaRequestDTO(" Ana ", " Pérez ", " 999123456 ", null, null, null, TipoDocumentoEnum.DNI, document), 1, null);
     }
 
+    // >>>> TESTS
     @Test
     void registraConsultaBuscaActualizaYDesactivaConAuditoria() throws Exception {
         String document = UUID.randomUUID().toString();
         String response = mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(request(" " + document + " "))))
+                        .content(json.writeValueAsString(request(" " + document + " ")))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.persona.nombres").value("Ana"))
                 .andExpect(jsonPath("$.persona.nombreCompleto").value("Ana Pérez"))
@@ -81,14 +93,17 @@ class PacienteControllerTest {
         var update = request(document);
         update = new PacienteRequestDTO(update.id(), new PersonaRequestDTO(update.persona().nombres(), update.persona().apellidos(), "988765432", update.persona().fechaNacimiento(), update.persona().sexo(), update.persona().direccion(), update.persona().tipoDocumento(), update.persona().numeroDocumento()), update.estado(), update.idUsuario());
         mvc.perform(put("/api/v1/pacientes/{id}", id).contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(update)))
+                        .content(json.writeValueAsString(update))
+        )
                 .andExpect(status().isOk()).andExpect(jsonPath("$.persona.telefono").value("988765432"));
         mvc.perform(patch("/api/v1/pacientes/{id}/estado", id).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"estado\":0}"))
+                        .content("{\"estado\":0}")
+        )
                 .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value(0));
-        // Repetir la misma transición es idempotente y no duplica el evento.
+
         mvc.perform(patch("/api/v1/pacientes/{id}/estado", id).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"estado\":0}")).andExpect(status().isOk());
+                .content("{\"estado\":0}")
+        ).andExpect(status().isOk());
         assertThat(patients.findById(id).orElseThrow().getActivo()).isEqualTo(false);
         assertThat(people.existsById(id)).isTrue();
         assertThat(patients.findById(id).orElseThrow().getFechaRegistro()).isEqualTo(registered);
@@ -96,7 +111,8 @@ class PacienteControllerTest {
                 .allSatisfy(log -> {
                     assertThat(log.getUsuario().getId()).isEqualTo(actor.getId());
                     assertThat(log.getFechaLog()).isNotNull();
-                });
+                }
+                );
         mvc.perform(get("/api/v1/pacientes").param("termino", document))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
         mvc.perform(get("/api/v1/pacientes").param("termino", document).param("estado", "0"))
@@ -109,7 +125,8 @@ class PacienteControllerTest {
         String document = UUID.randomUUID().toString();
         Persona person = people.saveAndFlush(new Persona(null, "Existente", "Prueba", null, null, null, null, document, TipoDocumentoEnum.DNI));
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request(document)))).andExpect(status().isConflict());
+                .content(json.writeValueAsString(request(document)))
+        ).andExpect(status().isConflict());
         String existing = "{\"id\":" + person.getId() + "}";
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON).content(existing))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.persona.nombres").value("Existente"));
@@ -125,10 +142,12 @@ class PacienteControllerTest {
         var ambiguous = request(UUID.randomUUID().toString());
         ambiguous = new PacienteRequestDTO(999999L, ambiguous.persona(), ambiguous.estado(), ambiguous.idUsuario());
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(ambiguous))).andExpect(status().isConflict());
+                .content(json.writeValueAsString(ambiguous))
+        ).andExpect(status().isConflict());
         var created = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
         mvc.perform(put("/api/v1/pacientes/{id}", created.id()).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(ambiguous))).andExpect(status().isConflict());
+                .content(json.writeValueAsString(ambiguous))
+        ).andExpect(status().isConflict());
     }
 
     @Test
@@ -136,7 +155,8 @@ class PacienteControllerTest {
         var first = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
         var second = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
         mvc.perform(put("/api/v1/pacientes/{id}", second.id()).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request(first.persona().numeroDocumento()))))
+                .content(json.writeValueAsString(request(first.persona().numeroDocumento())))
+        )
                 .andExpect(status().isConflict());
         assertThat(service.obtenerPorId(second.id()).persona().numeroDocumento())
                 .isEqualTo(second.persona().numeroDocumento());
@@ -148,18 +168,21 @@ class PacienteControllerTest {
         var request = request(UUID.randomUUID().toString());
         request = new PacienteRequestDTO(request.id(), request.persona(), request.estado(), actor.getId() + 9999);
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request))).andExpect(status().isForbidden());
+                .content(json.writeValueAsString(request))
+        ).andExpect(status().isForbidden());
         actor.setActivo(false);
         users.saveAndFlush(actor);
         request = new PacienteRequestDTO(request.id(), request.persona(), request.estado(), null);
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request))).andExpect(status().isForbidden());
+                .content(json.writeValueAsString(request))
+        ).andExpect(status().isForbidden());
     }
 
     @Test
     void validaJsonParametrosYRecursosAusentes() throws Exception {
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"persona\":{\"nombres\":\" \"}}"))
+                .content("{\"persona\":{\"nombres\":\" \"}}")
+        )
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON).content("{"))
                 .andExpect(status().isBadRequest());
@@ -173,7 +196,8 @@ class PacienteControllerTest {
                 .andExpect(status().isBadRequest());
         for (String invalid : new String[]{"{}", "{\"estado\":null}", "{\"estado\":2}"}) {
             mvc.perform(patch("/api/v1/pacientes/1/estado").contentType(MediaType.APPLICATION_JSON)
-                    .content(invalid)).andExpect(status().isBadRequest());
+                    .content(invalid)
+            ).andExpect(status().isBadRequest());
         }
     }
 
@@ -184,7 +208,8 @@ class PacienteControllerTest {
         request = new PacienteRequestDTO(request.id(), new PersonaRequestDTO("Porcentaje%_!", request.persona().apellidos(), request.persona().telefono(), request.persona().fechaNacimiento(), request.persona().sexo(), request.persona().direccion(), request.persona().tipoDocumento(), request.persona().numeroDocumento()), request.estado(), request.idUsuario());
         var created = service.registrarPaciente(request, actor.getNombre());
         var page = service.listarPacientes("%_!", true,
-                org.springframework.data.domain.PageRequest.of(0, 10));
+                PageRequest.of(0, 10)
+        );
         assertThat(page.getContent()).extracting("id").containsExactly(created.id());
     }
 
@@ -193,7 +218,8 @@ class PacienteControllerTest {
         var created = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
         service.cambiarEstadoPaciente(created.id(), 0, actor.getNombre());
         var updated = service.actualizarPaciente(created.id(),
-                request(created.persona().numeroDocumento()), actor.getNombre());
+                request(created.persona().numeroDocumento()), actor.getNombre()
+        );
         assertThat(updated.estado()).isZero();
         assertThat(updated.id()).isEqualTo(created.id());
         assertThat(updated.idUsuario()).isEqualTo(actor.getId());
@@ -204,10 +230,12 @@ class PacienteControllerTest {
     void permisoDeRegistroNoPermiteGestionNiLectura() throws Exception {
         mvc.perform(get("/api/v1/pacientes")).andExpect(status().isForbidden());
         mvc.perform(put("/api/v1/pacientes/1").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request(UUID.randomUUID().toString()))))
+                .content(json.writeValueAsString(request(UUID.randomUUID().toString())))
+        )
                 .andExpect(status().isForbidden());
         mvc.perform(patch("/api/v1/pacientes/1/estado").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"estado\":0}")).andExpect(status().isForbidden());
+                .content("{\"estado\":0}")
+        ).andExpect(status().isForbidden());
     }
 
     @Test
@@ -215,17 +243,20 @@ class PacienteControllerTest {
     void deniegaUsuarioSinPermisosDePacientes() throws Exception {
         mvc.perform(get("/api/v1/pacientes")).andExpect(status().isForbidden());
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request(UUID.randomUUID().toString()))))
+                .content(json.writeValueAsString(request(UUID.randomUUID().toString())))
+        )
                 .andExpect(status().isForbidden());
         mvc.perform(put("/api/v1/pacientes/1").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(request(UUID.randomUUID().toString()))))
+                .content(json.writeValueAsString(request(UUID.randomUUID().toString())))
+        )
                 .andExpect(status().isForbidden());
         mvc.perform(patch("/api/v1/pacientes/1/estado").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"estado\":0}")).andExpect(status().isForbidden());
+                .content("{\"estado\":0}")
+        ).andExpect(status().isForbidden());
     }
 
     @Test
-    @org.springframework.security.test.context.support.WithAnonymousUser
+    @WithAnonymousUser
     void exigeAutenticacion() throws Exception {
         mvc.perform(get("/api/v1/pacientes")).andExpect(status().isUnauthorized());
     }
@@ -235,20 +266,20 @@ class PacienteControllerTest {
     void falloDeAuditoriaRevierteAltaActualizacionYEstado() {
         String document = UUID.randomUUID().toString();
         var existing = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
-        doThrow(new org.springframework.dao.DataAccessResourceFailureException("Auditoría no disponible"))
+        doThrow(new DataAccessResourceFailureException("Auditoría no disponible"))
                 .when(logs).saveAndFlush(any(PacienteLog.class));
         try {
             assertThatThrownBy(() -> service.registrarPaciente(request(document), actor.getNombre()))
-                    .isInstanceOf(org.springframework.dao.DataAccessException.class);
+                    .isInstanceOf(DataAccessException.class);
             assertThat(people.findByNumeroDocumento(document)).isEmpty();
             assertThat(patients.findByPersonaNumeroDocumento(document)).isEmpty();
             var update = request(existing.persona().numeroDocumento());
             var invalidUpdate = new PacienteRequestDTO(update.id(), new PersonaRequestDTO("Cambio que debe revertirse", update.persona().apellidos(), update.persona().telefono(), update.persona().fechaNacimiento(), update.persona().sexo(), update.persona().direccion(), update.persona().tipoDocumento(), update.persona().numeroDocumento()), update.estado(), update.idUsuario());
             assertThatThrownBy(() -> service.actualizarPaciente(existing.id(), invalidUpdate, actor.getNombre()))
-                    .isInstanceOf(org.springframework.dao.DataAccessException.class);
+                    .isInstanceOf(DataAccessException.class);
             assertThat(service.obtenerPorId(existing.id()).persona().nombres()).isEqualTo("Ana");
             assertThatThrownBy(() -> service.cambiarEstadoPaciente(existing.id(), 0, actor.getNombre()))
-                    .isInstanceOf(org.springframework.dao.DataAccessException.class);
+                    .isInstanceOf(DataAccessException.class);
             assertThat(service.obtenerPorId(existing.id()).estado()).isEqualTo(1);
         } finally {
             logs.deleteAll(logs.findByPacienteIdOrderByFechaLogDesc(existing.id()));

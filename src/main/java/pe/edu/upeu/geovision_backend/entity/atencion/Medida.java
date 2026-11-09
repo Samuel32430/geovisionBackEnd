@@ -3,9 +3,7 @@ package pe.edu.upeu.geovision_backend.entity.atencion;
 import pe.edu.upeu.geovision_backend.entity.orden_trabajo.EnvioLaboratorio;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -31,12 +29,13 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class Medida {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_medida")
     private Long id;
 
-    @Convert(converter = TipoMedidaConverter.class)
+    @Convert(converter = TipoMedidaEnum.PersistenceConverter.class)
     @Column(name = "tipo_medida", nullable = false, precision = 1)
     private TipoMedidaEnum tipoMedida = TipoMedidaEnum.LEJOS;
 
@@ -65,6 +64,7 @@ public class Medida {
     @JoinColumn(name = "id_envio_laboratorio")
     private EnvioLaboratorio envioLaboratorio;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (tipoMedida == null) {
@@ -72,16 +72,4 @@ public class Medida {
         }
     }
 
-    @Converter
-    public static class TipoMedidaConverter implements AttributeConverter<TipoMedidaEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(TipoMedidaEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public TipoMedidaEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? TipoMedidaEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

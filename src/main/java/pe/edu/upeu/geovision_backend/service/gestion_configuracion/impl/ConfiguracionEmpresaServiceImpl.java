@@ -17,9 +17,12 @@ import pe.edu.upeu.geovision_backend.service.gestion_configuracion.Configuracion
 @Validated
 @RequiredArgsConstructor
 public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaService {
+
+    // >>>> DEPENDENCIES
     private final ConfiguracionEmpresaRepository repository;
     private final ConfiguracionEmpresaLock lock;
 
+    // >>>> QUERIES
     @Override
     @Transactional(readOnly = true)
     public ConfiguracionEmpresaDTO obtener() {
@@ -27,6 +30,7 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
         return ConfiguracionEmpresaMapper.toDTO(empresaExistente());
     }
 
+    // >>>> CREATION
     @Override
     @Transactional
     public ConfiguracionEmpresaDTO registrar(ConfiguracionEmpresaDTO request) {
@@ -39,6 +43,7 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
         return ConfiguracionEmpresaMapper.toDTO(repository.saveAndFlush(empresa));
     }
 
+    // >>>> UPDATES
     @Override
     @Transactional
     public ConfiguracionEmpresaDTO actualizar(ConfiguracionEmpresaDTO request) {
@@ -49,6 +54,7 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
         return ConfiguracionEmpresaMapper.toDTO(repository.saveAndFlush(empresa));
     }
 
+    // >>>> HELPERS
     private ConfiguracionEmpresa empresaExistente() {
         return repository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new RecursosNoEncontradosException("Los datos de la empresa aún no han sido configurados"));
@@ -59,4 +65,5 @@ public class ConfiguracionEmpresaServiceImpl implements ConfiguracionEmpresaServ
             throw new ReglaNegocioException("Existen múltiples empresas configuradas. Se requiere revisar los datos existentes.");
         }
     }
+
 }

@@ -11,9 +11,12 @@ import java.util.Optional;
 @Repository
 public interface PermisoRepository extends JpaRepository<Permiso, Long> {
 
+    // >>>> QUERIES
     Optional<Permiso> findByNombreIgnoreCase(String nombre);
 
+    List<Permiso> findByModulo(ModuloEnum modulo);
+
+    // >>>> EXISTENCE CHECKS
     boolean existsByNombreIgnoreCase(String nombre);
 
-    List<Permiso> findByModulo(ModuloEnum modulo);
 }

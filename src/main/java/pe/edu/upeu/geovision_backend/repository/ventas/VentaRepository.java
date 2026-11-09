@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.repository.ventas;
 
+import pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO;
+
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,7 @@ import java.util.Optional;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecificationExecutor<Venta> {
 
+    // >>>> QUERIES
     @Query("SELECT new pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO(" +
            "v.id, v.numeroComprobante, l.id, v.receta.id, p.id, " +
            "CONCAT(CONCAT(per.nombres, ' '), per.apellidos), v.total) " +
@@ -32,9 +35,11 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
            "OR LOWER(per.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
            "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') ESCAPE '!' " +
            "OR v.numeroComprobante LIKE CONCAT('%', :termino, '%') ESCAPE '!') " +
-           "ORDER BY v.fechaRegistro DESC, v.id DESC, l.id ASC")
-    Page<pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO> buscarPendientesOrdenTrabajo(
-            @Param("termino") String termino, Pageable pageable);
+           "ORDER BY v.fechaRegistro DESC, v.id DESC, l.id ASC"
+    )
+    Page<PendienteOrdenTrabajoDTO> buscarPendientesOrdenTrabajo(
+        @Param("termino") String termino, Pageable pageable
+    );
 
     List<Venta> findByRecetaId(Long idReceta);
 
@@ -46,14 +51,6 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
 
     Optional<Venta> findByNumeroComprobante(String numeroComprobante);
 
-    boolean existsByNumeroComprobante(String numeroComprobante);
-
-    boolean existsByRecetaId(Long idReceta);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT v FROM Venta v WHERE v.id = :id")
-    Optional<Venta> findByIdForUpdate(@Param("id") Long id);
-
     @Query("SELECT v FROM Venta v LEFT JOIN v.paciente p LEFT JOIN p.persona per " +
            "WHERE (:termino IS NULL " +
            "OR LOWER(per.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) " +
@@ -63,15 +60,27 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
            "AND (:estado IS NULL OR v.estado = :estado) " +
            "AND (:fechaInicio IS NULL OR v.fechaRegistro >= :fechaInicio) " +
            "AND (:fechaFin IS NULL OR v.fechaRegistro <= :fechaFin) " +
-           "ORDER BY v.fechaRegistro DESC")
+           "ORDER BY v.fechaRegistro DESC"
+    )
     Page<Venta> buscarHistorialVentas(
-            @Param("termino") String termino,
-            @Param("estado") EstadoVentaEnum estado,
-            @Param("fechaInicio") LocalDateTime fechaInicio,
-            @Param("fechaFin") LocalDateTime fechaFin,
-            Pageable pageable
+        @Param("termino") String termino,
+        @Param("estado") EstadoVentaEnum estado,
+        @Param("fechaInicio") LocalDateTime fechaInicio,
+        @Param("fechaFin") LocalDateTime fechaFin,
+        Pageable pageable
     );
 
     @Query("SELECT v FROM Venta v WHERE v.estado = pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum.PENDIENTE")
     List<Venta> findVentasConPagosPendientes();
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByNumeroComprobante(String numeroComprobante);
+
+    boolean existsByRecetaId(Long idReceta);
+
+    // >>>> LOCKING
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT v FROM Venta v WHERE v.id = :id")
+    Optional<Venta> findByIdForUpdate(@Param("id") Long id);
+
 }
