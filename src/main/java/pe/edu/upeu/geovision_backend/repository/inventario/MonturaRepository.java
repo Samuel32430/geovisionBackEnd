@@ -16,9 +16,11 @@ import java.util.List;
 @Repository
 public interface MonturaRepository extends JpaRepository<Montura, Long> {
 
+    // >>>> QUERIES
     @EntityGraph(attributePaths = "producto")
     Page<Montura> findByProductoActivoAndProductoStockGreaterThan(
-            Boolean estado, Integer stockMinimo, Pageable pageable);
+        Boolean estado, Integer stockMinimo, Pageable pageable
+    );
 
     List<Montura> findByModelo(ModeloMonturaEnum modelo);
 
@@ -30,10 +32,12 @@ public interface MonturaRepository extends JpaRepository<Montura, Long> {
     @Query("SELECT m FROM Montura m JOIN FETCH m.producto p " +
            "WHERE (:modelo IS NULL OR m.modelo = :modelo) " +
            "AND (:material IS NULL OR m.material = :material) " +
-           "AND p.activo = true")
+           "AND p.activo = true"
+    )
     Page<Montura> buscarMonturasFiltro(
-            @Param("modelo") ModeloMonturaEnum modelo,
-            @Param("material") MaterialMonturaEnum material,
-            Pageable pageable
+        @Param("modelo") ModeloMonturaEnum modelo,
+        @Param("material") MaterialMonturaEnum material,
+        Pageable pageable
     );
+
 }

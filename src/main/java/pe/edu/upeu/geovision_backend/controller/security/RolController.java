@@ -22,8 +22,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RolController {
 
+    // >>>> DEPENDENCIES
     private final RolService rolService;
 
+    // >>>> QUERIES
     @GetMapping
     public ResponseEntity<List<RolDTO>> listar() {
         return ResponseEntity.ok(rolService.listar());
@@ -34,18 +36,19 @@ public class RolController {
         return ResponseEntity.ok(rolService.obtenerPorId(id));
     }
 
+    // >>>> CREATION
     @PostMapping
     public ResponseEntity<RolDTO> crear(@Valid @RequestBody RolDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(rolService.crear(request));
     }
 
-    /**
-     * CUS18: Asignar permisos a cada rol (RF-90).
-     */
+    // >>>> UPDATES
     @PutMapping("/{id}/permisos")
     public ResponseEntity<RolDTO> asignarPermisos(
-            @PathVariable Long id,
-            @RequestBody Set<Long> permisoIds) {
+        @PathVariable Long id,
+        @RequestBody Set<Long> permisoIds
+    ) {
         return ResponseEntity.ok(rolService.asignarPermisos(id, permisoIds));
     }
+
 }

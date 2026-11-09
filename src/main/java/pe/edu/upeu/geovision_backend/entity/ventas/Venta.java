@@ -4,10 +4,8 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Paciente;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.security.Empleado;
 
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -35,6 +33,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Venta {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_venta")
@@ -46,14 +45,14 @@ public class Venta {
     @Column(name = "total", nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 
-    @Convert(converter = EstadoVentaConverter.class)
+    @Convert(converter = EstadoVentaEnum.PersistenceConverter.class)
     @Column(name = "estado", nullable = false)
     private EstadoVentaEnum estado;
 
     @Column(name = "numero_comprobante", length = 100)
     private String numeroComprobante;
 
-    @Convert(converter = TipoComprobanteConverter.class)
+    @Convert(converter = TipoComprobanteEnum.PersistenceConverter.class)
     @Column(name = "tipo_comprobante", nullable = false)
     private TipoComprobanteEnum tipoComprobante;
 
@@ -69,6 +68,7 @@ public class Venta {
     @JoinColumn(name = "id_receta")
     private Receta receta;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {
@@ -76,6 +76,7 @@ public class Venta {
         }
     }
 
+    // >>>> OPERATIONS
     public Integer getEstadoCodigo() {
         return this.estado != null ? this.estado.getCodigo() : null;
     }
@@ -92,29 +93,4 @@ public class Venta {
         this.tipoComprobante = TipoComprobanteEnum.fromCodigo(codigo);
     }
 
-    @Converter
-    public static class EstadoVentaConverter implements AttributeConverter<EstadoVentaEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(EstadoVentaEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public EstadoVentaEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? EstadoVentaEnum.fromCodigo(dbData) : null;
-        }
-    }
-
-    @Converter
-    public static class TipoComprobanteConverter implements AttributeConverter<TipoComprobanteEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(TipoComprobanteEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public TipoComprobanteEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? TipoComprobanteEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

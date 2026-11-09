@@ -2,7 +2,6 @@ package pe.edu.upeu.geovision_backend.util.orden_trabajo;
 
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 
-/** Constancias legibles en las columnas de texto existentes; nunca trunca el historial. */
 public final class ConstanciaOrdenTrabajo {
     private ConstanciaOrdenTrabajo() {}
     public static String agregar(String anterior,String nueva) {

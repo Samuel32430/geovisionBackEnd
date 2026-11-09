@@ -11,10 +11,13 @@ import java.util.List;
 @Repository
 public interface ProductoVendidoRepository extends JpaRepository<ProductoVendido, Long> {
 
+    // >>>> QUERIES
     List<ProductoVendido> findByVentaId(Long idVenta);
 
     List<ProductoVendido> findByProductoId(Long idProducto);
 
+    // >>>> AGGREGATES
     @Query("SELECT COALESCE(SUM(pv.cantidad), 0) FROM ProductoVendido pv WHERE pv.producto.id = :idProducto")
     Long sumCantidadVendidaByProductoId(@Param("idProducto") Long idProducto);
+
 }

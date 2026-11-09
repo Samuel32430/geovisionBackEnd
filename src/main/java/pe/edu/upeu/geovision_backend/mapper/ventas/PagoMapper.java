@@ -42,10 +42,11 @@ public final class PagoMapper {
     }
 
     public static PagoPendienteResponseDTO toPagoPendienteResponseDTO(
-            Venta venta,
-            BigDecimal totalPagado,
-            BigDecimal saldoPendiente,
-            List<Pago> pagos) {
+        Venta venta,
+        BigDecimal totalPagado,
+        BigDecimal saldoPendiente,
+        List<Pago> pagos
+    ) {
 
         if (venta == null) {
             return null;

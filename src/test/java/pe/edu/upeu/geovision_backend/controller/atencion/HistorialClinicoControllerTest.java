@@ -1,12 +1,11 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.PersistenceContext;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.data.domain.PageRequest;
@@ -56,33 +55,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @WithMockUser(authorities = "PACIENTES_LEER")
+@RequiredArgsConstructor
 class HistorialClinicoControllerTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired RecetaService service;
-    @Autowired RecetaRepository prescriptions;
-    @Autowired PacienteRepository patients;
-    @Autowired EmpleadoRepository employees;
-    @Autowired PersonaRepository people;
-    @Autowired MedidaRepository measures;
-    @Autowired MedidaOjoRepository eyes;
-    @Autowired LenteRepository lenses;
-    @Autowired MaterialCristalRepository materials;
-    @Autowired TratamientoCristalRepository treatments;
-    @Autowired ProductoRepository products;
-    @Autowired MonturaRepository frames;
-    @Autowired EntityManagerFactory emf;
-    @PersistenceContext EntityManager em;
+    // >>>> FIXTURES
+    private final MockMvc mvc;
+    private final RecetaService service;
+    private final RecetaRepository prescriptions;
+    private final PacienteRepository patients;
+    private final EmpleadoRepository employees;
+    private final PersonaRepository people;
+    private final MedidaRepository measures;
+    private final MedidaOjoRepository eyes;
+    private final LenteRepository lenses;
+    private final MaterialCristalRepository materials;
+    private final TratamientoCristalRepository treatments;
+    private final ProductoRepository products;
+    private final MonturaRepository frames;
+    private final EntityManagerFactory emf;
+    private final EntityManager em;
     Paciente patient;
     Empleado employee;
     MaterialCristal material;
     TratamientoCristal treatment;
     Montura frame;
 
+    // >>>> HELPERS
     Persona person(String name) {
         return people.saveAndFlush(new Persona(null, name, "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
+    // >>>> SETUP
     @BeforeEach
     void fixture() {
         patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
@@ -93,6 +96,7 @@ class HistorialClinicoControllerTest {
         frame = frames.saveAndFlush(new Montura(null, product, null, null, null));
     }
 
+    // >>>> HELPERS
     Receta recipe(LocalDateTime date, int external) {
         return prescriptions.saveAndFlush(new Receta(null, date, external, patient, employee));
     }
@@ -107,6 +111,7 @@ class HistorialClinicoControllerTest {
         return service.configurarLente(recipe.getId(), new LenteRequestDTO(recipe.getId(), material.getId(), frameId, new BigDecimal("380.00"), withTreatment ? List.of(treatment.getId()) : null, selectedMeasures)).id();
     }
 
+    // >>>> TESTS
     @Test
     void detalleIncluyeLentesMedidasPropiasTratamientosYMonturas() throws Exception {
         var recipe = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 1);
@@ -208,7 +213,7 @@ class HistorialClinicoControllerTest {
     @Test
     void datosHistoricosOpcionalesNoProvocanErrorNiSeInventanValores() throws Exception {
         var empty = recipe(LocalDateTime.of(2026, 11, 1, 10, 0), 0);
-        var legacy = measures.saveAndFlush(new Medida(null, pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum.LEJOS, null, null, null, empty, null, null, null));
+        var legacy = measures.saveAndFlush(new Medida(null, TipoMedidaEnum.LEJOS, null, null, null, empty, null, null, null));
         em.flush();
         em.clear();
         mvc.perform(get("/api/v1/recetas/{id}", empty.getId())).andExpect(status().isOk())
@@ -228,10 +233,12 @@ class HistorialClinicoControllerTest {
         }
         for (String[] invalid : new String[][]{{"page", "-1"}, {"size", "0"}, {"size", "101"}, {"page", "abc"}}) {
             mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId())
-                    .param(invalid[0], invalid[1])).andExpect(status().isBadRequest());
+                    .param(invalid[0], invalid[1])
+            ).andExpect(status().isBadRequest());
         }
         mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patient.getId())
-                .param("page", "2147483647").param("size", "100")).andExpect(status().isBadRequest());
+                .param("page", "2147483647").param("size", "100")
+        ).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -294,7 +301,9 @@ class HistorialClinicoControllerTest {
             lenses.deleteById(lensId);
             measures.deleteById(measure.getId());
             eyes.deleteAllById(List.of(measure.getMedidaOjoDerecha().getId(),
-                    measure.getMedidaOjoIzquierda().getId()));
+                    measure.getMedidaOjoIzquierda().getId()
+                )
+            );
             prescriptions.deleteById(recipe.getId());
             patients.deleteById(patient.getId());
             employees.deleteById(employee.getId());

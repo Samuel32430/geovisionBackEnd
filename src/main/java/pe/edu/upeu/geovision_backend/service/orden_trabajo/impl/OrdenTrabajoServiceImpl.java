@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.service.orden_trabajo.impl;
 
+import java.util.Locale;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,8 +50,10 @@ import pe.edu.upeu.geovision_backend.util.orden_trabajo.ConstanciaOrdenTrabajo;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.FlujoOrdenTrabajo;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.VentaOrdenTrabajo;
 
-@Service @RequiredArgsConstructor @Transactional
+@Service @RequiredArgsConstructor
 public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
+
+    // >>>> DEPENDENCIES
     private final OrdenTrabajoDetalleService detalles;
     private final OrdenTrabajoRepository ordenes;
     private final LenteRepository lentes;
@@ -61,14 +65,15 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     private final MedidaRepository medidas;
     private final ActorOrdenTrabajo actores;
     private final FlujoOrdenTrabajo flujo;
-    private final ComparadorLensometria comparador;
 
     private final VentaOrdenTrabajo ventasOrden;
 
+    // >>>> QUERIES
     @Override @Transactional(readOnly=true)
     public Page<PendienteOrdenTrabajoDTO> pendientes(String termino,Pageable pageable) {
         return ventas.buscarPendientesOrdenTrabajo(escapar(limpiar(termino)),pageable);
     }
+
     @Override @Transactional(readOnly=true)
     public Page<OrdenTrabajoResponseDTO> listar(EstadoOrdenTrabajoEnum estado,String termino,Pageable pageable) {
         String t=limpiar(termino);
@@ -77,19 +82,30 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             if(estado!=null) filtros.add(cb.equal(root.get("estado"),estado));
             if(t!=null) {
                 var persona=root.join("lente").join("receta").join("paciente").join("persona");
-                String pattern="%"+escapar(t.toLowerCase(java.util.Locale.ROOT))+"%";
+                String pattern="%"+escapar(t.toLowerCase(Locale.ROOT))+"%";
                 filtros.add(cb.or(cb.like(cb.lower(persona.get("nombres")),pattern,'!'),cb.like(cb.lower(persona.get("apellidos")),pattern,'!'),
-                    cb.like(persona.get("numeroDocumento"),pattern,'!')));
+                    cb.like(persona.get("numeroDocumento"),pattern,'!')
+                    )
+                );
             }
             return cb.and(filtros.toArray(Predicate[]::new));
         };
         return ordenes.findAll(spec,pageable).map(detalles::orden);
     }
+
     @Override @Transactional(readOnly=true)
     public OrdenTrabajoResponseDTO obtener(Long id) {
         return detalles.orden(ordenes.findById(id).orElseThrow(()->new RecursosNoEncontradosException("Orden no encontrada")));
     }
+
+    @Override @Transactional(readOnly=true)
+    public List<LaboratorioDTO> laboratorios() {
+        return laboratorios.findByActivo(true).stream().map(l->new LaboratorioDTO(l.getId(), l.getNombre(), l.getRuc(), l.getTelefono(), l.getDireccion(), l.getCorreo(), (l.getActivo() == null ? null : Boolean.TRUE.equals(l.getActivo()) ? 1 : 0))).toList();
+    }
+
+    // >>>> CREATION
     @Override
+    @Transactional
     public OrdenTrabajoResponseDTO generar(OrdenTrabajoRequestDTO request,String usuario) {
         flujo.validar(request); actores.obtener(usuario);
         var referencia=lentes.findById(request.idLente()).orElseThrow(()->new RecursosNoEncontradosException("Lente no encontrado"));
@@ -102,25 +118,19 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         if(medidasLente.isEmpty()) throw new ReglaNegocioException("El lente no tiene medidas asociadas");
         var tipos=new HashSet<TipoMedidaEnum>();
         for(var m:medidasLente) {
-            comparador.validarOriginal(m);
+            ComparadorLensometria.validarOriginal(m);
             if(m.getEnvioLaboratorio()!=null || m.getReceta()==null || !m.getReceta().getId().equals(lente.getReceta().getId())
-                || m.getTipoMedida()==null || !tipos.add(m.getTipoMedida()))
+                || m.getTipoMedida()==null || !tipos.add(m.getTipoMedida())
+            )
                 throw new ReglaNegocioException("Las medidas deben pertenecer a la receta y tener tipos unicos");
         }
         var orden=new OrdenTrabajo(null, null, null, null, EstadoOrdenTrabajoEnum.PENDIENTE, ConstanciaOrdenTrabajo.agregar(request.descripcion(),"[Creacion] Usuario: "+usuario), lente);
         return detalles.orden(ordenes.saveAndFlush(orden));
     }
-    private void validarVenta(Venta venta,Lente lente) {
-        if(venta.getEstado()!=EstadoVentaEnum.PENDIENTE && venta.getEstado()!=EstadoVentaEnum.PAGADA)
-            throw new ReglaNegocioException("La venta debe estar vigente");
-        if(venta.getReceta()==null || !venta.getReceta().getId().equals(lente.getReceta().getId())
-            || venta.getPaciente()==null || !venta.getPaciente().getId().equals(lente.getReceta().getPaciente().getId()))
-            throw new ReglaNegocioException("La venta, el lente y el paciente deben corresponder a la misma receta");
-        BigDecimal pagado=pagos.sumMontoPagadoByVentaId(venta.getId());
-        if(venta.getTotal()==null || venta.getTotal().signum()<=0 || pagado==null || pagado.signum()<=0 || pagado.compareTo(venta.getTotal())>0)
-            throw new ReglaNegocioException("La venta debe tener pago registrado e importes consistentes");
-    }
+
+    // >>>> LABORATORY OPERATIONS
     @Override
+    @Transactional
     public EnvioLaboratorioResponseDTO enviar(EnvioLaboratorioRequestDTO request,String usuario) {
         flujo.validar(request); actores.obtener(usuario); var ot=flujo.bloquear(request.idOrdenTrabajo());
         exigirVentaVigente(ot);
@@ -139,7 +149,9 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         envios.saveAndFlush(envio); ot.setEstado(EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO);
         ordenes.saveAndFlush(ot); return detalles.envio(envio);
     }
+
     @Override
+    @Transactional
     public EnvioLaboratorioResponseDTO recibir(Long idEnvio,RecepcionLaboratorioRequestDTO request,String usuario) {
         if(request!=null) flujo.validar(request);
         actores.obtener(usuario); var envio=flujo.bloquearEnvioActual(idEnvio); var ot=envio.getOrdenTrabajo();
@@ -148,11 +160,16 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             throw new ReglaNegocioException("El envio ya fue recibido o la orden no admite recepcion");
         envio.setFechaRecepcion(LocalDateTime.now().withNano(0));
         envio.setObservaciones(ConstanciaOrdenTrabajo.agregar(envio.getObservaciones(),"[Recepcion] Usuario: "+usuario
-            +(request==null || request.observaciones()==null?"":". "+request.observaciones())));
+            +(request==null || request.observaciones()==null?"":". "+request.observaciones())
+            )
+        );
         ot.setEstado(EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO);
         envios.saveAndFlush(envio); ordenes.saveAndFlush(ot); return detalles.envio(envio);
     }
+
+    // >>>> DELIVERY
     @Override
+    @Transactional
     public OrdenTrabajoResponseDTO entregar(EntregaPedidoRequestDTO request,String usuario) {
         flujo.validar(request); var actor=actores.obtener(usuario); var ot=flujo.bloquear(request.idOrdenTrabajo());
         if(request.idEmpleadoEntrega()!=null && !request.idEmpleadoEntrega().equals(actor.getId()))
@@ -161,9 +178,10 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             throw new ReglaNegocioException("La orden debe estar lista para entrega y no entregada previamente");
         var envio=ultimo(ot);
         if(envio.getFechaRecepcion()==null || envio.getFechaRevision()==null || !Integer.valueOf(1).equals(envio.getAprobado())
-            || medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
+            || medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty()
+        )
             throw new ReglaNegocioException("La entrega requiere control de calidad aprobado y lensometria registrada");
-        // Sin FK nueva: receta unica y bloqueo de la venta compartido con los abonos.
+
         var venta=ventasOrden.bloquear(ot.getLente().getReceta().getId());
         validarVenta(venta,ot.getLente());
         BigDecimal pagado=pagos.sumMontoPagadoByVentaId(venta.getId());
@@ -171,20 +189,36 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         if(saldo.compareTo(BigDecimal.ZERO)!=0) throw new ReglaNegocioException("No se puede entregar: el saldo pendiente debe ser exactamente cero. Saldo: "+saldo);
         ot.setEstado(EstadoOrdenTrabajoEnum.ENTREGADO); ot.setFechaEntrega(LocalDateTime.now().withNano(0));
         ot.setDescripcion(ConstanciaOrdenTrabajo.agregar(ot.getDescripcion(),"[Entrega] Usuario: "+usuario
-            +(request.observaciones()==null?"":". "+request.observaciones())));
+            +(request.observaciones()==null?"":". "+request.observaciones())
+            )
+        );
         return detalles.orden(ordenes.saveAndFlush(ot));
     }
+
+    // >>>> HELPERS
+    private void validarVenta(Venta venta,Lente lente) {
+        if(venta.getEstado()!=EstadoVentaEnum.PENDIENTE && venta.getEstado()!=EstadoVentaEnum.PAGADA)
+            throw new ReglaNegocioException("La venta debe estar vigente");
+        if(venta.getReceta()==null || !venta.getReceta().getId().equals(lente.getReceta().getId())
+            || venta.getPaciente()==null || !venta.getPaciente().getId().equals(lente.getReceta().getPaciente().getId())
+        )
+            throw new ReglaNegocioException("La venta, el lente y el paciente deben corresponder a la misma receta");
+        BigDecimal pagado=pagos.sumMontoPagadoByVentaId(venta.getId());
+        if(venta.getTotal()==null || venta.getTotal().signum()<=0 || pagado==null || pagado.signum()<=0 || pagado.compareTo(venta.getTotal())>0)
+            throw new ReglaNegocioException("La venta debe tener pago registrado e importes consistentes");
+    }
+
     private EnvioLaboratorio ultimo(OrdenTrabajo ot) {
         return envios.findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(ot.getId())
             .orElseThrow(()->new ReglaNegocioException("La orden no tiene un envio registrado"));
     }
+
     private void exigirVentaVigente(OrdenTrabajo ot) {
         ventasOrden.bloquear(ot.getLente().getReceta().getId());
     }
-    @Override @Transactional(readOnly=true)
-    public List<LaboratorioDTO> laboratorios() {
-        return laboratorios.findByActivo(true).stream().map(l->new LaboratorioDTO(l.getId(), l.getNombre(), l.getRuc(), l.getTelefono(), l.getDireccion(), l.getCorreo(), (l.getActivo() == null ? null : Boolean.TRUE.equals(l.getActivo()) ? 1 : 0))).toList();
-    }
+
     private String escapar(String t) { return t==null?null:t.replace("!","!!").replace("%","!%").replace("_","!_"); }
+
     private String limpiar(String t) { return t==null || t.isBlank()?null:t.trim(); }
+
 }

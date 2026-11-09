@@ -51,6 +51,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class VentaServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private VentaRepository ventaRepository;
 
@@ -91,6 +92,7 @@ class VentaServiceTest {
     private Producto productoTest;
     private Servicio servicioTest;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         personaEmpleado = new Persona(1L, "Carlos", "Vendedor", null, null, null, null, "44556677", null);
@@ -106,6 +108,7 @@ class VentaServiceTest {
         servicioTest = new Servicio(20L, "Medida de vista", null, new BigDecimal("30.00"), true);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CUS06: Registrar venta directa de productos al 100% exitosamente")
     void registrarVenta_directa100Porciento_exitoso() {
@@ -121,7 +124,8 @@ class VentaServiceTest {
             Venta v = inv.getArgument(0);
             v.setId(100L);
             return v;
-        });
+        }
+        );
         when(pagoRepository.save(any(Pago.class))).thenReturn(new Pago(1L, null, null, null, null, null));
 
         VentaResponseDTO responseMock = new VentaResponseDTO(100L, null, new BigDecimal("150.00"), new BigDecimal("150.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -131,7 +135,7 @@ class VentaServiceTest {
         assertThat(resultado).isNotNull();
         assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
         assertThat(resultado.saldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(productoTest.getStock()).isEqualTo(9); // 10 - 1
+        assertThat(productoTest.getStock()).isEqualTo(9);
         verify(productoRepository).save(productoTest);
         verify(ventaRepository).save(any(Venta.class));
     }

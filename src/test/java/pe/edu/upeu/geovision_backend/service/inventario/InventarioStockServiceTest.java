@@ -44,6 +44,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class InventarioStockServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private ProductoRepository productoRepository;
 
@@ -62,6 +63,7 @@ class InventarioStockServiceTest {
     private Producto producto;
     private Usuario usuario;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         Categoria categoria = new Categoria(1L, "MONTURAS", null, true, null);
@@ -71,6 +73,7 @@ class InventarioStockServiceTest {
         usuario = new Usuario(1L, "admin", null, "admin@geovision.com", true, null);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CU513 / RF-74, RF-79: Registrar entrada de stock incrementa stock y crea Kardex con bloqueo pesimista")
     void registrarEntradaStockExitoso() {
@@ -84,7 +87,8 @@ class InventarioStockServiceTest {
             MovimientoStockLog log = invocation.getArgument(0);
             log.setId(100L);
             return log;
-        });
+        }
+        );
 
         MovimientoStockResponseDTO response = inventarioStockService.registrarEntradaStock(request, "admin");
 
@@ -115,7 +119,8 @@ class InventarioStockServiceTest {
     @DisplayName("CU513 / RF-75, RF-78: Ajuste de stock por incremento suma unidades y genera Kardex")
     void registrarAjusteIncrementoExitoso() {
         AjusteStockRequestDTO request = new AjusteStockRequestDTO(10L, 5, "INCREMENTO",
-                MotivoMovimientoStockEnum.AJUSTE_POR_DIFERENCIA.getCodigo(), "Conteo físico anual arrojó 5 unidades adicionales");
+                MotivoMovimientoStockEnum.AJUSTE_POR_DIFERENCIA.getCodigo(), "Conteo físico anual arrojó 5 unidades adicionales"
+        );
 
         when(usuarioRepository.findByNombreOrCorreo("admin", "admin")).thenReturn(Optional.of(usuario));
         when(productoRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(producto));
@@ -125,7 +130,8 @@ class InventarioStockServiceTest {
             MovimientoStockLog log = invocation.getArgument(0);
             log.setId(101L);
             return log;
-        });
+        }
+        );
 
         MovimientoStockResponseDTO response = inventarioStockService.registrarAjusteStock(request, "admin");
 
@@ -138,9 +144,10 @@ class InventarioStockServiceTest {
     @Test
     @DisplayName("CU513 / RF-77: Impedir que un ajuste de salida deje stock negativo (Prevención estricta)")
     void registrarAjusteSalidaExcesivaRechazado() {
-        // Stock actual es 20; retirar 25 dejaría -5.
+
         AjusteStockRequestDTO request = new AjusteStockRequestDTO(10L, 25, "DECREMENTO",
-                MotivoMovimientoStockEnum.DANIO_DETERIORO.getCodigo(), "Deterioro en exhibidor");
+                MotivoMovimientoStockEnum.DANIO_DETERIORO.getCodigo(), "Deterioro en exhibidor"
+        );
 
         when(usuarioRepository.findByNombreOrCorreo("admin", "admin")).thenReturn(Optional.of(usuario));
         when(productoRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(producto));
@@ -149,7 +156,7 @@ class InventarioStockServiceTest {
                 .isInstanceOf(ReglaNegocioException.class)
                 .hasMessageContaining("dejaría el stock en negativo");
 
-        assertThat(producto.getStock()).isEqualTo(20); // No cambia
+        assertThat(producto.getStock()).isEqualTo(20);
         verify(movimientoStockLogRepository, never()).save(any());
     }
 

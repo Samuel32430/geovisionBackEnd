@@ -19,11 +19,16 @@ import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 @RequestMapping("/api/v1/control-calidad")
 @PreAuthorize("hasAuthority('ORDENES_TRABAJO_CALIDAD')")
 public class ControlCalidadController {
+
+    // >>>> DEPENDENCIES
     private final ControlCalidadService servicio;
 
+    // >>>> QUERIES
     @GetMapping("/pendientes")
-    public Page<OrdenTrabajoResponseDTO> pendientes(@RequestParam(defaultValue = "0") @Min(0) int page,
-                                                    @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
+    public Page<OrdenTrabajoResponseDTO> pendientes(
+        @RequestParam(defaultValue = "0") @Min(0) int page,
+        @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
+    ) {
         if ((long) page * size > Integer.MAX_VALUE)
             throw new ReglaNegocioException("La pagina excede el limite permitido");
         return servicio.pendientes(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaRegistro", "id")));
@@ -34,8 +39,10 @@ public class ControlCalidadController {
         return servicio.politica();
     }
 
+    // >>>> CREATION
     @PostMapping
     public EnvioLaboratorioResponseDTO registrar(@Valid @RequestBody ControlCalidadRequestDTO request, Authentication auth) {
         return servicio.registrar(request, auth.getName());
     }
+
 }

@@ -32,20 +32,25 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PacienteController {
 
+    // >>>> DEPENDENCIES
     private final PacienteService pacienteService;
 
+    // >>>> QUERIES
     @GetMapping
     @PreAuthorize("hasAuthority('PACIENTES_LEER')")
     public ResponseEntity<Page<PacienteResponseDTO>> listarPacientes(
-            @RequestParam(required = false) String termino,
-            @RequestParam(defaultValue = "1") @Min(0) @Max(1) Integer estado,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
+        @RequestParam(required = false) String termino,
+        @RequestParam(defaultValue = "1") @Min(0) @Max(1) Integer estado,
+        @RequestParam(defaultValue = "0") @Min(0) int page,
+        @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
+    ) {
         if ((long) page * size > Integer.MAX_VALUE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La página solicitada excede el límite permitido");
         }
         return ResponseEntity.ok(pacienteService.listarPacientes(termino,
-                (estado == null ? null : estado == 1), PageRequest.of(page, size)));
+                (estado == null ? null : estado == 1), PageRequest.of(page, size)
+            )
+        );
     }
 
     @GetMapping("/{id}")
@@ -60,31 +65,37 @@ public class PacienteController {
         return ResponseEntity.ok(pacienteService.obtenerPorNumeroDocumento(numeroDocumento));
     }
 
+    // >>>> CREATION
     @PostMapping
     @PreAuthorize("hasAuthority('PACIENTES_REGISTRAR')")
     public ResponseEntity<PacienteResponseDTO> registrarPaciente(
-            @Valid @RequestBody PacienteRequestDTO request, Authentication authentication) {
+        @Valid @RequestBody PacienteRequestDTO request, Authentication authentication
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(pacienteService.registrarPaciente(request, authentication.getName()));
     }
 
+    // >>>> UPDATES
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('PACIENTES_GESTIONAR')")
     public ResponseEntity<PacienteResponseDTO> actualizarPaciente(
-            @PathVariable @Positive Long id, @Valid @RequestBody PacienteRequestDTO request,
-            Authentication authentication) {
+        @PathVariable @Positive Long id, @Valid @RequestBody PacienteRequestDTO request,
+        Authentication authentication
+    ) {
         return ResponseEntity.ok(pacienteService.actualizarPaciente(id, request, authentication.getName()));
     }
 
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAuthority('PACIENTES_GESTIONAR')")
     public ResponseEntity<PacienteResponseDTO> cambiarEstadoPaciente(
-            @PathVariable @Positive Long id, @RequestBody Map<String, Integer> body,
-            Authentication authentication) {
+        @PathVariable @Positive Long id, @RequestBody Map<String, Integer> body,
+        Authentication authentication
+    ) {
         Integer estado = body.get("estado");
         if (estado == null || (estado != 0 && estado != 1)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El estado debe ser 0 o 1");
         }
         return ResponseEntity.ok(pacienteService.cambiarEstadoPaciente(id, estado, authentication.getName()));
     }
+
 }

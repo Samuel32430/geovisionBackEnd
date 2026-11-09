@@ -14,6 +14,7 @@ import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCri
 public final class MantenimientoMapper {
     private MantenimientoMapper() {}
 
+    // >>>> MAPPING
     public static void actualizar(CategoriaDTO source, Categoria target) {
         target.setNombre(limpiar(source.nombre()));
         target.setDescripcion(limpiar(source.descripcion()));
@@ -64,6 +65,7 @@ public final class MantenimientoMapper {
         return new LaboratorioDTO(source.getId(), source.getNombre(), source.getRuc(), source.getTelefono(), source.getDireccion(), source.getCorreo(), (source.getActivo() == null ? null : Boolean.TRUE.equals(source.getActivo()) ? 1 : 0));
     }
 
+    // >>>> HELPERS
     private static String limpiar(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }

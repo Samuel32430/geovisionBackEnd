@@ -10,13 +10,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/*
- * Configuracion CORS para /api/**.
- *
- * Con Spring Security activo, CORS se aplica en la cadena de seguridad
- * (SecurityConfig usa este bean). Asi la peticion de verificacion
- * (preflight OPTIONS) del navegador se responde antes de exigir el token.
- */
 @Configuration
 @RequiredArgsConstructor
 public class CorsConfig {
@@ -29,9 +22,13 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(getOrigenesPermitidos());
         config.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+            )
+        );
         config.setAllowedHeaders(List.of(
-                "Content-Type", "Accept", "Authorization", "Origin"));
+                "Content-Type", "Accept", "Authorization", "Origin"
+            )
+        );
         config.setExposedHeaders(List.of("Location"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

@@ -12,19 +12,23 @@ import java.util.Set;
 
 public interface UsuarioService {
 
+    // >>>> QUERIES
     Page<PersonaUsuarioResumenDTO> buscarPersonasParaUsuario(String termino, boolean sinUsuario, Pageable pageable);
-
-    UsuarioResponseDTO registrarConPersona(RegistroPersonaUsuarioRequestDTO request);
 
     List<UsuarioResponseDTO> listar();
 
     UsuarioResponseDTO obtenerPorId(Long id);
 
+    // >>>> CREATION
+    UsuarioResponseDTO registrarConPersona(RegistroPersonaUsuarioRequestDTO request);
+
     UsuarioResponseDTO crear(UsuarioRequestDTO request);
 
+    // >>>> UPDATES
     UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request);
 
     UsuarioResponseDTO cambiarEstado(Long id, Integer nuevoEstado, String authUsername);
 
     UsuarioResponseDTO asignarRoles(Long id, Set<Long> roleIds, String authUsername);
+
 }

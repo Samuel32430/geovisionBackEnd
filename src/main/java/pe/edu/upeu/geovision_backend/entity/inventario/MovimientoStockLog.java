@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class MovimientoStockLog {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_movimiento")
@@ -58,6 +59,7 @@ public class MovimientoStockLog {
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {

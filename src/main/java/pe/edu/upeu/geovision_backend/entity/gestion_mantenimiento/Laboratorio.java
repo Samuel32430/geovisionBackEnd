@@ -20,6 +20,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Laboratorio {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_laboratorio")
@@ -43,6 +44,7 @@ public class Laboratorio {
     @Column(name = "estado", nullable = false)
     private Boolean activo = true;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.activo == null) {

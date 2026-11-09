@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.security;
 
+import lombok.RequiredArgsConstructor;
+
 import pe.edu.upeu.geovision_backend.security.service.JwtService;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -21,25 +23,25 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Filtro de autenticación JWT ejecutado en cada petición HTTP protegida.
- * Extrae el Bearer token, valida su firma y caducidad, y autentica al usuario en el SecurityContext.
- */
-@lombok.RequiredArgsConstructor
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    // >>>> CONSTANTS
     public static final String ATRIBUTO_ERROR = "jwt.error";
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String PREFIJO = "Bearer ";
 
+    // >>>> FIELDS
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
+    // >>>> OPERATIONS
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+        HttpServletRequest request,
+        HttpServletResponse response,
+        FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String encabezado = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (encabezado == null || !encabezado.startsWith(PREFIJO)) {

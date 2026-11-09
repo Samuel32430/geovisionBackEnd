@@ -13,15 +13,18 @@ import java.util.Optional;
 @Repository
 public interface CategoriaRepository extends JpaRepository<Categoria, Long>, JpaSpecificationExecutor<Categoria> {
 
+    // >>>> QUERIES
     Optional<Categoria> findByNombreIgnoreCase(String nombre);
-
-    boolean existsByNombreIgnoreCase(String nombre);
-
-    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idCategoria);
 
     List<Categoria> findByActivo(Boolean estado);
 
     Page<Categoria> findByActivo(Boolean estado, Pageable pageable);
 
     Page<Categoria> findByNombreContainingIgnoreCase(String termino, Pageable pageable);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByNombreIgnoreCase(String nombre);
+
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idCategoria);
+
 }

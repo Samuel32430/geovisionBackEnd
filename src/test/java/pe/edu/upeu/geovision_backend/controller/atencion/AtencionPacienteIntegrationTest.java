@@ -1,12 +1,14 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import java.util.Map;
+
+import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -69,56 +71,64 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@RequiredArgsConstructor
 class AtencionPacienteIntegrationTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired ObjectMapper json;
-    @Autowired PasswordEncoder encoder;
-    @Autowired JwtService jwt;
-    @Autowired PacienteService patientService;
-    @Autowired PersonaRepository people;
-    @Autowired UsuarioRepository users;
-    @Autowired EmpleadoRepository employees;
-    @Autowired PacienteRepository patients;
-    @Autowired PacienteLogRepository patientLogs;
-    @Autowired RolRepository roles;
-    @Autowired PermisoRepository permissions;
-    @Autowired RolPermisoRepository rolePermissions;
-    @Autowired UsuarioRolRepository userRoles;
-    @Autowired MaterialCristalRepository materials;
-    @Autowired VentaRepository sales;
-    @Autowired RecetaRepository prescriptions;
-    @Autowired UsuarioLogRepository userLogs;
-    @Autowired PlatformTransactionManager transactions;
-    @Value("${app.jwt.secret}") String testSecret;
+    // >>>> FIXTURES
+    private final MockMvc mvc;
+    private final ObjectMapper json;
+    private final PasswordEncoder encoder;
+    private final JwtService jwt;
+    private final PacienteService patientService;
+    private final PersonaRepository people;
+    private final UsuarioRepository users;
+    private final EmpleadoRepository employees;
+    private final PacienteRepository patients;
+    private final PacienteLogRepository patientLogs;
+    private final RolRepository roles;
+    private final PermisoRepository permissions;
+    private final RolPermisoRepository rolePermissions;
+    private final UsuarioRolRepository userRoles;
+    private final MaterialCristalRepository materials;
+    private final VentaRepository sales;
+    private final RecetaRepository prescriptions;
+    private final UsuarioLogRepository userLogs;
+    private final PlatformTransactionManager transactions;
+    @Value("${app.jwt.secret}") private final String testSecret;
     Usuario actor;
     Empleado employee;
     Rol role;
 
+    // >>>> HELPERS
     Persona person(String name) {
         return people.saveAndFlush(new Persona(null, name, "Integración", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
+    // >>>> SETUP
     @BeforeEach
     void setup() {
-        // La auditoría de login usa REQUIRES_NEW y necesita una cuenta ya confirmada.
+        // REQUIRES_NEW login auditing requires a committed account fixture.
         var fixtureTransaction = new TransactionTemplate(transactions);
         fixtureTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         fixtureTransaction.executeWithoutResult(status -> createFixture());
     }
 
+    // >>>> HELPERS
     void createFixture() {
         Persona professional = person("Profesional");
         actor = users.saveAndFlush(new Usuario(null, "integracion-" + UUID.randomUUID(), encoder.encode("PruebaSegura123!"), UUID.randomUUID() + "@test.invalid", true, professional));
         employee = employees.saveAndFlush(new Empleado(null, professional, true, null, actor));
         role = roles.saveAndFlush(new Rol(null, "PRUEBA-" + UUID.randomUUID()));
         for (String permission : List.of("PACIENTES_LEER", "PACIENTES_REGISTRAR", "PACIENTES_GESTIONAR",
-                "EXAMENES_REGISTRAR", "RECETAS_REGISTRAR")) {
+                "EXAMENES_REGISTRAR", "RECETAS_REGISTRAR"
+            )
+        ) {
             rolePermissions.saveAndFlush(new RolPermiso(null, role, permissions.findByNombreIgnoreCase(permission).orElseThrow()));
         }
         userRoles.saveAndFlush(new UsuarioRol(null, actor, role));
     }
 
+    // >>>> CLEANUP
     @AfterTransaction
     void cleanup() {
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
@@ -129,12 +139,15 @@ class AtencionPacienteIntegrationTest {
             users.deleteById(actor.getId());
             people.deleteById(employee.getId());
             roles.deleteById(role.getId());
-        });
+        }
+        );
     }
 
+    // >>>> HELPERS
     String login() throws Exception {
         String response = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(java.util.Map.of("username", actor.getNombre(), "password", "PruebaSegura123!"))))
+                        .content(json.writeValueAsString(Map.of("username", actor.getNombre(), "password", "PruebaSegura123!")))
+        )
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return "Bearer " + json.readTree(response).get("token").asText();
     }
@@ -149,51 +162,69 @@ class AtencionPacienteIntegrationTest {
                 """.formatted(patientId, employee.getId());
     }
 
+    // >>>> TESTS
     @Test
     void flujoCompletoConLoginJwtAuditoriaRecetaLenteHistorialPdfYBloqueoPorVenta() throws Exception {
         String bearer = login();
         String document = UUID.randomUUID().toString();
-        String patientJson = json.writeValueAsString(java.util.Map.of("persona", java.util.Map.of(
-                "nombres", "Paciente", "apellidos", "Integración", "tipoDocumento", "DNI", "numeroDocumento", document)));
+        String patientJson = json.writeValueAsString(Map.of("persona", Map.of(
+                "nombres", "Paciente", "apellidos", "Integración", "tipoDocumento", "DNI", "numeroDocumento", document
+                )
+            )
+        );
         JsonNode patient = json.readTree(mvc.perform(post("/api/v1/pacientes").header("Authorization", bearer)
-                        .contentType(MediaType.APPLICATION_JSON).content(patientJson))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+                        .contentType(MediaType.APPLICATION_JSON).content(patientJson)
+            )
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()
+        );
         long patientId = patient.get("id").asLong();
         mvc.perform(post("/api/v1/pacientes").header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content(patientJson)).andExpect(status().isConflict());
+                .contentType(MediaType.APPLICATION_JSON).content(patientJson)
+        ).andExpect(status().isConflict());
         JsonNode recipe = json.readTree(mvc.perform(post("/api/v1/recetas/examen-visual").header("Authorization", bearer)
-                        .contentType(MediaType.APPLICATION_JSON).content(exam(patientId)))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+                        .contentType(MediaType.APPLICATION_JSON).content(exam(patientId))
+            )
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()
+        );
         long recipeId = recipe.get("id").asLong();
         var material = materials.saveAndFlush(new MaterialCristal(null, "Material " + UUID.randomUUID()));
         mvc.perform(get("/api/v1/catalogos-opticos/materiales-cristal").header("Authorization", bearer))
                 .andExpect(status().isOk());
-        String lens = json.writeValueAsString(java.util.Map.of("idReceta", recipeId,
-                "idMaterialCristal", material.getId(), "subTotal", new BigDecimal("380.00")));
+        String lens = json.writeValueAsString(Map.of("idReceta", recipeId,
+                "idMaterialCristal", material.getId(), "subTotal", new BigDecimal("380.00")
+            )
+        );
         mvc.perform(post("/api/v1/recetas/{id}/lentes", recipeId).header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content(lens)).andExpect(status().isCreated());
+                .contentType(MediaType.APPLICATION_JSON).content(lens)
+        ).andExpect(status().isCreated());
         mvc.perform(get("/api/v1/recetas/{id}", recipeId).header("Authorization", bearer))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.lentes.length()").value(1));
         byte[] pdf = mvc.perform(get("/api/v1/recetas/{id}/pdf", recipeId).header("Authorization", bearer)
-                        .accept(MediaType.APPLICATION_PDF)).andExpect(status().isOk())
+                        .accept(MediaType.APPLICATION_PDF)
+        ).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsByteArray();
         try (var parsed = Loader.loadPDF(pdf)) {
             assertThat(new PDFTextStripper().getText(parsed)).contains("Paciente Integración", "-1.25", "Material");
         }
         mvc.perform(patch("/api/v1/pacientes/{id}/estado", patientId).header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":0}")).andExpect(status().isOk());
+                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":0}")
+        ).andExpect(status().isOk());
         mvc.perform(post("/api/v1/recetas/examen-visual").header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content(exam(patientId))).andExpect(status().isConflict());
+                .contentType(MediaType.APPLICATION_JSON).content(exam(patientId))
+        ).andExpect(status().isConflict());
         mvc.perform(get("/api/v1/recetas/paciente/{id}/historial", patientId).header("Authorization", bearer))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
         mvc.perform(patch("/api/v1/pacientes/{id}/estado", patientId).header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":1}")).andExpect(status().isOk());
+                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":1}")
+        ).andExpect(status().isOk());
         mvc.perform(post("/api/v1/recetas/externa").header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content(exam(patientId)))
+                .contentType(MediaType.APPLICATION_JSON).content(exam(patientId))
+        )
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.esExterno").value(1));
         sales.saveAndFlush(new Venta(null, null, new BigDecimal("380.00"), EstadoVentaEnum.PENDIENTE, null, TipoComprobanteEnum.BOLETA, employee, patients.findById(patientId).orElseThrow(), prescriptions.findById(recipeId).orElseThrow()));
         mvc.perform(post("/api/v1/recetas/{id}/lentes", recipeId).header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content(lens)).andExpect(status().isConflict());
+                .contentType(MediaType.APPLICATION_JSON).content(lens)
+        ).andExpect(status().isConflict());
         assertThat(patientLogs.findByPacienteIdOrderByFechaLogDesc(patientId)).hasSize(3)
                 .allSatisfy(log -> assertThat(log.getUsuario().getId()).isEqualTo(actor.getId()));
     }
@@ -227,7 +258,8 @@ class AtencionPacienteIntegrationTest {
         employees.saveAndFlush(employee);
         mvc.perform(get("/api/v1/pacientes").header("Authorization", bearer)).andExpect(status().isUnauthorized());
         var expired = new JwtService(testSecret, -1).generarToken(User.withUsername(actor.getNombre())
-                .password("unused").authorities("PACIENTES_LEER").build());
+                .password("unused").authorities("PACIENTES_LEER").build()
+        );
         mvc.perform(get("/api/v1/pacientes").header("Authorization", "Bearer " + expired)).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/pacientes").header("Authorization", "Bearer invalid-token"))
                 .andExpect(status().isUnauthorized());
@@ -238,16 +270,21 @@ class AtencionPacienteIntegrationTest {
         String bearer = login();
         var patient = patients.saveAndFlush(new Paciente(null, person("Paciente"), true, null, null));
         for (String invalid : List.of(exam(patient.getId()).replace("\"idPaciente\":" + patient.getId(),
-                "\"idPaciente\":" + patient.getId() + ".5"),
-                exam(patient.getId()).replace("\"eje\":90", "\"eje\":90.5"))) {
+                "\"idPaciente\":" + patient.getId() + ".5"
+                ),
+                exam(patient.getId()).replace("\"eje\":90", "\"eje\":90.5")
+            )
+        ) {
             mvc.perform(post("/api/v1/recetas/examen-visual").header("Authorization", bearer)
-                    .contentType(MediaType.APPLICATION_JSON).content(invalid)).andExpect(status().isBadRequest())
+                    .contentType(MediaType.APPLICATION_JSON).content(invalid)
+            ).andExpect(status().isBadRequest())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$.status").value(400))
                     .andExpect(jsonPath("$.message").value("El cuerpo JSON tiene un formato inválido o contiene valores incompatibles"));
         }
         mvc.perform(patch("/api/v1/pacientes/{id}/estado", patient.getId()).header("Authorization", bearer)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":0.5}")).andExpect(status().isBadRequest());
+                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":0.5}")
+        ).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -257,7 +294,9 @@ class AtencionPacienteIntegrationTest {
         for (String numeric : List.of("1", "\"1\"")) {
             mvc.perform(post("/api/v1/recetas/examen-visual").header("Authorization", bearer)
                     .contentType(MediaType.APPLICATION_JSON).content(exam(patient.getId())
-                            .replace("\"tipoMedida\":\"LEJOS\"", "\"tipoMedida\":" + numeric)))
+                            .replace("\"tipoMedida\":\"LEJOS\"", "\"tipoMedida\":" + numeric)
+                    )
+            )
                     .andExpect(status().isBadRequest());
         }
     }
@@ -298,7 +337,9 @@ class AtencionPacienteIntegrationTest {
                 patientLogs.deleteAll(patientLogs.findByPacienteIdOrderByFechaLogDesc(person.getId()));
                 if (patients.existsById(person.getId())) patients.deleteById(person.getId());
                 people.deleteById(person.getId());
-            }));
+            }
+                )
+            );
         }
     }
 }

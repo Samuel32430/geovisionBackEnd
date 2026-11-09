@@ -10,9 +10,12 @@ import java.util.Optional;
 @Repository
 public interface TratamientoCristalRepository extends JpaRepository<TratamientoCristal, Long>, JpaSpecificationExecutor<TratamientoCristal> {
 
+    // >>>> QUERIES
     Optional<TratamientoCristal> findByNombreIgnoreCase(String nombre);
 
+    // >>>> EXISTENCE CHECKS
     boolean existsByNombreIgnoreCase(String nombre);
 
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long idTratamientoCristal);
+
 }

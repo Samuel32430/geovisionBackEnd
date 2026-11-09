@@ -55,8 +55,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    // >>>> CONSTANTS
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
+    // >>>> DEPENDENCIES
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UsuarioRepository usuarioRepository;
@@ -67,6 +69,30 @@ public class AuthServiceImpl implements AuthService {
     private final UsuarioLogService usuarioLogService;
     private final EmailService emailService;
 
+    // >>>> QUERIES
+    @Override
+    @Transactional(readOnly = true)
+    public UsuarioResponseDTO usuarioActual(String username) {
+        Usuario usuario = usuarioRepository.findByNombreOrCorreo(username, username)
+                .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado con: " + username));
+
+        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioId(usuario.getId());
+        Set<RolDTO> rolesDTO = usuarioRoles.stream()
+                .map(ur -> {
+                    Rol rol = ur.getRol();
+                    List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
+                    Set<PermisoDTO> permisosDTO = rolPermisos.stream()
+                            .map(rp -> PermisoMapper.toDTO(rp.getPermiso()))
+                            .collect(Collectors.toSet());
+                    return RolMapper.toDTO(rol, permisosDTO);
+                }
+                )
+                .collect(Collectors.toSet());
+
+        return UsuarioMapper.toUsuarioResponse(usuario, rolesDTO);
+    }
+
+    // >>>> AUTHENTICATION
     @Override
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO request) {
@@ -76,7 +102,8 @@ public class AuthServiceImpl implements AuthService {
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(identificador, request.password()));
+                    new UsernamePasswordAuthenticationToken(identificador, request.password())
+            );
         } catch (AuthenticationException ex) {
             log.warn("Fallo de autenticación para {}: {}", identificador, ex.getMessage());
             usuarioRepository.findByNombreOrCorreo(identificador, identificador)
@@ -133,27 +160,7 @@ public class AuthServiceImpl implements AuthService {
         return new LogoutResponseDTO("Sesión cerrada exitosamente", true, LocalDateTime.now());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public UsuarioResponseDTO usuarioActual(String username) {
-        Usuario usuario = usuarioRepository.findByNombreOrCorreo(username, username)
-                .orElseThrow(() -> new RecursosNoEncontradosException("Usuario no encontrado con: " + username));
-
-        List<UsuarioRol> usuarioRoles = usuarioRolRepository.findByUsuarioId(usuario.getId());
-        Set<RolDTO> rolesDTO = usuarioRoles.stream()
-                .map(ur -> {
-                    Rol rol = ur.getRol();
-                    List<RolPermiso> rolPermisos = rolPermisoRepository.findByRolId(rol.getId());
-                    Set<PermisoDTO> permisosDTO = rolPermisos.stream()
-                            .map(rp -> PermisoMapper.toDTO(rp.getPermiso()))
-                            .collect(Collectors.toSet());
-                    return RolMapper.toDTO(rol, permisosDTO);
-                })
-                .collect(Collectors.toSet());
-
-        return UsuarioMapper.toUsuarioResponse(usuario, rolesDTO);
-    }
-
+    // >>>> PASSWORD CHANGES
     @Override
     @Transactional
     public void cambiarPassword(String username, CambioPasswordRequestDTO request) {
@@ -183,6 +190,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Contraseña actualizada exitosamente para usuario: {}", usuario.getNombre());
     }
 
+    // >>>> PASSWORD RECOVERY
     @Override
     @Transactional(readOnly = true)
     public void solicitarRecuperacionPassword(RecuperarPasswordRequestDTO request) {
@@ -191,7 +199,9 @@ public class AuthServiceImpl implements AuthService {
 
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new RecursosNoEncontradosException(
-                        "No se encontró ninguna cuenta registrada con el correo: " + correo));
+                        "No se encontró ninguna cuenta registrada con el correo: " + correo
+                    )
+                );
 
         if (!Boolean.TRUE.equals(usuario.getActivo())) {
             throw new ReglaNegocioException("La cuenta de usuario asociada a este correo se encuentra inactiva");
@@ -240,4 +250,5 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Contraseña restablecida exitosamente para usuario={}", usuario.getNombre());
     }
+
 }

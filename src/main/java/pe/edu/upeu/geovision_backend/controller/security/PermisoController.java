@@ -17,8 +17,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PermisoController {
 
+    // >>>> DEPENDENCIES
     private final PermisoService permisoService;
 
+    // >>>> QUERIES
     @GetMapping
     public ResponseEntity<List<PermisoDTO>> listar() {
         return ResponseEntity.ok(permisoService.listar());
@@ -33,4 +35,5 @@ public class PermisoController {
     public ResponseEntity<PermisoDTO> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(permisoService.obtenerPorId(id));
     }
+
 }

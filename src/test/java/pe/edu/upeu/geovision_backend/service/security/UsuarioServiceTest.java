@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private UsuarioRepository usuarioRepository;
 
@@ -71,6 +72,7 @@ class UsuarioServiceTest {
     private Rol rolAdmin;
     private Rol rolVendedor;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         personaAdmin = new Persona(1L, "Admin", "General", null, null, null, null, null, null);
@@ -84,6 +86,7 @@ class UsuarioServiceTest {
         vendedorUser = new Usuario(2L, "carlos.vendedor", "$2a$10$hash", "carlos@geovision.com", true, personaVendedor);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CUS17: Registro de nuevo usuario exitoso (RF-86)")
     void crearUsuarioExitoso() {

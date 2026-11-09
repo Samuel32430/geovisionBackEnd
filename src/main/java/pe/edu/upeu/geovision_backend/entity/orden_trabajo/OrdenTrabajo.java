@@ -2,10 +2,8 @@ package pe.edu.upeu.geovision_backend.entity.orden_trabajo;
 
 import pe.edu.upeu.geovision_backend.entity.atencion.Lente;
 
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -31,6 +29,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class OrdenTrabajo {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_orden_trabajo")
@@ -45,7 +44,7 @@ public class OrdenTrabajo {
     @Column(name = "fecha_notificacion")
     private LocalDateTime fechaNotificacion;
 
-    @Convert(converter = EstadoOrdenTrabajoConverter.class)
+    @Convert(converter = EstadoOrdenTrabajoEnum.PersistenceConverter.class)
     @Column(name = "estado", nullable = false)
     private EstadoOrdenTrabajoEnum estado;
 
@@ -56,6 +55,7 @@ public class OrdenTrabajo {
     @JoinColumn(name = "id_lente", nullable = false)
     private Lente lente;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {
@@ -63,6 +63,7 @@ public class OrdenTrabajo {
         }
     }
 
+    // >>>> OPERATIONS
     public Integer getEstadoCodigo() {
         return this.estado != null ? this.estado.getCodigo() : null;
     }
@@ -71,16 +72,4 @@ public class OrdenTrabajo {
         this.estado = EstadoOrdenTrabajoEnum.fromCodigo(codigo);
     }
 
-    @Converter
-    public static class EstadoOrdenTrabajoConverter implements AttributeConverter<EstadoOrdenTrabajoEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(EstadoOrdenTrabajoEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public EstadoOrdenTrabajoEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? EstadoOrdenTrabajoEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

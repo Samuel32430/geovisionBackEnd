@@ -25,6 +25,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Usuario {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario")
@@ -46,6 +47,7 @@ public class Usuario {
     @JoinColumn(name = "id_persona")
     private Persona persona;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.activo == null) {

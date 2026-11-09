@@ -9,9 +9,12 @@ import java.util.Optional;
 @Repository
 public interface ConfiguracionEmpresaRepository extends JpaRepository<ConfiguracionEmpresa, Long> {
 
+    // >>>> QUERIES
     Optional<ConfiguracionEmpresa> findByRuc(String ruc);
 
+    Optional<ConfiguracionEmpresa> findFirstByOrderByIdAsc();
+
+    // >>>> EXISTENCE CHECKS
     boolean existsByRuc(String ruc);
 
-    Optional<ConfiguracionEmpresa> findFirstByOrderByIdAsc();
 }

@@ -26,8 +26,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CatalogoOpticoController {
 
+    // >>>> DEPENDENCIES
     private final CatalogoOpticoService catalogoOpticoService;
 
+    // >>>> QUERIES
     @GetMapping("/materiales-cristal")
     public ResponseEntity<List<MaterialCristalDTO>> listarMaterialesCristal() {
         return ResponseEntity.ok(catalogoOpticoService.listarMaterialesCristal());
@@ -40,11 +42,13 @@ public class CatalogoOpticoController {
 
     @GetMapping("/monturas")
     public ResponseEntity<Page<MonturaDTO>> listarMonturasDisponibles(
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
+        @RequestParam(defaultValue = "0") @Min(0) int page,
+        @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
+    ) {
         if ((long) page * size > Integer.MAX_VALUE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La página solicitada excede el límite permitido");
         }
         return ResponseEntity.ok(catalogoOpticoService.listarMonturasDisponibles(PageRequest.of(page, size)));
     }
+
 }

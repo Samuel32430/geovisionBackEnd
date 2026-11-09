@@ -13,15 +13,19 @@ import java.util.List;
 
 public interface RecetaService {
 
-    RecetaResponseDTO registrarExamenVisual(@NotNull @Valid RecetaRequestDTO request, String usernameAuditoria);
-
-    RecetaResponseDTO registrarRecetaExterna(@NotNull @Valid RecetaRequestDTO request, String usernameAuditoria);
-
-    LenteResponseDTO configurarLente(Long idReceta, @NotNull @Valid LenteRequestDTO request);
-
+    // >>>> QUERIES
     RecetaResponseDTO obtenerRecetaPorId(Long idReceta);
 
     List<RecetaResponseDTO> listarHistorialPorPaciente(Long idPaciente);
 
     Page<RecetaResponseDTO> listarRecetasPaginadas(Long idPaciente, Pageable pageable);
+
+    // >>>> CREATION
+    RecetaResponseDTO registrarExamenVisual(@NotNull @Valid RecetaRequestDTO request, String usernameAuditoria);
+
+    RecetaResponseDTO registrarRecetaExterna(@NotNull @Valid RecetaRequestDTO request, String usernameAuditoria);
+
+    // >>>> OPERATIONS
+    LenteResponseDTO configurarLente(Long idReceta, @NotNull @Valid LenteRequestDTO request);
+
 }

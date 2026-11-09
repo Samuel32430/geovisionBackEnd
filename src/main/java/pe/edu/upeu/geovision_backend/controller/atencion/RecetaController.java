@@ -35,9 +35,11 @@ import pe.edu.upeu.geovision_backend.service.atencion.RecetaPdfService;
 @RequiredArgsConstructor
 public class RecetaController {
 
+    // >>>> DEPENDENCIES
     private final RecetaService recetaService;
     private final RecetaPdfService recetaPdfService;
 
+    // >>>> QUERIES
     @GetMapping(value = "/{idReceta}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAuthority('PACIENTES_LEER')")
     public ResponseEntity<byte[]> generarRecetaPdf(@PathVariable @Positive Long idReceta) {
@@ -45,7 +47,8 @@ public class RecetaController {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
                 .contentLength(pdf.length).cacheControl(CacheControl.noStore())
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
-                        .filename("receta-" + idReceta + ".pdf").build().toString())
+                        .filename("receta-" + idReceta + ".pdf").build().toString()
+                )
                 .body(pdf);
     }
 
@@ -58,26 +61,30 @@ public class RecetaController {
     @GetMapping("/paciente/{idPaciente}/historial")
     @PreAuthorize("hasAuthority('PACIENTES_LEER')")
     public ResponseEntity<Page<RecetaResponseDTO>> listarHistorialPorPaciente(
-            @PathVariable @Positive Long idPaciente,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
+        @PathVariable @Positive Long idPaciente,
+        @RequestParam(defaultValue = "0") @Min(0) int page,
+        @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
+    ) {
         if ((long) page * size > Integer.MAX_VALUE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La página solicitada excede el límite permitido");
         }
         return ResponseEntity.ok(recetaService.listarRecetasPaginadas(idPaciente, PageRequest.of(page, size)));
     }
 
+    // >>>> CREATION
     @PostMapping("/{idReceta}/lentes")
     @PreAuthorize("hasAuthority('RECETAS_REGISTRAR')")
     public ResponseEntity<LenteResponseDTO> configurarLente(
-            @PathVariable @Positive Long idReceta, @Valid @RequestBody LenteRequestDTO request) {
+        @PathVariable @Positive Long idReceta, @Valid @RequestBody LenteRequestDTO request
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(recetaService.configurarLente(idReceta, request));
     }
 
     @PostMapping("/examen-visual")
     @PreAuthorize("hasAuthority('EXAMENES_REGISTRAR')")
     public ResponseEntity<RecetaResponseDTO> registrarExamenVisual(
-            @Valid @RequestBody RecetaRequestDTO request, Authentication authentication) {
+        @Valid @RequestBody RecetaRequestDTO request, Authentication authentication
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(recetaService.registrarExamenVisual(request, authentication.getName()));
     }
@@ -85,8 +92,10 @@ public class RecetaController {
     @PostMapping("/externa")
     @PreAuthorize("hasAuthority('RECETAS_REGISTRAR')")
     public ResponseEntity<RecetaResponseDTO> registrarRecetaExterna(
-            @Valid @RequestBody RecetaRequestDTO request, Authentication authentication) {
+        @Valid @RequestBody RecetaRequestDTO request, Authentication authentication
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(recetaService.registrarRecetaExterna(request, authentication.getName()));
     }
+
 }

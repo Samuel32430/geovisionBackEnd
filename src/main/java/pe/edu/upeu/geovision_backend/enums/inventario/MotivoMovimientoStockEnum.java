@@ -1,10 +1,8 @@
 package pe.edu.upeu.geovision_backend.enums.inventario;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public enum MotivoMovimientoStockEnum {
 
     ENTRADA_POR_COMPRA(1, "Entrada por compra"),
@@ -15,6 +13,12 @@ public enum MotivoMovimientoStockEnum {
 
     private final Integer codigo;
     private final String descripcion;
+
+    // >>>> CONSTRUCTOR
+    MotivoMovimientoStockEnum(Integer codigo, String descripcion) {
+        this.codigo = codigo;
+        this.descripcion = descripcion;
+    }
 
     public static MotivoMovimientoStockEnum fromCodigo(Integer codigo) {
         if (codigo == null) {

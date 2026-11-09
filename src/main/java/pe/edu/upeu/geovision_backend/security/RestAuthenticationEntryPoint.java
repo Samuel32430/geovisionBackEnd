@@ -10,17 +10,15 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * Manejador para respuestas 401 Unauthorized cuando una petición no está autenticada.
- */
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
     public void commence(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException authException) throws IOException {
+        HttpServletRequest request,
+        HttpServletResponse response,
+        AuthenticationException authException
+    ) throws IOException {
 
         Object motivo = request.getAttribute(JwtAuthenticationFilter.ATRIBUTO_ERROR);
         String mensaje = motivo != null
@@ -33,6 +31,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 response,
                 HttpStatus.UNAUTHORIZED.value(),
                 "Unauthorized",
-                mensaje);
+                mensaje
+        );
     }
 }

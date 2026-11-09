@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record VentaRegistroRequestDTO(
-    // Opcional en el request: si no se envía, se deduce del usuario/empleado autenticado
+
     Long idEmpleado,
     Long idPaciente,
     Long idReceta,

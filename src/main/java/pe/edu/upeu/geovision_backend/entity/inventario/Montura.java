@@ -1,9 +1,7 @@
 package pe.edu.upeu.geovision_backend.entity.inventario;
 
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -26,6 +24,7 @@ import pe.edu.upeu.geovision_backend.enums.inventario.ModeloMonturaEnum;
 @AllArgsConstructor
 public class Montura {
 
+    // >>>> FIELDS
     @Id
     @Column(name = "id_producto")
     private Long id;
@@ -38,14 +37,15 @@ public class Montura {
     @Column(name = "color", length = 100)
     private String color;
 
-    @Convert(converter = ModeloMonturaConverter.class)
+    @Convert(converter = ModeloMonturaEnum.PersistenceConverter.class)
     @Column(name = "modelo")
     private ModeloMonturaEnum modelo;
 
-    @Convert(converter = MaterialMonturaConverter.class)
+    @Convert(converter = MaterialMonturaEnum.PersistenceConverter.class)
     @Column(name = "material")
     private MaterialMonturaEnum material;
 
+    // >>>> OPERATIONS
     public Integer getModeloCodigo() {
         return this.modelo != null ? this.modelo.getCodigo() : null;
     }
@@ -62,29 +62,4 @@ public class Montura {
         this.material = MaterialMonturaEnum.fromCodigo(codigo);
     }
 
-    @Converter
-    public static class ModeloMonturaConverter implements AttributeConverter<ModeloMonturaEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(ModeloMonturaEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public ModeloMonturaEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? ModeloMonturaEnum.fromCodigo(dbData) : null;
-        }
-    }
-
-    @Converter
-    public static class MaterialMonturaConverter implements AttributeConverter<MaterialMonturaEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(MaterialMonturaEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public MaterialMonturaEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? MaterialMonturaEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

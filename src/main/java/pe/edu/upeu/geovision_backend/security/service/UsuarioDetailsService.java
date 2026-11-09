@@ -23,19 +23,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Servicio de carga de detalles del usuario para Spring Security.
- * Soporta autenticación tanto por nombre de usuario como por correo electrónico.
- */
 @Service
 @RequiredArgsConstructor
 public class UsuarioDetailsService implements UserDetailsService {
 
+    // >>>> DEPENDENCIES
     private final UsuarioRepository usuarioRepository;
     private final UsuarioRolRepository usuarioRolRepository;
     private final RolPermisoRepository rolPermisoRepository;
     private final EmpleadoRepository empleadoRepository;
 
+    // >>>> OPERATIONS
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {

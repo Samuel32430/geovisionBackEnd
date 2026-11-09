@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface MedidaRepository extends JpaRepository<Medida, Long> {
 
+    // >>>> QUERIES
     List<Medida> findByRecetaId(Long idReceta);
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
@@ -33,4 +34,5 @@ public interface MedidaRepository extends JpaRepository<Medida, Long> {
 
     @EntityGraph(attributePaths = {"medidaOjoDerecha", "medidaOjoIzquierda"})
     Optional<Medida> findOneWithOjosById(Long idMedida);
+
 }

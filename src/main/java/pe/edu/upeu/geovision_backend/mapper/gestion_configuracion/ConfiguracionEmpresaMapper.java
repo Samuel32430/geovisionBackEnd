@@ -7,7 +7,7 @@ public final class ConfiguracionEmpresaMapper {
     private ConfiguracionEmpresaMapper() {}
 
     public static void actualizar(ConfiguracionEmpresaDTO source, ConfiguracionEmpresa target) {
-        // El identificador del cuerpo nunca controla qué registro se modifica.
+
         target.setNombreLegal(source.nombreLegal().trim());
         target.setNombreComercial(limpiar(source.nombreComercial()));
         target.setRuc(source.ruc());

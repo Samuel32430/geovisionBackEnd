@@ -12,9 +12,13 @@ import jakarta.validation.Validator;
 
 @Component @RequiredArgsConstructor
 public class FlujoOrdenTrabajo {
+
+    // >>>> DEPENDENCIES
     private final OrdenTrabajoRepository ordenes;
     private final EnvioLaboratorioRepository envios;
     private final Validator validator;
+
+    // >>>> OPERATIONS
     public void validar(Object request) {
         if(request==null || !validator.validate(request).isEmpty()) throw new ReglaNegocioException("Complete correctamente los datos requeridos");
     }
@@ -22,7 +26,7 @@ public class FlujoOrdenTrabajo {
         return ordenes.findByIdForUpdate(id).orElseThrow(()->new RecursosNoEncontradosException("Orden de trabajo no encontrada"));
     }
     public EnvioLaboratorio bloquearEnvioActual(Long id) {
-        // Orden de bloqueo comun: OT -> envio. Evita ciclos con calidad y entrega.
+        // Lock order: work order, then shipment.
         var idOrden=envios.findIdOrdenByIdEnvio(id).orElseThrow(()->new RecursosNoEncontradosException("Envio no encontrado"));
         var orden=bloquear(idOrden);
         var envio=envios.findByIdForUpdate(id).orElseThrow(()->new RecursosNoEncontradosException("Envio no encontrado"));

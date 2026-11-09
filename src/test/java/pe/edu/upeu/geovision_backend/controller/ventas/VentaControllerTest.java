@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class VentaControllerTest {
 
+    // >>>> FIXTURES
     private MockMvc mockMvc;
 
     private ObjectMapper objectMapper;
@@ -45,6 +46,7 @@ class VentaControllerTest {
     @InjectMocks
     private VentaController ventaController;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
@@ -55,6 +57,7 @@ class VentaControllerTest {
                 .build();
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("POST /api/v1/ventas: Retorna 201 Created cuando el request es válido")
     void registrarVenta_valido_retorna201Created() throws Exception {
@@ -66,7 +69,8 @@ class VentaControllerTest {
 
         mockMvc.perform(post("/api/v1/ventas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+        )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.numeroComprobante").value("B001-00000001"))
@@ -81,7 +85,8 @@ class VentaControllerTest {
 
         mockMvc.perform(post("/api/v1/ventas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestInvalido)))
+                        .content(objectMapper.writeValueAsString(requestInvalido))
+        )
                 .andExpect(status().isBadRequest());
     }
 
@@ -93,7 +98,8 @@ class VentaControllerTest {
         when(ventaService.obtenerVentaPorId(1L)).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/ventas/1")
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.numeroComprobante").value("B001-00000001"));

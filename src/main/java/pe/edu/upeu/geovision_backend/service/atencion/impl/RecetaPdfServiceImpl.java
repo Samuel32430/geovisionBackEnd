@@ -29,27 +29,34 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RecetaPdfServiceImpl implements RecetaPdfService {
 
+    // >>>> DEPENDENCIES
     private final RecetaService recetaService;
     private final ConfiguracionEmpresaRepository configuracionEmpresaRepository;
 
+    // >>>> CREATION
     @Override
+    @Transactional(readOnly = true)
     public byte[] generarRecetaPdf(Long idReceta) {
         RecetaResponseDTO receta = recetaService.obtenerRecetaPorId(idReceta);
         ConfiguracionEmpresa empresa = configuracionEmpresaRepository.findFirstByOrderByIdAsc()
                 .orElse(null);
         try (PDDocument documento = new PDDocument(); ByteArrayOutputStream salida = new ByteArrayOutputStream();
-             PaginaPdf pagina = new PaginaPdf(documento)) {
+             PaginaPdf pagina = new PaginaPdf(documento)
+        ) {
             documento.getDocumentInformation().setTitle("Receta oftálmica #" + receta.id());
             escribirCabecera(pagina, empresa);
             pagina.seccion("RECETA OFTÁLMICA #" + receta.id());
             pagina.parrafo("Tipo: " + (Boolean.TRUE.equals(receta.esRecetaExterna())
-                    ? "Prescripción externa" : "Examen visual interno"));
+                    ? "Prescripción externa" : "Examen visual interno"
+                )
+            );
             pagina.parrafo("Fecha: " + (receta.fechaRegistro() == null ? "Sin registrar"
-                    : receta.fechaRegistro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
+                    : receta.fechaRegistro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                )
+            );
             pagina.parrafo("Paciente: " + texto(receta.nombreCompletoPaciente()));
             pagina.parrafo("Documento: " + texto(receta.numeroDocumentoPaciente()));
             pagina.parrafo("Empleado responsable del registro: " + texto(receta.nombreCompletoEmpleado()));
@@ -66,11 +73,16 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
                     pagina.espacio(100);
                     pagina.parrafo("Lente #" + lente.id() + " - Material: " + texto(lente.nombreMaterialCristal()));
                     pagina.parrafo("Montura: " + (lente.idProductoMontura() == null ? "Propia del paciente"
-                            : texto(lente.codigoMontura()) + " - " + texto(lente.nombreMontura())));
+                            : texto(lente.codigoMontura()) + " - " + texto(lente.nombreMontura())
+                        )
+                    );
                     pagina.parrafo("Tratamientos: " + (lente.tratamientos().isEmpty() ? "Sin tratamientos"
-                            : lente.tratamientos().stream().map(t -> t.nombre()).collect(Collectors.joining(", "))));
+                            : lente.tratamientos().stream().map(t -> t.nombre()).collect(Collectors.joining(", "))
+                        )
+                    );
                     pagina.parrafo("Medidas asociadas: " + lente.medidas().stream()
-                            .map(m -> "#" + m.id() + " (" + tipoMedida(m) + ")").collect(Collectors.joining(", ")));
+                            .map(m -> "#" + m.id() + " (" + tipoMedida(m) + ")").collect(Collectors.joining(", "))
+                    );
                 }
             }
             pagina.terminar(receta.id());
@@ -81,6 +93,7 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
         }
     }
 
+    // >>>> HELPERS
     private void escribirCabecera(PaginaPdf pagina, ConfiguracionEmpresa empresa) throws IOException {
         if (empresa == null) {
             pagina.titulo("Óptica Geo Visión");
@@ -101,14 +114,16 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
         String[] derecha = filaOjo("OD", medida.ojoDerecho());
         String[] izquierda = filaOjo("OI", medida.ojoIzquierdo());
         int lineasObservacion = pagina.lineas("Observaciones: " + texto(medida.observaciones()), pagina.regular,
-                10, PaginaPdf.ANCHO).size();
+                10, PaginaPdf.ANCHO
+        ).size();
         pagina.espacio(95 + pagina.altoFila(derecha) + pagina.altoFila(izquierda) + lineasObservacion * 14);
         pagina.parrafo(tipoMedida(medida) + " - Medida #" + medida.id());
         pagina.fila(new String[]{"Ojo", "Agudeza visual", "Esfera", "Cilindro", "Eje", "Adición"}, true);
         pagina.fila(derecha, false);
         pagina.fila(izquierda, false);
         pagina.parrafo("Distancia pupilar: " + decimal(medida.distanciaPupilar())
-                + "    Prisma: " + decimal(medida.prisma()));
+                + "    Prisma: " + decimal(medida.prisma())
+        );
         if (medida.observaciones() != null && !medida.observaciones().isBlank()) {
             pagina.parrafo("Observaciones: " + medida.observaciones());
         }
@@ -132,11 +147,14 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
         return valor == null || valor.isBlank() ? "-" : valor;
     }
 
-    // Estado exclusivo de una generación: fuentes, posición y páginas nunca se comparten entre peticiones.
     private static class PaginaPdf implements AutoCloseable {
+
+        // >>>> CONSTANTS
         private static final float MARGEN = 42;
         private static final float ANCHO = PDRectangle.A4.getWidth() - MARGEN * 2;
         private static final float[] COLUMNAS = {36, 139, 80, 80, 66, ANCHO - 401};
+
+        // >>>> FIELDS
         private final PDDocument documento;
         private final PDFont regular;
         private final PDFont negrita;
@@ -146,13 +164,15 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
         PaginaPdf(PDDocument documento) throws IOException {
             this.documento = documento;
             try (InputStream normal = new ClassPathResource("fonts/NotoSans-Regular.ttf").getInputStream();
-                 InputStream bold = new ClassPathResource("fonts/NotoSans-Bold.ttf").getInputStream()) {
+                 InputStream bold = new ClassPathResource("fonts/NotoSans-Bold.ttf").getInputStream()
+            ) {
                 regular = PDType0Font.load(documento, normal);
                 negrita = PDType0Font.load(documento, bold);
             }
             nuevaPagina();
         }
 
+        // >>>> HELPERS
         private void nuevaPagina() throws IOException {
             close();
             PDPage pagina = new PDPage(PDRectangle.A4);
@@ -161,6 +181,7 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
             y = PDRectangle.A4.getHeight() - MARGEN;
         }
 
+        // >>>> OPERATIONS
         void espacio(float alto) throws IOException {
             if (y - alto < 65) nuevaPagina();
         }
@@ -221,7 +242,7 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
         }
 
         List<String> lineas(String texto, PDFont fuente, float tamanio, float ancho) throws IOException {
-            // Representa los glifos no disponibles por su código Unicode, sin descartarlos.
+
             StringBuilder seguro = new StringBuilder();
             for (int code : texto.codePoints().toArray()) {
                 if (code == '\n') { seguro.append('\n'); continue; }
@@ -258,6 +279,7 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
             return resultado;
         }
 
+        // >>>> HELPERS
         private void escribir(String texto, float x, float y, PDFont fuente, float tamanio) throws IOException {
             contenido.beginText();
             contenido.setFont(fuente, tamanio);
@@ -266,12 +288,15 @@ public class RecetaPdfServiceImpl implements RecetaPdfService {
             contenido.endText();
         }
 
+        // >>>> OPERATIONS
         void terminar(Long idReceta) throws IOException {
             close();
             int total = documento.getNumberOfPages();
             for (int i = 0; i < total; i++) {
                 try (PDPageContentStream pie = new PDPageContentStream(documento, documento.getPage(i),
-                        PDPageContentStream.AppendMode.APPEND, true, true)) {
+                        PDPageContentStream.AppendMode.APPEND, true, true
+                    )
+                ) {
                     pie.beginText();
                     pie.setFont(regular, 8);
                     pie.newLineAtOffset(MARGEN, 34);

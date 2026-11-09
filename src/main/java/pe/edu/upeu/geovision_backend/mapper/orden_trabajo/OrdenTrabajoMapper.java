@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.mapper.orden_trabajo;
 
+import java.util.ArrayList;
+
 import pe.edu.upeu.geovision_backend.mapper.atencion.RecetaMapper;
 
 import java.math.BigDecimal;
@@ -14,17 +16,21 @@ import pe.edu.upeu.geovision_backend.entity.orden_trabajo.OrdenTrabajo;
 public final class OrdenTrabajoMapper {
     private OrdenTrabajoMapper() {}
 
-    public static OrdenTrabajoResponseDTO orden(OrdenTrabajo o, Venta venta, BigDecimal saldo,
-                                                List<EnvioLaboratorioResponseDTO> envios) {
+    public static OrdenTrabajoResponseDTO orden(
+        OrdenTrabajo o, Venta venta, BigDecimal saldo,
+        List<EnvioLaboratorioResponseDTO> envios
+    ) {
         var lente=o.getLente(); var paciente=lente.getReceta().getPaciente(); var persona=paciente.getPersona();
         return new OrdenTrabajoResponseDTO(o.getId(), o.getFechaRegistro(), o.getFechaEntrega(),
                 venta==null?null:venta.getId(),
                 saldo,
                 o.getFechaNotificacion(), o.getEstado(), o.getEstado().getDescripcion(), o.getDescripcion(),
-                lente.getId(), RecetaMapper.toLenteResponse(lente, new java.util.ArrayList<>(lente.getMedidas()),
-                    new java.util.ArrayList<>(lente.getTratamientosCristal())),
+                lente.getId(), RecetaMapper.toLenteResponse(lente, new ArrayList<>(lente.getMedidas()),
+                    new ArrayList<>(lente.getTratamientosCristal())
+                ),
                 paciente.getId(), persona.getNombres()+" "+persona.getApellidos(), persona.getTelefono(),
-                envios);
+                envios
+        );
     }
     public static EnvioLaboratorioResponseDTO envio(EnvioLaboratorio e, List<MedidaResponseDTO> medidas) {
         return new EnvioLaboratorioResponseDTO(e.getId(), e.getOrdenTrabajo().getId(), e.getLaboratorio().getId(), e.getLaboratorio().getNombre(), e.getFechaEnvio(), e.getFechaRecepcionEstimada(), e.getFechaRecepcion(), e.getFechaRevision(), e.getTolerancia(), e.getAprobado()==null?null:e.getAprobado()==1, e.getObservaciones(), medidas);

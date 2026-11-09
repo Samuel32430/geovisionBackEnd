@@ -1,8 +1,8 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
-import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** Proyección de selección: no contiene contraseñas, hashes ni datos clínicos. */
+import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 
 public record PersonaUsuarioResumenDTO(
     Long id,
@@ -16,9 +16,9 @@ public record PersonaUsuarioResumenDTO(
     boolean esEmpleado,
     boolean empleadoActivo
 ) {
-    @com.fasterxml.jackson.annotation.JsonProperty("nombreCompleto")
+    @JsonProperty("nombreCompleto")
     public String nombreCompleto() { return (nombres + " " + apellidos).trim(); }
 
-    @com.fasterxml.jackson.annotation.JsonProperty("tieneUsuario")
+    @JsonProperty("tieneUsuario")
     public boolean tieneUsuario() { return idUsuario != null; }
 }

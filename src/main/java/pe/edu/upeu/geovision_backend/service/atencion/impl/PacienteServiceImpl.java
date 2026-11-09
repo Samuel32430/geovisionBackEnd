@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.service.atencion.impl;
 
+import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -29,25 +31,29 @@ import java.util.Set;
 
 @Service
 @Validated
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PacienteServiceImpl implements PacienteService {
 
+    // >>>> DEPENDENCIES
     private final PacienteRepository pacienteRepository;
     private final PersonaRepository personaRepository;
     private final PacienteLogRepository pacienteLogRepository;
     private final UsuarioRepository usuarioRepository;
 
+    // >>>> QUERIES
     @Override
+    @Transactional(readOnly = true)
     public Page<PacienteResponseDTO> listarPacientes(String termino, Boolean estado, Pageable pageable) {
         if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100
-                || pageable.getOffset() > Integer.MAX_VALUE) {
+                || pageable.getOffset() > Integer.MAX_VALUE
+        ) {
             throw new ReglaNegocioException("La consulta debe estar paginada con un máximo de 100 pacientes");
         }
         Sort orden = pageable.getSort();
         for (Sort.Order campo : orden) {
             if (!Set.of("id", "fechaRegistro", "persona.nombres", "persona.apellidos")
-                    .contains(campo.getProperty())) {
+                    .contains(campo.getProperty())
+            ) {
                 throw new ReglaNegocioException("Campo de ordenamiento no permitido");
             }
         }
@@ -59,16 +65,19 @@ public class PacienteServiceImpl implements PacienteService {
             busqueda = busqueda.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         }
         return pacienteRepository.buscarPacientes(busqueda, estado,
-                        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden))
+                        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), orden)
+        )
                 .map(PacienteMapper::toPacienteResponse);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PacienteResponseDTO obtenerPorId(Long idPaciente) {
         return PacienteMapper.toPacienteResponse(buscarPaciente(idPaciente));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PacienteResponseDTO obtenerPorNumeroDocumento(String numeroDocumento) {
         if (numeroDocumento == null || numeroDocumento.isBlank()) {
             throw new ReglaNegocioException("El número de documento es obligatorio");
@@ -78,6 +87,7 @@ public class PacienteServiceImpl implements PacienteService {
                 .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado"));
     }
 
+    // >>>> CREATION
     @Override
     @Transactional
     public PacienteResponseDTO registrarPaciente(PacienteRequestDTO request, String usernameAuditoria) {
@@ -105,10 +115,13 @@ public class PacienteServiceImpl implements PacienteService {
         return PacienteMapper.toPacienteResponse(paciente);
     }
 
+    // >>>> UPDATES
     @Override
     @Transactional
-    public PacienteResponseDTO actualizarPaciente(Long idPaciente, PacienteRequestDTO request,
-                                                  String usernameAuditoria) {
+    public PacienteResponseDTO actualizarPaciente(
+        Long idPaciente, PacienteRequestDTO request,
+        String usernameAuditoria
+    ) {
         Usuario actor = obtenerActor(usernameAuditoria, request.idUsuario());
         if (request.persona() == null) {
             throw new ReglaNegocioException("Los datos de persona son obligatorios para actualizar");
@@ -124,7 +137,7 @@ public class PacienteServiceImpl implements PacienteService {
         }
         PacienteMapper.actualizarPersona(persona, request.persona());
         guardarPersona(persona);
-        // El estado se gestiona exclusivamente con cambiarEstadoPaciente.
+
         auditar(paciente, actor);
         return PacienteMapper.toPacienteResponse(paciente);
     }
@@ -136,7 +149,7 @@ public class PacienteServiceImpl implements PacienteService {
         Usuario actor = obtenerActor(usernameAuditoria, null);
         bloquearPersona(idPaciente);
         Paciente paciente = buscarPaciente(idPaciente);
-        if (!java.util.Objects.equals(paciente.getActivo(), estado)) {
+        if (!Objects.equals(paciente.getActivo(), estado)) {
             paciente.setActivo(estado);
             pacienteRepository.saveAndFlush(paciente);
             auditar(paciente, actor);
@@ -144,6 +157,7 @@ public class PacienteServiceImpl implements PacienteService {
         return PacienteMapper.toPacienteResponse(paciente);
     }
 
+    // >>>> HELPERS
     private Paciente buscarPaciente(Long id) {
         return pacienteRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado"));
@@ -178,7 +192,7 @@ public class PacienteServiceImpl implements PacienteService {
         try {
             personaRepository.saveAndFlush(persona);
         } catch (DataIntegrityViolationException ex) {
-            // La restricción UNIQUE también protege contra altas concurrentes.
+            // The database constraint also protects concurrent inserts.
             throw new ReglaNegocioException("No se pudo guardar la persona; verifique la unicidad del documento");
         }
     }
@@ -186,4 +200,5 @@ public class PacienteServiceImpl implements PacienteService {
     private void auditar(Paciente paciente, Usuario actor) {
         pacienteLogRepository.saveAndFlush(new PacienteLog(null, null, actor, paciente));
     }
+
 }

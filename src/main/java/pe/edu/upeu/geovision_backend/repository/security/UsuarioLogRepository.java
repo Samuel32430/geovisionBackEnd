@@ -13,6 +13,7 @@ import java.util.List;
 @Repository
 public interface UsuarioLogRepository extends JpaRepository<UsuarioLog, Long> {
 
+    // >>>> QUERIES
     List<UsuarioLog> findByUsuarioIdOrderByFechaLogDesc(Long idUsuario);
 
     Page<UsuarioLog> findByUsuarioIdOrderByFechaLogDesc(Long idUsuario, Pageable pageable);
@@ -20,4 +21,5 @@ public interface UsuarioLogRepository extends JpaRepository<UsuarioLog, Long> {
     Page<UsuarioLog> findByTipoLogOrderByFechaLogDesc(TipoLogEnum tipoLog, Pageable pageable);
 
     Page<UsuarioLog> findByFechaLogBetween(LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+
 }

@@ -16,19 +16,25 @@ import pe.edu.upeu.geovision_backend.dto.orden_trabajo.RecepcionLaboratorioReque
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
 
 public interface OrdenTrabajoService {
+
+    // >>>> QUERIES
     Page<PendienteOrdenTrabajoDTO> pendientes(String termino, Pageable pageable);
 
     Page<OrdenTrabajoResponseDTO> listar(EstadoOrdenTrabajoEnum estado, String termino, Pageable pageable);
 
     OrdenTrabajoResponseDTO obtener(Long id);
 
+    List<LaboratorioDTO> laboratorios();
+
+    // >>>> CREATION
     OrdenTrabajoResponseDTO generar(OrdenTrabajoRequestDTO request, String usuario);
 
+    // >>>> LABORATORY OPERATIONS
     EnvioLaboratorioResponseDTO enviar(EnvioLaboratorioRequestDTO request, String usuario);
 
     EnvioLaboratorioResponseDTO recibir(Long idEnvio, RecepcionLaboratorioRequestDTO request, String usuario);
 
+    // >>>> DELIVERY
     OrdenTrabajoResponseDTO entregar(EntregaPedidoRequestDTO request, String usuario);
 
-    List<LaboratorioDTO> laboratorios();
 }
