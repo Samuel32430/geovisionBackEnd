@@ -32,6 +32,9 @@ import pe.edu.upeu.geovision_backend.mapper.ventas.VentaMapper;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.PacienteRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
+import pe.edu.upeu.geovision_backend.entity.inventario.MovimientoStockLog;
+import pe.edu.upeu.geovision_backend.enums.inventario.MotivoMovimientoStockEnum;
+import pe.edu.upeu.geovision_backend.repository.inventario.MovimientoStockLogRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.ProductoRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.ProductoVendidoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.RecetaRepository;
@@ -65,6 +68,7 @@ public class VentaServiceImpl implements VentaService {
     private final PacienteRepository pacienteRepository;
     private final EmpleadoRepository empleadoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final MovimientoStockLogRepository movimientoStockLogRepository;
 
     // >>>> QUERIES
     @Override
@@ -122,41 +126,7 @@ public class VentaServiceImpl implements VentaService {
             }
         }
 
-        // Products
-        List<ProductoVendido> productosParaGuardar = new ArrayList<>();
-        if (request.productos() != null && !request.productos().isEmpty()) {
-            for (ProductoVendidoDTO prodDTO : request.productos()) {
-                Producto producto = productoRepository.findById(prodDTO.idProducto())
-                        .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.idProducto()));
-
-                if (producto.getStock() < prodDTO.cantidad()) {
-                    throw new ReglaNegocioException("Stock insuficiente para el producto '" + producto.getNombre() +
-                            "'. Stock disponible: " + producto.getStock() + ", Solicitado: " + prodDTO.cantidad() + " (RN-VE05)"
-                    );
-                }
-
-                producto.setStock(producto.getStock() - prodDTO.cantidad());
-                productoRepository.save(producto);
-
-                BigDecimal subTotal = prodDTO.precioUnit().multiply(BigDecimal.valueOf(prodDTO.cantidad()));
-                ProductoVendido pv = new ProductoVendido(null, prodDTO.cantidad(), prodDTO.precioUnit(), subTotal, null, producto);
-                productosParaGuardar.add(pv);
-            }
-        }
-
-        // Services
-        List<ServicioVendido> serviciosParaGuardar = new ArrayList<>();
-        if (request.servicios() != null && !request.servicios().isEmpty()) {
-            for (ServicioVendidoDTO servDTO : request.servicios()) {
-                Servicio servicio = servicioRepository.findById(servDTO.idServicio())
-                        .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.idServicio()));
-
-                ServicioVendido sv = new ServicioVendido(null, servDTO.precio(), null, servicio);
-                serviciosParaGuardar.add(sv);
-            }
-        }
-
-        // Payments
+        // Payments (Fail-Fast: Validar pagos y anticipos antes de descontar stock)
         if (request.pagos() == null || request.pagos().isEmpty()) {
             throw new ReglaNegocioException("Debe registrar al menos un pago inicial o completo para la venta");
         }
@@ -187,7 +157,6 @@ public class VentaServiceImpl implements VentaService {
                 throw new ReglaNegocioException("En ventas de productos o servicios directos sin receta, el pago debe registrarse por el 100% del monto total (RN-VE06)");
             }
         } else {
-
             BigDecimal adelantoMinimo = request.total().multiply(new BigDecimal("0.25"));
             if (totalPagado.compareTo(adelantoMinimo) < 0) {
                 throw new ReglaNegocioException("En ventas con receta médica, el adelanto inicial no puede ser menor al 25% del total de la orden (Mínimo: S/ " + adelantoMinimo + ") (RN-VE07)");
@@ -195,6 +164,58 @@ public class VentaServiceImpl implements VentaService {
 
             if (totalPagado.compareTo(request.total()) < 0 && request.fechaEntregaEstimada() == null) {
                 throw new ReglaNegocioException("Si la venta se registra con adelanto, debe consignarse de forma obligatoria la fecha estimada de entrega (RN-VE08)");
+            }
+        }
+
+        // Responsible user for kardex log
+        Usuario usuarioResponsable = empleado.getUsuario();
+        if (usuarioResponsable == null) {
+            usuarioResponsable = usuarioRepository.findById(1L).orElse(null);
+        }
+
+        // Products (Atomic discount with pessimistic lock & kardex log)
+        List<ProductoVendido> productosParaGuardar = new ArrayList<>();
+        List<MovimientoStockLog> movimientosParaGuardar = new ArrayList<>();
+        if (request.productos() != null && !request.productos().isEmpty()) {
+            for (ProductoVendidoDTO prodDTO : request.productos()) {
+                Producto producto = productoRepository.findByIdForUpdate(prodDTO.idProducto())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.idProducto()));
+
+                if (producto.getStock() < prodDTO.cantidad()) {
+                    throw new ReglaNegocioException("Stock insuficiente para el producto '" + producto.getNombre() +
+                            "'. Stock disponible: " + producto.getStock() + ", Solicitado: " + prodDTO.cantidad() + " (RN-VE05)"
+                    );
+                }
+
+                int stockPrevio = producto.getStock();
+                int nuevoStock = stockPrevio - prodDTO.cantidad();
+                producto.setStock(nuevoStock);
+                productoRepository.save(producto);
+
+                MovimientoStockLog movimiento = new MovimientoStockLog();
+                movimiento.setProducto(producto);
+                movimiento.setUsuario(usuarioResponsable);
+                movimiento.setCantidad(prodDTO.cantidad());
+                movimiento.setStockPrevio(stockPrevio);
+                movimiento.setStockPosterior(nuevoStock);
+                movimiento.setMotivo(MotivoMovimientoStockEnum.SALIDA_POR_VENTA.getCodigo());
+                movimientosParaGuardar.add(movimiento);
+
+                BigDecimal subTotal = prodDTO.precioUnit().multiply(BigDecimal.valueOf(prodDTO.cantidad()));
+                ProductoVendido pv = new ProductoVendido(null, prodDTO.cantidad(), prodDTO.precioUnit(), subTotal, null, producto);
+                productosParaGuardar.add(pv);
+            }
+        }
+
+        // Services
+        List<ServicioVendido> serviciosParaGuardar = new ArrayList<>();
+        if (request.servicios() != null && !request.servicios().isEmpty()) {
+            for (ServicioVendidoDTO servDTO : request.servicios()) {
+                Servicio servicio = servicioRepository.findById(servDTO.idServicio())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.idServicio()));
+
+                ServicioVendido sv = new ServicioVendido(null, servDTO.precio(), null, servicio);
+                serviciosParaGuardar.add(sv);
             }
         }
 
@@ -215,14 +236,29 @@ public class VentaServiceImpl implements VentaService {
         }
 
         // Sale
-        Venta venta = new Venta(null, LocalDateTime.now(), request.total(), estadoInicial, numeroComprobante, request.tipoComprobante(), empleado, paciente, receta);
+        Venta venta = new Venta(
+                null,
+                LocalDateTime.now(),
+                request.total(),
+                estadoInicial,
+                numeroComprobante,
+                request.tipoComprobante(),
+                empleado,
+                paciente,
+                receta
+        );
 
         Venta ventaGuardada = ventaRepository.save(venta);
 
-        // Product items
+        // Product items & kardex log
         for (ProductoVendido pv : productosParaGuardar) {
             pv.setVenta(ventaGuardada);
             productoVendidoRepository.save(pv);
+        }
+
+        for (MovimientoStockLog mov : movimientosParaGuardar) {
+            mov.setObservaciones("Salida por venta. Comprobante ID: " + ventaGuardada.getId() + " (" + numeroComprobante + ")");
+            movimientoStockLogRepository.save(mov);
         }
 
         // Service items
