@@ -15,3 +15,10 @@ app:
     base-url: ${TEXTBEE_BASE_URL:https://api.textbee.dev/api/v1}
     api-key: ${TEXTBEE_API_KEY:}
     device-id: ${TEXTBEE_DEVICE_ID:}
+
+mercadopago:
+  access-token: ${MP_ACCESS_TOKEN:***REVOKED***}
+  user-id: ${MP_USER_ID:***REVOKED***}
+  pos-id: ${MP_POS_ID:CAJAPRINCIPAL01}
+  webhook-url: ${MP_WEBHOOK_URL:}
+  sandbox-mode: ${MP_SANDBOX_MODE:false}
