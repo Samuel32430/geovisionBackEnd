@@ -15,17 +15,21 @@ import java.util.Optional;
 @Repository
 public interface PagoRepository extends JpaRepository<Pago, Long> {
 
+    // >>>> QUERIES
     List<Pago> findByVentaId(Long idVenta);
 
     List<Pago> findByMetodoPago(MetodoPagoEnum metodoPago);
 
     Optional<Pago> findByNumeroOperacion(String numeroOperacion);
 
+    @Query("SELECT p FROM Pago p WHERE p.fechaRegistro BETWEEN :desde AND :hasta ORDER BY p.fechaRegistro DESC")
+    List<Pago> findPagosPorRangoFecha(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    // >>>> EXISTENCE CHECKS
     boolean existsByNumeroOperacion(String numeroOperacion);
 
+    // >>>> AGGREGATES
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p WHERE p.venta.id = :idVenta")
     BigDecimal sumMontoPagadoByVentaId(@Param("idVenta") Long idVenta);
 
-    @Query("SELECT p FROM Pago p WHERE p.fechaRegistro BETWEEN :desde AND :hasta ORDER BY p.fechaRegistro DESC")
-    List<Pago> findPagosPorRangoFecha(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 }

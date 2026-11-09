@@ -18,8 +18,6 @@ public record CategoriaDTO(
     @NotNull(message = "El estado es obligatorio")
     @Min(value = 0, message = "El estado debe ser 0 o 1")
     @Max(value = 1, message = "El estado debe ser 0 o 1")
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.One.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.One.class)
     Integer estado,
     LocalDateTime fechaRegistro
 ) {

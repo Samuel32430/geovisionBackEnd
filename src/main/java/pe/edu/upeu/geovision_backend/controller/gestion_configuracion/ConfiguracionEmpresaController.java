@@ -15,20 +15,26 @@ import java.net.URI;
 @PreAuthorize("hasAuthority('MANTENIMIENTO_GESTIONAR')")
 @RequiredArgsConstructor
 public class ConfiguracionEmpresaController {
+
+    // >>>> DEPENDENCIES
     private final ConfiguracionEmpresaService service;
 
+    // >>>> QUERIES
     @GetMapping
     public ResponseEntity<ConfiguracionEmpresaDTO> obtener() {
         return ResponseEntity.ok(service.obtener());
     }
 
+    // >>>> CREATION
     @PostMapping
     public ResponseEntity<ConfiguracionEmpresaDTO> registrar(@Valid @RequestBody ConfiguracionEmpresaDTO request) {
         return ResponseEntity.created(URI.create("/api/v1/configuracion/empresa")).body(service.registrar(request));
     }
 
+    // >>>> UPDATES
     @PutMapping
     public ResponseEntity<ConfiguracionEmpresaDTO> actualizar(@Valid @RequestBody ConfiguracionEmpresaDTO request) {
         return ResponseEntity.ok(service.actualizar(request));
     }
+
 }

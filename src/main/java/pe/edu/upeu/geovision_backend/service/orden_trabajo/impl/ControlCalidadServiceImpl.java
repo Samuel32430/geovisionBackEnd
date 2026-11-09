@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.service.orden_trabajo.impl;
 
+import java.util.ArrayList;
+
 import java.time.LocalDateTime;
 
 import lombok.RequiredArgsConstructor;
@@ -30,8 +32,9 @@ import pe.edu.upeu.geovision_backend.service.orden_trabajo.ControlCalidadService
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ControlCalidadServiceImpl implements ControlCalidadService {
+
+    // >>>> DEPENDENCIES
     private final OrdenTrabajoDetalleService detalles;
     private final OrdenTrabajoRepository ordenes;
     private final EnvioLaboratorioRepository envios;
@@ -40,10 +43,10 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
     private final ActorOrdenTrabajo actores;
     private final FlujoOrdenTrabajo flujo;
     private final PoliticaCalidad politica;
-    private final ComparadorLensometria comparador;
 
     private final VentaOrdenTrabajo ventasOrden;
 
+    // >>>> QUERIES
     @Override
     @Transactional(readOnly = true)
     public Page<OrdenTrabajoResponseDTO> pendientes(Pageable pageable) {
@@ -56,7 +59,9 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         return politica.consultar();
     }
 
+    // >>>> QUALITY CONTROL
     @Override
+    @Transactional
     public EnvioLaboratorioResponseDTO registrar(ControlCalidadRequestDTO request, String usuario) {
         flujo.validar(request);
         actores.obtener(usuario);
@@ -68,12 +73,12 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         if (envio.getFechaRevision() != null || envio.getAprobado() != null || !medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
             throw new ReglaNegocioException("Este envio ya tiene un control; para recontrolar registre un nuevo envio y recepcion");
         ventasOrden.bloquear(ot.getLente().getReceta().getId());
-        var referencia = new java.util.ArrayList<>(ot.getLente().getMedidas());
-        boolean aprobado = comparador.comparar(referencia, request.medidasLensometria(), p);
+        var referencia = new ArrayList<>(ot.getLente().getMedidas());
+        boolean aprobado = ComparadorLensometria.comparar(referencia, request.medidasLensometria(), p);
         for (var m : request.medidasLensometria()) {
             var derecha = ojos.save(RecetaMapper.toMedidaOjo(m.ojoDerecho()));
             var izquierda = ojos.save(RecetaMapper.toMedidaOjo(m.ojoIzquierdo()));
-            // Las medidas de taller se vinculan al envio, nunca a la receta clinica ni a LENTE_MEDIDA.
+            // Workshop measurements must never alter clinical prescription measurements.
             var medida = RecetaMapper.toMedida(m, null, derecha, izquierda);
             medida.setEnvioLaboratorio(envio);
             medidas.save(medida);
@@ -91,4 +96,5 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         ordenes.saveAndFlush(ot);
         return detalles.envio(envio);
     }
+
 }

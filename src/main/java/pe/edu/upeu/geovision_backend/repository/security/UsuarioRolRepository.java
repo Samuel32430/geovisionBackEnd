@@ -12,16 +12,20 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRolRepository extends JpaRepository<UsuarioRol, Long> {
 
+    // >>>> QUERIES
     List<UsuarioRol> findByUsuarioId(Long idUsuario);
 
     List<UsuarioRol> findByRolId(Long idRol);
 
     Optional<UsuarioRol> findByUsuarioIdAndRolId(Long idUsuario, Long idRol);
 
-    boolean existsByUsuarioIdAndRolId(Long idUsuario, Long idRol);
-
-    void deleteByUsuarioId(Long idUsuario);
-
     @Query("SELECT ur.rol.nombre FROM UsuarioRol ur WHERE ur.usuario.id = :idUsuario")
     List<String> findNombresRolesByUsuarioId(@Param("idUsuario") Long idUsuario);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByUsuarioIdAndRolId(Long idUsuario, Long idRol);
+
+    // >>>> DELETIONS
+    void deleteByUsuarioId(Long idUsuario);
+
 }

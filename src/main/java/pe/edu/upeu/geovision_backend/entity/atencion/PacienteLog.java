@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PacienteLog {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_paciente_log")
@@ -43,6 +44,7 @@ public class PacienteLog {
     @JoinColumn(name = "id_persona")
     private Paciente paciente;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaLog == null) {

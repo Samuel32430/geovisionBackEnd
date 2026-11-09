@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.dto.orden_trabajo;
 
+import java.math.BigDecimal;
+
 import pe.edu.upeu.geovision_backend.dto.atencion.LenteResponseDTO;
 
 import pe.edu.upeu.geovision_backend.enums.orden_trabajo.EstadoOrdenTrabajoEnum;
@@ -12,7 +14,7 @@ public record OrdenTrabajoResponseDTO(
     LocalDateTime fechaRegistro,
     LocalDateTime fechaEntrega,
     Long idVenta,
-    java.math.BigDecimal saldoPendiente,
+    BigDecimal saldoPendiente,
     LocalDateTime fechaNotificacion,
     EstadoOrdenTrabajoEnum estado,
     String estadoDescripcion,

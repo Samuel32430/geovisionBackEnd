@@ -20,6 +20,7 @@ public class TextbeeClient {
     public record Resultado(String estado, String referencia, String detalle) {
     }
 
+    // >>>> CONFIGURATION
     @Value("${app.textbee.enabled:false}")
     private final boolean habilitado;
     @Value("${app.textbee.base-url:https://api.textbee.dev/api/v1}")
@@ -28,14 +29,12 @@ public class TextbeeClient {
     private final String apiKey;
     @Value("${app.textbee.device-id:}")
     private final String deviceId;
+
+    // >>>> FIELDS
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper json = new ObjectMapper();
 
-    public void validarConfiguracion() {
-        if (!habilitado || apiKey.isBlank() || deviceId.isBlank())
-            throw new ReglaNegocioException("SMS no disponible. Configure Textbee en el backend.");
-    }
-
+    // >>>> SMS
     public Resultado enviar(String telefono, String mensaje) {
         validarConfiguracion();
         try {
@@ -57,12 +56,20 @@ public class TextbeeClient {
             Thread.currentThread().interrupt();
             return incierto();
         } catch (Exception e) {
-            // No exponer respuesta, cabeceras ni excepcion del proveedor.
+            // Provider responses may contain sensitive information.
             return incierto();
         }
     }
 
+    // >>>> VALIDATION
+    public void validarConfiguracion() {
+        if (!habilitado || apiKey.isBlank() || deviceId.isBlank())
+            throw new ReglaNegocioException("SMS no disponible. Configure Textbee en el backend.");
+    }
+
+    // >>>> HELPERS
     private Resultado incierto() {
         return new Resultado("INCIERTO", null, "No se pudo confirmar el resultado. Revise Textbee antes de volver a enviar.");
     }
+
 }

@@ -16,6 +16,7 @@ import java.util.Optional;
 @Repository
 public interface PersonaRepository extends JpaRepository<Persona, Long> {
 
+    // >>>> QUERIES
     @Query(value = """
         SELECT new pe.edu.upeu.geovision_backend.dto.security.PersonaUsuarioResumenDTO(
             p.id, p.nombres, p.apellidos, p.tipoDocumento, p.numeroDocumento,
@@ -37,22 +38,29 @@ public interface PersonaRepository extends JpaRepository<Persona, Long> {
           AND (:sinUsuario = false OR u.id IS NULL)
           AND (LOWER(CONCAT(CONCAT(p.nombres, ' '), p.apellidos)) LIKE :patron ESCAPE '!'
                OR LOWER(p.numeroDocumento) LIKE :patron ESCAPE '!')
-        """)
-    Page<PersonaUsuarioResumenDTO> buscarParaUsuario(@Param("patron") String patron,
-            @Param("sinUsuario") boolean sinUsuario, Pageable pageable);
+        """
+    )
+    Page<PersonaUsuarioResumenDTO> buscarParaUsuario(
+        @Param("patron") String patron,
+        @Param("sinUsuario") boolean sinUsuario, Pageable pageable
+    );
 
     Optional<Persona> findByNumeroDocumento(String numeroDocumento);
 
+    @Query("SELECT p FROM Persona p WHERE LOWER(p.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) " +
+           "OR LOWER(p.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) " +
+           "OR p.numeroDocumento LIKE CONCAT('%', :termino, '%')"
+    )
+    Page<Persona> buscarPorNombreODocumento(@Param("termino") String termino, Pageable pageable);
+
+    // >>>> EXISTENCE CHECKS
     boolean existsByNumeroDocumento(String numeroDocumento);
 
     boolean existsByNumeroDocumentoAndIdNot(String numeroDocumento, Long idPersona);
 
+    // >>>> LOCKING
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Persona p WHERE p.id = :id")
     Optional<Persona> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("SELECT p FROM Persona p WHERE LOWER(p.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) " +
-           "OR LOWER(p.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) " +
-           "OR p.numeroDocumento LIKE CONCAT('%', :termino, '%')")
-    Page<Persona> buscarPorNombreODocumento(@Param("termino") String termino, Pageable pageable);
 }

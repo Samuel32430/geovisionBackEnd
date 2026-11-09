@@ -12,8 +12,6 @@ import java.math.BigDecimal;
 
 public record MedidaRequestDTO(
     @NotNull(message = "El tipo de medida es obligatorio")
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.Lejos.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.Lejos.class)
     TipoMedidaEnum tipoMedida,
     @NotNull(message = "La distancia pupilar es obligatoria")
     @DecimalMin(value = "0", inclusive = false, message = "La distancia pupilar debe ser positiva")

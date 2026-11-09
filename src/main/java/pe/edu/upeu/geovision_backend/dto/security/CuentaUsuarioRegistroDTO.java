@@ -10,8 +10,6 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Set;
 
-// Sin toString: este objeto contiene una contraseña en texto plano.
-
 public record CuentaUsuarioRegistroDTO(
     @NotBlank
     @Size(min = 3, max = 100)
@@ -25,8 +23,6 @@ public record CuentaUsuarioRegistroDTO(
     String password,
     @Min(0)
     @Max(1)
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson2.One.class)
-    @tools.jackson.databind.annotation.JsonDeserialize(using = pe.edu.upeu.geovision_backend.config.DtoDefaultsJackson3.One.class)
     Integer estado,
     Set<@NotNull @Positive Long> rolesIds
 ) {

@@ -1,11 +1,14 @@
 package pe.edu.upeu.geovision_backend.controller.gestion_mantenimiento;
 
+import jakarta.validation.ConstraintViolationException;
+import java.util.LinkedHashSet;
+
+import lombok.RequiredArgsConstructor;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.CannotAcquireLockException;
@@ -57,37 +60,48 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @WithMockUser(authorities = "MANTENIMIENTO_GESTIONAR")
+@RequiredArgsConstructor
 class MantenimientoControllerTest {
+
+    // >>>> FIXTURES
     static final String BASE = "/api/v1/mantenimiento/";
     record Caso(String ruta, String campoId, String cuerpo, int longitudNombre, boolean estado) { }
 
+    // >>>> HELPERS
     static Stream<Caso> catalogos() {
         return Stream.of(
-                new Caso("categorias", "id", "{\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \"}", 100, true),
+                new Caso("categorias", "id", "{\"estado\":1,\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \"}", 100, true),
                 new Caso("materiales-cristal", "id", "{\"nombre\":\"Catálogo prueba\"}", 100, false),
                 new Caso("tratamientos-cristal", "id", "{\"nombre\":\"Catálogo prueba\"}", 100, false),
-                new Caso("servicios", "id", "{\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \",\"precio\":25.50}", 200, true),
-                new Caso("laboratorios", "id", "{\"nombre\":\"Catálogo prueba\",\"ruc\":\"20123456789\",\"telefono\":\" 999123456 \",\"direccion\":\" Lima \",\"correo\":\"contacto@example.com\"}", 200, true));
+                new Caso("servicios", "id", "{\"estado\":1,\"nombre\":\"Catálogo prueba\",\"descripcion\":\" Descripción \",\"precio\":25.50}", 200, true),
+                new Caso("laboratorios", "id", "{\"estado\":1,\"nombre\":\"Catálogo prueba\",\"ruc\":\"20123456789\",\"telefono\":\" 999123456 \",\"direccion\":\" Lima \",\"correo\":\"contacto@example.com\"}", 200, true)
+        );
     }
 
-    @Autowired MockMvc mvc;
-    @Autowired ObjectMapper json;
-    @Autowired EntityManager em;
-    @Autowired MantenimientoService service;
-    // H2 no soporta LOCK TABLE de Oracle; las consultas y persistencia sí son reales.
+    // >>>> FIXTURES
+    private final MockMvc mvc;
+    private final ObjectMapper json;
+    private final EntityManager em;
+    private final MantenimientoService service;
+    // Oracle table locks are not verified by this H2 test.
     @MockitoBean MantenimientoLock lock;
 
+    // >>>> SETUP
     @BeforeEach
     void limpiarMock() { reset(lock); }
 
+    // >>>> HELPERS
     ObjectNode cuerpo(Caso caso) { return (ObjectNode) json.readTree(caso.cuerpo()); }
 
     JsonNode crear(Caso caso, ObjectNode body) throws Exception {
         return json.readTree(mvc.perform(post(BASE + caso.ruta()).contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(body)))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+                        .content(json.writeValueAsString(body))
+            )
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()
+        );
     }
 
+    // >>>> TESTS
     @ParameterizedTest
     @MethodSource("catalogos")
     void cicloCompletoMantieneIdentidadYCamposSoportados(Caso caso) throws Exception {
@@ -107,8 +121,10 @@ class MantenimientoControllerTest {
                 .andExpect(jsonPath("$.nombre").value("Catálogo prueba"));
         request.put("nombre", "Editado").put(caso.campoId(), 90000001);
         JsonNode editado = json.readTree(mvc.perform(put(BASE + caso.ruta() + "/" + id)
-                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request)))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request))
+            )
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()
+        );
         assertThat(editado.get(caso.campoId()).asLong()).isEqualTo(id);
         assertThat(editado.get("nombre").asText()).isEqualTo("Editado");
         if (caso.ruta().equals("categorias")) {
@@ -129,14 +145,17 @@ class MantenimientoControllerTest {
         long id = primero.get(caso.campoId()).asLong();
         ObjectNode duplicado = cuerpo(caso).put("nombre", " CATÁLOGO PRUEBA ");
         mvc.perform(post(BASE + caso.ruta()).contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(duplicado)))
+                        .content(json.writeValueAsString(duplicado))
+        )
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.message").exists());
         ObjectNode otro = cuerpo(caso).put("nombre", "Otro registro");
         long otroId = crear(caso, otro).get(caso.campoId()).asLong();
         mvc.perform(put(BASE + caso.ruta() + "/" + otroId).contentType(MediaType.APPLICATION_JSON)
-                .content(caso.cuerpo())).andExpect(status().isConflict());
+                .content(caso.cuerpo())
+        ).andExpect(status().isConflict());
         mvc.perform(put(BASE + caso.ruta() + "/" + id).contentType(MediaType.APPLICATION_JSON)
-                .content(caso.cuerpo())).andExpect(status().isOk());
+                .content(caso.cuerpo())
+        ).andExpect(status().isOk());
         mvc.perform(get(BASE + caso.ruta() + "/" + otroId)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("Otro registro"));
     }
@@ -147,27 +166,32 @@ class MantenimientoControllerTest {
         for (String nombre : new String[]{" ", "x".repeat(caso.longitudNombre() + 1)}) {
             ObjectNode invalid = cuerpo(caso).put("nombre", nombre);
             mvc.perform(post(BASE + caso.ruta()).contentType(MediaType.APPLICATION_JSON)
-                    .content(json.writeValueAsString(invalid))).andExpect(status().isBadRequest());
+                    .content(json.writeValueAsString(invalid))
+            ).andExpect(status().isBadRequest());
         }
         if (caso.estado()) {
             for (Integer estado : new Integer[]{null, -1, 2}) {
                 ObjectNode invalid = cuerpo(caso);
                 if (estado == null) invalid.putNull("estado"); else invalid.put("estado", estado);
                 mvc.perform(post(BASE + caso.ruta()).contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(invalid))).andExpect(status().isBadRequest());
+                        .content(json.writeValueAsString(invalid))
+                ).andExpect(status().isBadRequest());
             }
             mvc.perform(get(BASE + caso.ruta()).param("estado", "2")).andExpect(status().isBadRequest());
         }
         for (String[] param : new String[][]{{"page", "-1"}, {"size", "0"}, {"size", "101"},
-                {"page", "2147483647"}, {"termino", "x".repeat(201)}}) {
+                {"page", "2147483647"}, {"termino", "x".repeat(201)}}
+        ) {
             mvc.perform(get(BASE + caso.ruta()).param(param[0], param[1])).andExpect(status().isBadRequest());
         }
         mvc.perform(get(BASE + caso.ruta() + "/0")).andExpect(status().isBadRequest());
         mvc.perform(get(BASE + caso.ruta() + "/90000000")).andExpect(status().isNotFound());
         mvc.perform(put(BASE + caso.ruta() + "/90000000").contentType(MediaType.APPLICATION_JSON)
-                .content(caso.cuerpo())).andExpect(status().isNotFound());
+                .content(caso.cuerpo())
+        ).andExpect(status().isNotFound());
         mvc.perform(post(BASE + caso.ruta()).contentType(MediaType.APPLICATION_JSON)
-                .content("{")).andExpect(status().isBadRequest());
+                .content("{")
+        ).andExpect(status().isBadRequest());
     }
 
     @ParameterizedTest
@@ -187,7 +211,8 @@ class MantenimientoControllerTest {
                     .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
             inactivo.put("estado", 1);
             mvc.perform(put(BASE + caso.ruta() + "/" + id).contentType(MediaType.APPLICATION_JSON)
-                    .content(json.writeValueAsString(inactivo))).andExpect(status().isOk())
+                    .content(json.writeValueAsString(inactivo))
+            ).andExpect(status().isOk())
                     .andExpect(jsonPath("$.estado").value(1));
         }
     }
@@ -196,17 +221,21 @@ class MantenimientoControllerTest {
     void validaPrecioYContactoSinAlterarElDdl() throws Exception {
         for (String precio : new String[]{"-1", "0.001", "10000000000", "null"}) {
             mvc.perform(post(BASE + "servicios").contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"nombre\":\"Servicio\",\"precio\":" + precio + "}")).andExpect(status().isBadRequest());
+                    .content("{\"estado\":1,\"nombre\":\"Servicio\",\"precio\":" + precio + "}")
+            ).andExpect(status().isBadRequest());
         }
         for (String body : new String[]{
-                "{\"nombre\":\"Laboratorio\",\"correo\":\"invalido\"}",
-                "{\"nombre\":\"Laboratorio\",\"telefono\":\"" + "x".repeat(51) + "\"}",
-                "{\"nombre\":\"Laboratorio\",\"ruc\":\"" + "x".repeat(21) + "\"}"}) {
+                "{\"estado\":1,\"nombre\":\"Laboratorio\",\"correo\":\"invalido\"}",
+                "{\"estado\":1,\"nombre\":\"Laboratorio\",\"telefono\":\"" + "x".repeat(51) + "\"}",
+                "{\"estado\":1,\"nombre\":\"Laboratorio\",\"ruc\":\"" + "x".repeat(21) + "\"}"}
+        ) {
             mvc.perform(post(BASE + "laboratorios").contentType(MediaType.APPLICATION_JSON)
-                    .content(body)).andExpect(status().isBadRequest());
+                    .content(body)
+            ).andExpect(status().isBadRequest());
         }
         mvc.perform(post(BASE + "servicios").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nombre\":\"Servicio gratuito\",\"precio\":0}")).andExpect(status().isCreated());
+                .content("{\"estado\":1,\"nombre\":\"Servicio gratuito\",\"precio\":0}")
+        ).andExpect(status().isCreated());
     }
 
     @Test
@@ -215,11 +244,13 @@ class MantenimientoControllerTest {
         Producto producto = persistir(new Producto(null, "PRUEBA-CUS22", "Producto", null, null, BigDecimal.TEN, 0, true, null, categoria));
         String body = "{\"nombre\":\"Categoría dependiente\",\"estado\":0}";
         mvc.perform(put(BASE + "categorias/" + categoria.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(body)).andExpect(status().isConflict());
+                .content(body)
+        ).andExpect(status().isConflict());
         assertThat(categoria.getActivo()).isEqualTo(true);
         producto.setActivo(false); em.flush();
         mvc.perform(put(BASE + "categorias/" + categoria.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.estado").value(0));
+                .content(body)
+        ).andExpect(status().isOk()).andExpect(jsonPath("$.estado").value(0));
         verify(lock, times(2)).bloquear(Catalogo.CATEGORIA, true);
     }
 
@@ -230,10 +261,12 @@ class MantenimientoControllerTest {
         ServicioVendido detalle = persistir(new ServicioVendido(null, BigDecimal.TEN, venta, servicio));
         String body = "{\"nombre\":\"Servicio vendido\",\"precio\":20,\"estado\":0}";
         mvc.perform(put(BASE + "servicios/" + servicio.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(body)).andExpect(status().isConflict());
+                .content(body)
+        ).andExpect(status().isConflict());
         venta.setEstado(EstadoVentaEnum.PAGADA); em.flush();
         mvc.perform(put(BASE + "servicios/" + servicio.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.precio").value(20));
+                .content(body)
+        ).andExpect(status().isOk()).andExpect(jsonPath("$.precio").value(20));
         em.flush(); em.clear();
         assertThat(em.find(ServicioVendido.class, detalle.getId()).getPrecio()).isEqualByComparingTo("10");
     }
@@ -245,25 +278,28 @@ class MantenimientoControllerTest {
         Paciente paciente = persistir(new Paciente(null, persona(), true, null, null));
         Receta receta = persistir(new Receta(null, null, 0, paciente, empleado));
         MaterialCristal material = persistir(new MaterialCristal(null, "Material envío"));
-        Lente lente = persistir(new Lente(null, BigDecimal.TEN, receta, material, null, new java.util.LinkedHashSet<>(), new java.util.LinkedHashSet<>()));
+        Lente lente = persistir(new Lente(null, BigDecimal.TEN, receta, material, null, new LinkedHashSet<>(), new LinkedHashSet<>()));
         OrdenTrabajo orden = persistir(new OrdenTrabajo(null, null, null, null, EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO, null, lente));
         EnvioLaboratorio envio = persistir(new EnvioLaboratorio(null, null, null, null, null, null, null, null, orden, laboratorio));
         String body = "{\"nombre\":\"Laboratorio con envío\",\"estado\":0}";
         mvc.perform(put(BASE + "laboratorios/" + laboratorio.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(body)).andExpect(status().isConflict());
+                .content(body)
+        ).andExpect(status().isConflict());
         envio.setFechaRecepcion(LocalDateTime.now()); em.flush();
         mvc.perform(put(BASE + "laboratorios/" + laboratorio.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(body)).andExpect(status().isConflict());
+                .content(body)
+        ).andExpect(status().isConflict());
         envio.setFechaRevision(LocalDateTime.now()); em.flush();
         mvc.perform(put(BASE + "laboratorios/" + laboratorio.getId()).contentType(MediaType.APPLICATION_JSON)
-                .content(body)).andExpect(status().isOk());
+                .content(body)
+        ).andExpect(status().isOk());
         assertThat(envio.getLaboratorio().getId()).isEqualTo(laboratorio.getId());
     }
 
     @Test
     void validacionDelServicioNoSeOmiteFueraDelController() {
         assertThatThrownBy(() -> service.registrarCategoria(new CategoriaDTO(null, " ", null, 1, null)))
-                .isInstanceOf(jakarta.validation.ConstraintViolationException.class);
+                .isInstanceOf(ConstraintViolationException.class);
         verifyNoInteractions(lock);
     }
 
@@ -271,7 +307,8 @@ class MantenimientoControllerTest {
     void bloqueoOcupadoRetornaConflictoSinExponerSql() throws Exception {
         doThrow(new CannotAcquireLockException("detalle interno SQL")).when(lock).bloquear(Catalogo.CATEGORIA, false);
         mvc.perform(post(BASE + "categorias").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombre\":\"Ocupada\"}"))
+                        .content("{\"nombre\":\"Ocupada\",\"estado\":1}")
+        )
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("El catálogo está siendo utilizado. Intente nuevamente."));
     }
@@ -297,6 +334,7 @@ class MantenimientoControllerTest {
         mvc.perform(put(BASE + caso.ruta() + "/1").contentType(MediaType.APPLICATION_JSON).content(caso.cuerpo())).andExpect(status().isUnauthorized());
     }
 
+    // >>>> HELPERS
     private <T> T persistir(T entity) { em.persist(entity); em.flush(); return entity; }
     private Persona persona() {
         return persistir(new Persona(null, "Persona", "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));

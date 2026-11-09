@@ -1,8 +1,9 @@
 package pe.edu.upeu.geovision_backend.controller.ventas;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,45 +24,44 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/ventas/pagos-pendientes")
 @RequiredArgsConstructor
-@Slf4j
 public class PagoPendienteController {
 
+    // >>>> CONSTANTS
+    private static final Logger log = LoggerFactory.getLogger(PagoPendienteController.class);
+
+    // >>>> DEPENDENCIES
     private final PagoPendienteService pagoPendienteService;
 
-    /**
-     * CUS07: Listar ventas con saldo pendiente de pago.
-     * Permite filtrar opcionalmente por comprobante, cliente o número de documento.
-     */
+    // >>>> QUERIES
     @GetMapping
     @PreAuthorize("hasAnyAuthority('VENTAS_LEER', 'PAGOS_GESTIONAR')")
     public ResponseEntity<List<PagoPendienteResponseDTO>> listarVentasConSaldoPendiente(
-            @RequestParam(value = "termino", required = false) String termino) {
+        @RequestParam(value = "termino", required = false) String termino
+    ) {
         log.info("Petición REST para listar ventas con saldo pendiente, filtro: '{}'", termino);
         List<PagoPendienteResponseDTO> lista = pagoPendienteService.listarVentasConPagosPendientes(termino);
         return ResponseEntity.ok(lista);
     }
 
-    /**
-     * CUS07: Consultar saldo y desglose de deuda de una venta específica.
-     */
     @GetMapping("/{idVenta}")
     @PreAuthorize("hasAnyAuthority('VENTAS_LEER', 'PAGOS_GESTIONAR')")
     public ResponseEntity<PagoPendienteResponseDTO> obtenerSaldoPendientePorVenta(
-            @PathVariable("idVenta") Long idVenta) {
+        @PathVariable("idVenta") Long idVenta
+    ) {
         log.info("Petición REST para consultar balance de saldo de la venta ID: {}", idVenta);
         PagoPendienteResponseDTO response = pagoPendienteService.obtenerSaldoPendientePorVenta(idVenta);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * CUS07: Registrar abono o liquidación total del saldo adeudado.
-     */
+    // >>>> CREATION
     @PostMapping
     @PreAuthorize("hasAuthority('PAGOS_GESTIONAR')")
     public ResponseEntity<PagoResponseDTO> registrarPagoPendiente(
-            @Valid @RequestBody PagoRegistroRequestDTO request) {
+        @Valid @RequestBody PagoRegistroRequestDTO request
+    ) {
         log.info("Petición REST para registrar abono/liquidación a venta ID: {}", request.idVenta());
         PagoResponseDTO response = pagoPendienteService.registrarPagoPendiente(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 }

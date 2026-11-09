@@ -11,7 +11,9 @@ import java.util.List;
 @Repository
 public interface PacienteLogRepository extends JpaRepository<PacienteLog, Long> {
 
+    // >>>> QUERIES
     List<PacienteLog> findByPacienteIdOrderByFechaLogDesc(Long idPersona);
 
     Page<PacienteLog> findByPacienteIdOrderByFechaLogDesc(Long idPersona, Pageable pageable);
+
 }

@@ -3,7 +3,6 @@ package pe.edu.upeu.geovision_backend.util.orden_trabajo;
 import java.math.BigDecimal;
 import java.util.*;
 
-import org.springframework.stereotype.Component;
 import pe.edu.upeu.geovision_backend.dto.atencion.MedidaOjoDTO;
 import pe.edu.upeu.geovision_backend.dto.atencion.MedidaRequestDTO;
 import pe.edu.upeu.geovision_backend.dto.orden_trabajo.PoliticaCalidadDTO;
@@ -12,12 +11,12 @@ import pe.edu.upeu.geovision_backend.entity.atencion.MedidaOjo;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoMedidaEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 
-/**
- * Compara la misma convencion de cilindro; no transforma ni modifica la receta.
- */
-@Component
-public class ComparadorLensometria {
-    public boolean comparar(List<Medida> referencia, List<MedidaRequestDTO> control, PoliticaCalidadDTO p) {
+public final class ComparadorLensometria {
+    private ComparadorLensometria() {}
+
+
+    // >>>> VALIDATION
+    public static boolean comparar(List<Medida> referencia, List<MedidaRequestDTO> control, PoliticaCalidadDTO p) {
         if (!p.configurada()) throw new ReglaNegocioException("Politica de calidad no configurada");
         var referencias = new EnumMap<TipoMedidaEnum, Medida>(TipoMedidaEnum.class);
         for (var m : referencia) {
@@ -32,7 +31,8 @@ public class ComparadorLensometria {
             if (m == null || m.tipoMedida() == null || !tipos.add(m.tipoMedida()) || !referencias.containsKey(m.tipoMedida()))
                 throw new ReglaNegocioException("La lensometria contiene tipos repetidos o ajenos al lente");
             if (m.idReceta() != null || m.idEnvioLaboratorio() != null || m.ojoDerecho() == null || m.ojoIzquierdo() == null
-                    || m.ojoDerecho().id() != null || m.ojoIzquierdo().id() != null)
+                    || m.ojoDerecho().id() != null || m.ojoIzquierdo().id() != null
+            )
                 throw new ReglaNegocioException("Ingrese medidas nuevas de ambos ojos sin identificadores internos");
             var original = referencias.get(m.tipoMedida());
             validarOriginal(original);
@@ -48,22 +48,24 @@ public class ComparadorLensometria {
         return aprobado;
     }
 
-    public void validarOriginal(Medida m) {
+    public static void validarOriginal(Medida m) {
         if (m == null || m.getDistanciaPupilar() == null || m.getDistanciaPupilar().signum() <= 0
-                || !completo(m.getMedidaOjoDerecha()) || !completo(m.getMedidaOjoIzquierda()))
+                || !completo(m.getMedidaOjoDerecha()) || !completo(m.getMedidaOjoIzquierda())
+        )
             throw new ReglaNegocioException("El lente debe tener medidas completas de ambos ojos y distancia pupilar");
     }
 
-    private boolean completo(MedidaOjo o) {
+    // >>>> HELPERS
+    private static boolean completo(MedidaOjo o) {
         return o != null && o.getEsfera() != null && o.getCilindro() != null && o.getEje() != null && o.getEje() >= 0 && o.getEje() <= 180;
     }
 
-    private void validarControl(MedidaOjoDTO o) {
+    private static void validarControl(MedidaOjoDTO o) {
         if (o.esfera() == null || o.cilindro() == null || o.eje() == null || o.eje() < 0 || o.eje() > 180)
             throw new ReglaNegocioException("La lensometria requiere esfera, cilindro y eje validos para ambos ojos");
     }
 
-    private boolean ojo(MedidaOjo r, MedidaOjoDTO c, PoliticaCalidadDTO p) {
+    private static boolean ojo(MedidaOjo r, MedidaOjoDTO c, PoliticaCalidadDTO p) {
         int diff = Math.abs(r.getEje() - c.eje());
         boolean cumple = diferencia(r.getEsfera(), c.esfera(), p.dioptrias());
         cumple &= diferencia(r.getCilindro(), c.cilindro(), p.dioptrias());
@@ -72,7 +74,7 @@ public class ComparadorLensometria {
         return cumple;
     }
 
-    private boolean diferencia(BigDecimal referencia, BigDecimal medida, BigDecimal tolerancia) {
+    private static boolean diferencia(BigDecimal referencia, BigDecimal medida, BigDecimal tolerancia) {
         if (referencia == null) return medida == null || medida.signum() == 0;
         if (medida == null) throw new ReglaNegocioException("Complete todas las magnitudes presentes en la receta");
         return referencia.subtract(medida).abs().compareTo(tolerancia) <= 0;

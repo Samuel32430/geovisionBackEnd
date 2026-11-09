@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
     // BadRequest: 400
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleUnreadableBody(
-            HttpServletRequest request
+        HttpServletRequest request
     ) {
         String message = "El cuerpo JSON tiene un formato inválido o contiene valores incompatibles";
 
@@ -42,8 +42,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleInvalidParameter(
-            HttpServletRequest request,
-            MethodArgumentTypeMismatchException ex
+        HttpServletRequest request,
+        MethodArgumentTypeMismatchException ex
     ) {
         String message = "El parámetro '" + ex.getName() + "' tiene un formato inválido";
         if (LocalDate.class.equals(ex.getRequiredType())) {
@@ -57,8 +57,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleValidation(
-            HttpServletRequest request,
-            MethodArgumentNotValidException ex
+        HttpServletRequest request,
+        MethodArgumentNotValidException ex
     ) {
         String message = "Existen errores de validación";
 
@@ -66,15 +66,16 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(e -> validationErrors.put(
                 e.getField(),
                 e.getDefaultMessage()
-        ));
+            )
+        );
 
         return buildResponse(request, HttpStatus.BAD_REQUEST, null, message, validationErrors);
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleMethodValidation(
-            HttpServletRequest request,
-            HandlerMethodValidationException ex
+        HttpServletRequest request,
+        HandlerMethodValidationException ex
     ) {
         if (ex.isForReturnValue()) {
             String message = "La respuesta generada no cumple las validaciones";
@@ -92,8 +93,10 @@ public class GlobalExceptionHandler {
             result.getResolvableErrors().forEach(error -> validationErrors.putIfAbsent(
                     error instanceof FieldError fieldError ? fieldError.getField() : key,
                     error.getDefaultMessage() != null ? error.getDefaultMessage() : "Valor inválido"
-            ));
-        });
+                )
+            );
+        }
+        );
 
         return buildResponse(request, HttpStatus.BAD_REQUEST, null, message, validationErrors);
     }
@@ -101,8 +104,8 @@ public class GlobalExceptionHandler {
     // MethodNotAllowed: 405
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleMethodNotSupported(
-            HttpServletRequest request,
-            HttpRequestMethodNotSupportedException ex
+        HttpServletRequest request,
+        HttpRequestMethodNotSupportedException ex
     ) {
         String message = "El método HTTP '" + ex.getMethod() + "' no está permitido para este recurso";
 
@@ -114,8 +117,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleResponseStatus(
-            HttpServletRequest request,
-            ResponseStatusException ex
+        HttpServletRequest request,
+        ResponseStatusException ex
     ) {
         String message = ex.getReason() != null ? ex.getReason() : "No se pudo completar la solicitud";
 
@@ -125,8 +128,8 @@ public class GlobalExceptionHandler {
     // NotFound: 404
     @ExceptionHandler(RecursosNoEncontradosException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleNotFound(
-            HttpServletRequest request,
-            RecursosNoEncontradosException ex
+        HttpServletRequest request,
+        RecursosNoEncontradosException ex
     ) {
         return buildResponse(request, HttpStatus.NOT_FOUND, null, ex.getMessage(), null);
     }
@@ -134,7 +137,7 @@ public class GlobalExceptionHandler {
     // Conflict: 409
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleIntegrityConflict(
-            HttpServletRequest request
+        HttpServletRequest request
     ) {
         log.warn("Conflicto de integridad en {}", request.getRequestURI());
 
@@ -146,8 +149,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ReglaNegocioException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleBusinessRule(
-            HttpServletRequest request,
-            ReglaNegocioException ex
+        HttpServletRequest request,
+        ReglaNegocioException ex
     ) {
         return buildResponse(request, HttpStatus.CONFLICT, null, ex.getMessage(), null);
     }
@@ -156,8 +159,8 @@ public class GlobalExceptionHandler {
     // Unauthorized: 401
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleAuthentication(
-            HttpServletRequest request,
-            AuthenticationException ex
+        HttpServletRequest request,
+        AuthenticationException ex
     ) {
         log.warn(
                 "Autenticación fallida en {} | motivo={}",
@@ -173,7 +176,7 @@ public class GlobalExceptionHandler {
     // Forbidden: 403
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleAccessDenied(
-            HttpServletRequest request
+        HttpServletRequest request
     ) {
         log.warn("Acceso denegado en {}", request.getRequestURI());
 
@@ -186,8 +189,8 @@ public class GlobalExceptionHandler {
     // InternalServerError: 500
     @ExceptionHandler(Exception.class)
     public ResponseEntity<@NonNull ErrorResponseDTO> handleAnyException(
-            HttpServletRequest request,
-            Exception ex
+        HttpServletRequest request,
+        Exception ex
     ) {
         log.warn("Error sin manejar en {}. {}: {}",
                 request.getRequestURI(),
@@ -198,13 +201,13 @@ public class GlobalExceptionHandler {
         return buildResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, null, ex.getMessage(), null);
     }
 
-    // >>>> PRIVATE METHODS
+    // >>>> RESPONSE BUILDING
     public static ResponseEntity<@NonNull ErrorResponseDTO> buildResponse(
-            HttpServletRequest request,
-            HttpStatusCode status,
-            HttpHeaders headers,
-            String message,
-            Map<String, String> validationErrors
+        HttpServletRequest request,
+        HttpStatusCode status,
+        HttpHeaders headers,
+        String message,
+        Map<String, String> validationErrors
     ) {
         return ResponseEntity
                 .status(status)
@@ -219,6 +222,7 @@ public class GlobalExceptionHandler {
                         message,
                         request.getRequestURI(),
                         validationErrors
-                ));
+                    )
+                );
     }
 }

@@ -1,9 +1,7 @@
 package pe.edu.upeu.geovision_backend.entity.security;
 
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,6 +21,7 @@ import pe.edu.upeu.geovision_backend.enums.security.ModuloEnum;
 @AllArgsConstructor
 public class Permiso {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_permiso")
@@ -31,10 +30,11 @@ public class Permiso {
     @Column(name = "nombre", nullable = false, unique = true, length = 100)
     private String nombre;
 
-    @Convert(converter = ModuloConverter.class)
+    @Convert(converter = ModuloEnum.PersistenceConverter.class)
     @Column(name = "modulo")
     private ModuloEnum modulo;
 
+    // >>>> OPERATIONS
     public Integer getModuloCodigo() {
         return this.modulo != null ? this.modulo.getCodigo() : null;
     }
@@ -43,16 +43,4 @@ public class Permiso {
         this.modulo = ModuloEnum.fromCodigo(codigo);
     }
 
-    @Converter
-    public static class ModuloConverter implements AttributeConverter<ModuloEnum, Integer> {
-        @Override
-        public Integer convertToDatabaseColumn(ModuloEnum attribute) {
-            return attribute != null ? attribute.getCodigo() : null;
-        }
-
-        @Override
-        public ModuloEnum convertToEntityAttribute(Integer dbData) {
-            return dbData != null ? ModuloEnum.fromCodigo(dbData) : null;
-        }
-    }
 }

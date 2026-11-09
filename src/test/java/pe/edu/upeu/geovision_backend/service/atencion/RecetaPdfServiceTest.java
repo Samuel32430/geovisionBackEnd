@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.service.atencion;
 
+import org.apache.pdfbox.text.TextPosition;
+
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -31,10 +33,12 @@ import static org.mockito.Mockito.*;
 
 class RecetaPdfServiceTest {
 
+    // >>>> FIXTURES
     RecetaService prescriptions;
     ConfiguracionEmpresaRepository companies;
     RecetaPdfServiceImpl service;
 
+    // >>>> SETUP
     @BeforeEach
     void setup() {
         prescriptions = mock(RecetaService.class);
@@ -43,17 +47,21 @@ class RecetaPdfServiceTest {
         when(companies.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
     }
 
+    // >>>> HELPERS
     RecetaResponseDTO recipe(long id) {
         var far = new MedidaResponseDTO(20L, TipoMedidaEnum.LEJOS, new BigDecimal("62.50"), new BigDecimal("0.30"), "Uso permanente. Material recomendado: policarbonato.", null, new MedidaOjoDTO(null, "20/20", new BigDecimal("-1.25"), new BigDecimal("-0.50"), 90, new BigDecimal("1.00")), new MedidaOjoDTO(null, "20/25", new BigDecimal("2.50"), BigDecimal.ZERO, 80, null), null);
         var near = new MedidaResponseDTO(21L, TipoMedidaEnum.CERCA, new BigDecimal("62.50"), null, "Lectura y trabajo de cerca.", null, far.ojoDerecho(), far.ojoIzquierdo(), null);
         return new RecetaResponseDTO(id, LocalDateTime.of(2026, 11, 1, 10, 15), 0, null, null, "Ana María Muñoz Peña", "72458912", null, "José Núñez", new ArrayList<>(List.of(far, near)), List.of(new LenteResponseDTO(7L, null, null, null, "Policarbonato", null, null, null, List.of(new TratamientoCristalDTO(null, "Antirreflejo")), List.of(far))));
     }
 
+    // >>>> TESTS
     @Test
     void generaPdfConFuentesIncluidasYContenidoClinicoConAcentos() throws Exception {
         when(prescriptions.obtenerRecetaPorId(105L)).thenReturn(recipe(105));
         when(companies.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
-                new ConfiguracionEmpresa(null, "Geo Visión - Datos de prueba", "Óptica Geo Visión", "20123456789", "Av. Las Palmeras 450, Lima", "987654321", "prueba@example.invalid", null)));
+                new ConfiguracionEmpresa(null, "Geo Visión - Datos de prueba", "Óptica Geo Visión", "20123456789", "Av. Las Palmeras 450, Lima", "987654321", "prueba@example.invalid", null)
+            )
+        );
         byte[] bytes = service.generarRecetaPdf(105L);
         Files.write(Path.of("target/stage6-preview.pdf"), bytes);
         try (PDDocument document = Loader.loadPDF(bytes)) {
@@ -61,7 +69,8 @@ class RecetaPdfServiceTest {
             assertThat(text).contains("Óptica Geo Visión", "20123456789", "RECETA OFTÁLMICA #105",
                     "Ana María Muñoz Peña", "José Núñez", "72458912", "01/11/2026 10:15",
                     "Lejos", "Cerca", "OD", "OI", "-1.25", "-0.50", "62.50", "0.30",
-                    "Material recomendado: policarbonato", "Antirreflejo", "Propia del paciente", "Página 1 de");
+                    "Material recomendado: policarbonato", "Antirreflejo", "Propia del paciente", "Página 1 de"
+            );
             for (var page : document.getPages()) {
                 for (var name : page.getResources().getFontNames()) {
                     assertThat(page.getResources().getFont(name).isEmbedded()).isTrue();
@@ -79,7 +88,8 @@ class RecetaPdfServiceTest {
         when(prescriptions.obtenerRecetaPorId(106L)).thenReturn(recipe);
         try (PDDocument document = Loader.loadPDF(service.generarRecetaPdf(106L))) {
             assertThat(new PDFTextStripper().getText(document)).contains("Prescripción externa", "Sin registrar",
-                    "Sin tipo registrado", "Óptica Geo Visión").doesNotContain("RUC:", "null");
+                    "Sin tipo registrado", "Óptica Geo Visión"
+            ).doesNotContain("RUC:", "null");
         }
     }
 
@@ -103,7 +113,7 @@ class RecetaPdfServiceTest {
             assertThat(text).contains("Página " + document.getNumberOfPages() + " de " + document.getNumberOfPages());
             var bounds = new PDFTextStripper() {
                 @Override
-                protected void processTextPosition(org.apache.pdfbox.text.TextPosition position) {
+                protected void processTextPosition(TextPosition position) {
                     assertThat(position.getXDirAdj()).isGreaterThanOrEqualTo(41f);
                     assertThat(position.getXDirAdj() + position.getWidthDirAdj()).isLessThanOrEqualTo(554f);
                     assertThat(position.getYDirAdj()).isBetween(35f, 812f);

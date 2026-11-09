@@ -10,17 +10,22 @@ import pe.edu.upeu.geovision_backend.dto.security.UsuarioResponseDTO;
 
 public interface AuthService {
 
+    // >>>> QUERIES
+    UsuarioResponseDTO usuarioActual(String username);
+
+    // >>>> AUTHENTICATION
     LoginResponseDTO login(LoginRequestDTO request);
 
     LogoutResponseDTO logout(String username);
 
-    UsuarioResponseDTO usuarioActual(String username);
-
+    // >>>> PASSWORD CHANGES
     void cambiarPassword(String username, CambioPasswordRequestDTO request);
 
+    // >>>> PASSWORD RECOVERY
     void solicitarRecuperacionPassword(RecuperarPasswordRequestDTO request);
 
     boolean validarTokenRecuperacion(String token);
 
     void restablecerPassword(ResetPasswordRequestDTO request);
+
 }

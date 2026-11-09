@@ -27,6 +27,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class Empleado {
 
+    // >>>> FIELDS
     @Id
     @Column(name = "id_persona")
     private Long id;
@@ -46,6 +47,7 @@ public class Empleado {
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaContrato == null) {

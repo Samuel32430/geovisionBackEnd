@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Receta {
 
+    // >>>> FIELDS
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_receta")
@@ -46,6 +47,7 @@ public class Receta {
     @JoinColumn(name = "id_empleado", nullable = false)
     private Empleado empleado;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {

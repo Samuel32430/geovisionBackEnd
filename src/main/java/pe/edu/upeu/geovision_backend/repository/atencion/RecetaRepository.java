@@ -18,6 +18,7 @@ import java.util.Optional;
 @Repository
 public interface RecetaRepository extends JpaRepository<Receta, Long>, JpaSpecificationExecutor<Receta> {
 
+    // >>>> QUERIES
     List<Receta> findByPacienteIdOrderByFechaRegistroDesc(Long idPaciente);
 
     @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
@@ -30,11 +31,13 @@ public interface RecetaRepository extends JpaRepository<Receta, Long>, JpaSpecif
 
     Page<Receta> findByEsExterno(Integer esExterno, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
+    @Query("SELECT r FROM Receta r WHERE r.id = :id")
+    Optional<Receta> findByIdWithDetails(@Param("id") Long id);
+
+    // >>>> LOCKING
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM Receta r WHERE r.id = :id")
     Optional<Receta> findByIdForUpdate(@Param("id") Long id);
 
-    @EntityGraph(attributePaths = {"paciente.persona", "empleado.persona"})
-    @Query("SELECT r FROM Receta r WHERE r.id = :id")
-    Optional<Receta> findByIdWithDetails(@Param("id") Long id);
 }

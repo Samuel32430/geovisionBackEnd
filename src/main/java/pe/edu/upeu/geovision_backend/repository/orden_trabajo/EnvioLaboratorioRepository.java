@@ -17,6 +17,7 @@ import java.util.Optional;
 @Repository
 public interface EnvioLaboratorioRepository extends JpaRepository<EnvioLaboratorio, Long>, JpaSpecificationExecutor<EnvioLaboratorio> {
 
+    // >>>> QUERIES
     @Query("SELECT e.ordenTrabajo.id FROM EnvioLaboratorio e WHERE e.id = :id")
     Optional<Long> findIdOrdenByIdEnvio(@Param("id") Long id);
 
@@ -32,7 +33,9 @@ public interface EnvioLaboratorioRepository extends JpaRepository<EnvioLaborator
 
     Optional<EnvioLaboratorio> findFirstByOrdenTrabajoIdOrderByFechaEnvioDescIdDesc(Long idOrdenTrabajo);
 
+    // >>>> LOCKING
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EnvioLaboratorio e WHERE e.id = :id")
     Optional<EnvioLaboratorio> findByIdForUpdate(@Param("id") Long id);
+
 }

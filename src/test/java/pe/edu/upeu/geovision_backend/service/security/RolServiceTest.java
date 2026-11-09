@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class RolServiceTest {
 
+    // >>>> FIXTURES
     @Mock
     private RolRepository rolRepository;
 
@@ -49,6 +50,7 @@ class RolServiceTest {
     private Permiso permisoVentas;
     private Permiso permisoPacientes;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         testRol = new Rol(1L, "VENDEDOR");
@@ -58,6 +60,7 @@ class RolServiceTest {
         permisoPacientes = new Permiso(20L, "PACIENTES_REGISTRAR", ModuloEnum.ATENCION_PACIENTES);
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("CUS18: Asignación de permisos a un rol exitosa, permitiendo permisos de múltiples módulos (RF-90)")
     void asignarPermisosExitosoCrossModulo() {

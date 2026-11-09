@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Paciente {
 
+    // >>>> FIELDS
     @Id
     @Column(name = "id_persona")
     private Long id;
@@ -46,6 +47,7 @@ public class Paciente {
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
+    // >>>> LIFECYCLE
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) {

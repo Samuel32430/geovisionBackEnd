@@ -1,10 +1,11 @@
 package pe.edu.upeu.geovision_backend.enums.ventas;
 
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Converter;
+
+import jakarta.persistence.AttributeConverter;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public enum EstadoVentaEnum {
     PENDIENTE(1, "Pendiente de Saldo / Pago"),
     PAGADA(2, "Pagada Totalmente"),
@@ -12,6 +13,12 @@ public enum EstadoVentaEnum {
 
     private final Integer codigo;
     private final String descripcion;
+
+    // >>>> CONSTRUCTOR
+    EstadoVentaEnum(Integer codigo, String descripcion) {
+        this.codigo = codigo;
+        this.descripcion = descripcion;
+    }
 
     public static EstadoVentaEnum fromCodigo(Integer codigo) {
         if (codigo == null) return null;
@@ -21,5 +28,19 @@ public enum EstadoVentaEnum {
             }
         }
         throw new IllegalArgumentException("Código de estado de venta no válido: " + codigo);
+    }
+
+    // >>>> CONVERTER
+    @Converter
+    public static class PersistenceConverter implements AttributeConverter<EstadoVentaEnum, Integer> {
+        @Override
+        public Integer convertToDatabaseColumn(EstadoVentaEnum attribute) {
+            return attribute != null ? attribute.getCodigo() : null;
+        }
+
+        @Override
+        public EstadoVentaEnum convertToEntityAttribute(Integer dbData) {
+            return dbData != null ? EstadoVentaEnum.fromCodigo(dbData) : null;
+        }
     }
 }

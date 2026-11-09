@@ -18,8 +18,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PermisoServiceImpl implements PermisoService {
 
+    // >>>> DEPENDENCIES
     private final PermisoRepository permisoRepository;
 
+    // >>>> QUERIES
     @Override
     @Transactional(readOnly = true)
     public List<PermisoDTO> listar() {
@@ -45,4 +47,5 @@ public class PermisoServiceImpl implements PermisoService {
                 .orElseThrow(() -> new RecursosNoEncontradosException("Permiso no encontrado con ID: " + id));
         return PermisoMapper.toDTO(permiso);
     }
+
 }

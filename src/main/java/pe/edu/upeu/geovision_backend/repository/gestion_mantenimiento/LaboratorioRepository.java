@@ -13,15 +13,18 @@ import java.util.Optional;
 @Repository
 public interface LaboratorioRepository extends JpaRepository<Laboratorio, Long>, JpaSpecificationExecutor<Laboratorio> {
 
+    // >>>> QUERIES
     Optional<Laboratorio> findByRuc(String ruc);
-
-    boolean existsByRuc(String ruc);
-
-    boolean existsByRucAndIdNot(String ruc, Long idLaboratorio);
 
     List<Laboratorio> findByActivo(Boolean estado);
 
     Page<Laboratorio> findByActivo(Boolean estado, Pageable pageable);
 
     Page<Laboratorio> findByNombreContainingIgnoreCaseOrRucContaining(String nombre, String ruc, Pageable pageable);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByRuc(String ruc);
+
+    boolean existsByRucAndIdNot(String ruc, Long idLaboratorio);
+
 }

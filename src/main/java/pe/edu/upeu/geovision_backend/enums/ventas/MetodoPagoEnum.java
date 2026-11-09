@@ -1,10 +1,11 @@
 package pe.edu.upeu.geovision_backend.enums.ventas;
 
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Converter;
+
+import jakarta.persistence.AttributeConverter;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public enum MetodoPagoEnum {
     EFECTIVO(1, "Efectivo"),
     TARJETA_DEBITO(2, "Tarjeta de Débito"),
@@ -15,6 +16,12 @@ public enum MetodoPagoEnum {
     private final Integer codigo;
     private final String descripcion;
 
+    // >>>> CONSTRUCTOR
+    MetodoPagoEnum(Integer codigo, String descripcion) {
+        this.codigo = codigo;
+        this.descripcion = descripcion;
+    }
+
     public static MetodoPagoEnum fromCodigo(Integer codigo) {
         if (codigo == null) return null;
         for (MetodoPagoEnum m : values()) {
@@ -23,5 +30,19 @@ public enum MetodoPagoEnum {
             }
         }
         throw new IllegalArgumentException("Código de método de pago no válido: " + codigo);
+    }
+
+    // >>>> CONVERTER
+    @Converter
+    public static class PersistenceConverter implements AttributeConverter<MetodoPagoEnum, Integer> {
+        @Override
+        public Integer convertToDatabaseColumn(MetodoPagoEnum attribute) {
+            return attribute != null ? attribute.getCodigo() : null;
+        }
+
+        @Override
+        public MetodoPagoEnum convertToEntityAttribute(Integer dbData) {
+            return dbData != null ? MetodoPagoEnum.fromCodigo(dbData) : null;
+        }
     }
 }

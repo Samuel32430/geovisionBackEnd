@@ -1,10 +1,11 @@
 package pe.edu.upeu.geovision_backend.enums.ventas;
 
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Converter;
+
+import jakarta.persistence.AttributeConverter;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public enum TipoComprobanteEnum {
     BOLETA(1, "Boleta de Venta"),
     FACTURA(2, "Factura"),
@@ -12,6 +13,12 @@ public enum TipoComprobanteEnum {
 
     private final Integer codigo;
     private final String descripcion;
+
+    // >>>> CONSTRUCTOR
+    TipoComprobanteEnum(Integer codigo, String descripcion) {
+        this.codigo = codigo;
+        this.descripcion = descripcion;
+    }
 
     public static TipoComprobanteEnum fromCodigo(Integer codigo) {
         if (codigo == null) return null;
@@ -21,5 +28,19 @@ public enum TipoComprobanteEnum {
             }
         }
         throw new IllegalArgumentException("Código de tipo de comprobante no válido: " + codigo);
+    }
+
+    // >>>> CONVERTER
+    @Converter
+    public static class PersistenceConverter implements AttributeConverter<TipoComprobanteEnum, Integer> {
+        @Override
+        public Integer convertToDatabaseColumn(TipoComprobanteEnum attribute) {
+            return attribute != null ? attribute.getCodigo() : null;
+        }
+
+        @Override
+        public TipoComprobanteEnum convertToEntityAttribute(Integer dbData) {
+            return dbData != null ? TipoComprobanteEnum.fromCodigo(dbData) : null;
+        }
     }
 }

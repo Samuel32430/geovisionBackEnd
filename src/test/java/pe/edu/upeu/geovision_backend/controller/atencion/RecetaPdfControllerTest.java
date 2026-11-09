@@ -1,10 +1,13 @@
 package pe.edu.upeu.geovision_backend.controller.atencion;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -34,19 +37,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @WithMockUser(authorities = "PACIENTES_LEER")
+@RequiredArgsConstructor
 class RecetaPdfControllerTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired PersonaRepository people;
-    @Autowired PacienteRepository patients;
-    @Autowired EmpleadoRepository employees;
-    @Autowired RecetaRepository prescriptions;
+    // >>>> FIXTURES
+    private final MockMvc mvc;
+    private final PersonaRepository people;
+    private final PacienteRepository patients;
+    private final EmpleadoRepository employees;
+    private final RecetaRepository prescriptions;
     Receta recipe;
 
+    // >>>> HELPERS
     Persona person(String name) {
         return people.saveAndFlush(new Persona(null, name, "Prueba", null, null, null, null, UUID.randomUUID().toString(), TipoDocumentoEnum.DNI));
     }
 
+    // >>>> SETUP
     @BeforeEach
     void setup() {
         var patient = patients.saveAndFlush(new Paciente(null, person("Paciente PDF"), true, null, null));
@@ -54,6 +61,7 @@ class RecetaPdfControllerTest {
         recipe = prescriptions.saveAndFlush(new Receta(null, null, 0, patient, employee));
     }
 
+    // >>>> TESTS
     @Test
     void descargaPdfConNombreLongitudYCacheDeshabilitado() throws Exception {
         var response = mvc.perform(get("/api/v1/recetas/{id}/pdf", recipe.getId()).accept(MediaType.APPLICATION_PDF))
@@ -63,16 +71,17 @@ class RecetaPdfControllerTest {
                 .andReturn().getResponse();
         byte[] bytes = response.getContentAsByteArray();
         assertThat(response.getHeader("Content-Length")).isEqualTo(Integer.toString(bytes.length));
-        assertThat(bytes).startsWith("%PDF-".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        assertThat(bytes).startsWith("%PDF-".getBytes(StandardCharsets.US_ASCII));
         try (var document = Loader.loadPDF(bytes)) {
             assertThat(new PDFTextStripper().getText(document)).contains("Paciente PDF Prueba",
-                    "Profesional PDF Prueba", "No hay medidas registradas.");
+                    "Profesional PDF Prueba", "No hay medidas registradas."
+            );
         }
     }
 
     @Test
     void validaIdYRecursoInexistenteInclusoConAcceptPdf() throws Exception {
-        for (String invalid : java.util.List.of("0", "-1", "abc")) {
+        for (String invalid : List.of("0", "-1", "abc")) {
             mvc.perform(get("/api/v1/recetas/" + invalid + "/pdf").accept(MediaType.APPLICATION_PDF))
                     .andExpect(status().isBadRequest());
         }

@@ -32,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class VentaHistorialControllerTest {
 
+    // >>>> FIXTURES
     private MockMvc mockMvc;
 
     @Mock
@@ -40,6 +41,7 @@ class VentaHistorialControllerTest {
     @InjectMocks
     private VentaHistorialController ventaHistorialController;
 
+    // >>>> SETUP
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(ventaHistorialController)
@@ -48,6 +50,7 @@ class VentaHistorialControllerTest {
                 .build();
     }
 
+    // >>>> TESTS
     @Test
     @DisplayName("GET /api/v1/ventas/historial: Retorna 200 OK con página de ventas")
     void buscarHistorialVentas_retorna200OK() throws Exception {
@@ -59,7 +62,8 @@ class VentaHistorialControllerTest {
 
         mockMvc.perform(get("/api/v1/ventas/historial")
                         .param("termino", "Ana")
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(200L))
                 .andExpect(jsonPath("$.content[0].clienteNombre").value("Ana Torres"));
@@ -73,7 +77,8 @@ class VentaHistorialControllerTest {
         when(ventaHistorialService.obtenerDetalleModalVenta(200L)).thenReturn(detalle);
 
         mockMvc.perform(get("/api/v1/ventas/historial/200/detalle")
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(200L))
                 .andExpect(jsonPath("$.numeroComprobante").value("B001-00000200"));

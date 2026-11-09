@@ -17,23 +17,14 @@ import java.util.Optional;
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSpecificationExecutor<Producto> {
 
+    // >>>> QUERIES
     Optional<Producto> findByCodigo(String codigo);
 
-    boolean existsByCodigo(String codigo);
-
-    boolean existsByCodigoAndIdNot(String codigo, Long idProducto);
-
     List<Producto> findByCategoriaId(Long idCategoria);
-
-    boolean existsByCategoriaIdAndActivo(Long idCategoria, Boolean estado);
 
     List<Producto> findByActivo(Boolean estado);
 
     Page<Producto> findByActivoAndStockGreaterThan(Boolean estado, Integer stock, Pageable pageable);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Producto p WHERE p.id = :id")
-    Optional<Producto> findByIdForUpdate(@Param("id") Long id);
 
     @Query("SELECT p FROM Producto p WHERE p.stock <= :stockMinimo AND p.activo = true")
     List<Producto> findProductosBajoStock(@Param("stockMinimo") Integer stockMinimo);
@@ -43,11 +34,25 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
            "OR LOWER(p.codigo) LIKE LOWER(CONCAT('%', :termino, '%')) " +
            "OR LOWER(p.marca) LIKE LOWER(CONCAT('%', :termino, '%'))) " +
            "AND (:idCategoria IS NULL OR p.categoria.id = :idCategoria) " +
-           "AND (:estado IS NULL OR p.activo = :estado)")
+           "AND (:estado IS NULL OR p.activo = :estado)"
+    )
     Page<Producto> buscarProductosPaginado(
-            @Param("termino") String termino,
-            @Param("idCategoria") Long idCategoria,
-            @Param("estado") Boolean estado,
-            Pageable pageable
+        @Param("termino") String termino,
+        @Param("idCategoria") Long idCategoria,
+        @Param("estado") Boolean estado,
+        Pageable pageable
     );
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByCodigo(String codigo);
+
+    boolean existsByCodigoAndIdNot(String codigo, Long idProducto);
+
+    boolean existsByCategoriaIdAndActivo(Long idCategoria, Boolean estado);
+
+    // >>>> LOCKING
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Producto p WHERE p.id = :id")
+    Optional<Producto> findByIdForUpdate(@Param("id") Long id);
+
 }
