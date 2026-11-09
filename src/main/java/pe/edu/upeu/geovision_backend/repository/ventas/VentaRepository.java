@@ -73,6 +73,9 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
     @Query("SELECT v FROM Venta v WHERE v.estado = pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum.PENDIENTE")
     List<Venta> findVentasConPagosPendientes();
 
+    @Query("SELECT MAX(v.numeroComprobante) FROM Venta v WHERE v.numeroComprobante LIKE CONCAT(:prefijo, '%')")
+    Optional<String> findUltimoNumeroComprobantePorPrefijo(@Param("prefijo") String prefijo);
+
     // >>>> EXISTENCE CHECKS
     boolean existsByNumeroComprobante(String numeroComprobante);
 
