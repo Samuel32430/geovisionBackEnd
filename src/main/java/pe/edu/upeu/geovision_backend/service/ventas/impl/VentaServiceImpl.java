@@ -279,17 +279,23 @@ public class VentaServiceImpl implements VentaService {
         throw new ReglaNegocioException("No se encontró un empleado activo responsable para registrar la venta");
     }
 
-    private String generarNumeroComprobante(TipoComprobanteEnum tipoComprobante) {
-        String prefijo;
-        if (tipoComprobante == TipoComprobanteEnum.FACTURA) {
-            prefijo = "F001-";
-        } else if (tipoComprobante == TipoComprobanteEnum.BOLETA) {
-            prefijo = "B001-";
-        } else {
-            prefijo = "NV01-";
-        }
-        long correlativo = System.currentTimeMillis() % 100000000L;
-        return String.format("%s%08d", prefijo, correlativo);
+    private synchronized String generarNumeroComprobante(TipoComprobanteEnum tipoComprobante) {
+        String prefijo = switch (tipoComprobante) {
+            case FACTURA -> "F001-";
+            case BOLETA -> "B001-";
+            default -> "NV01-";
+        };
+        return ventaRepository.findUltimoNumeroComprobantePorPrefijo(prefijo)
+                .map(ultimo -> {
+                    try {
+                        String correlativoStr = ultimo.substring(prefijo.length());
+                        long siguiente = Long.parseLong(correlativoStr) + 1;
+                        return String.format("%s%08d", prefijo, siguiente);
+                    } catch (Exception e) {
+                        return String.format("%s00000001", prefijo);
+                    }
+                })
+                .orElseGet(() -> String.format("%s00000001", prefijo));
     }
 
 }
