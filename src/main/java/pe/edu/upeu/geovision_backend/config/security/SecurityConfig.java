@@ -32,6 +32,7 @@ public class SecurityConfig {
             "/api/v1/auth/recuperar-password",
             "/api/v1/auth/reset-password",
             "/api/v1/auth/validar-token",
+            "/api/v1/ventas/pagos/webhook/mercadopago",
             "/api/health",
             "/swagger-ui.html",
             "/swagger-ui/**",
