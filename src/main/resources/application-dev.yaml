@@ -1,14 +1,17 @@
 server:
   port: 8080
 spring:
+  config:
+    import:
+      - optional:classpath:application-local.yaml
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:${local.db.url:jdbc:oracle:thin:@localhost:1522/FREEPDB1}}
+    username: ${DB_USERNAME:${local.db.username:geovisionBackEnd}}
+    password: ${DB_PASSWORD:${local.db.password:123456}}
   jpa:
     database-platform: org.hibernate.dialect.OracleDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: ${HIBERNATE_DDL_AUTO:none}
     show-sql: true
 
     properties:
