@@ -3,6 +3,7 @@ package pe.edu.upeu.geovision_backend.entity.security;
 import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -12,6 +13,7 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.type.NumericBooleanConverter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,6 +40,7 @@ public class Empleado {
     private Persona persona;
 
     @Column(name = "estado", nullable = false)
+    @Convert(converter = NumericBooleanConverter.class)
     private Boolean activo = true;
 
     @Column(name = "fecha_contrato", nullable = false)
