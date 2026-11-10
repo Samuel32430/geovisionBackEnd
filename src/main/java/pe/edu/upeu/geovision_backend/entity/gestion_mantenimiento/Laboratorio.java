@@ -1,12 +1,14 @@
 package pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.type.NumericBooleanConverter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,6 +44,7 @@ public class Laboratorio {
     private String correo;
 
     @Column(name = "estado", nullable = false)
+    @Convert(converter = NumericBooleanConverter.class)
     private Boolean activo = true;
 
     // >>>> LIFECYCLE
