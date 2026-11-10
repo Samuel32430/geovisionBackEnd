@@ -3,6 +3,9 @@ spring:
     name: geovisionBackEnd
   profiles:
     active: dev
+  config:
+    import:
+      - optional:application-local.yaml
 
 app:
   calidad:
