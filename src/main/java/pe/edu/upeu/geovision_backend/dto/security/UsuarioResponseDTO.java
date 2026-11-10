@@ -1,5 +1,7 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Set;
 
 public record UsuarioResponseDTO(
@@ -12,4 +14,8 @@ public record UsuarioResponseDTO(
     String nombreCompletoPersona,
     Set<RolDTO> roles
 ) {
+    @JsonProperty("idUsuario")
+    public Long idUsuario() {
+        return id;
+    }
 }

@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -14,4 +15,8 @@ public record PermisoDTO(
     ModuloEnum modulo,
     String moduloDescripcion
 ) {
+    @JsonProperty("idPermiso")
+    public Long idPermiso() {
+        return id;
+    }
 }

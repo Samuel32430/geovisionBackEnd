@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.dto.security;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -12,4 +13,8 @@ public record RolDTO(
     String nombre,
     Set<PermisoDTO> permisos
 ) {
+    @JsonProperty("idRol")
+    public Long idRol() {
+        return id;
+    }
 }
