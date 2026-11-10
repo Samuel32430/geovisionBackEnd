@@ -3,6 +3,9 @@ spring:
     name: geovisionBackEnd
   profiles:
     active: dev
+  config:
+    import:
+      - optional:classpath:application-local.yaml
 
 app:
   calidad:
@@ -17,8 +20,8 @@ app:
     device-id: ${TEXTBEE_DEVICE_ID:}
 
 mercadopago:
-  access-token: ${MP_ACCESS_TOKEN:APP_USR-1846952303399508-110913-3108dab94863db4403d790453a473b4c-3826623963}
-  user-id: ${MP_USER_ID:3826623963}
-  pos-id: ${MP_POS_ID:CAJAPRINCIPAL01}
+  access-token: ${MP_ACCESS_TOKEN:}
+  user-id: ${MP_USER_ID:}
+  pos-id: ${MP_POS_ID:}
   webhook-url: ${MP_WEBHOOK_URL:}
   sandbox-mode: ${MP_SANDBOX_MODE:false}
