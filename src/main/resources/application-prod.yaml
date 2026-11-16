@@ -1,11 +1,21 @@
 server:
   port: ${SERVER_PORT:8080}
+  shutdown: graceful
+
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.driver.OracleDriver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN:5}
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
   jpa:
     database-platform: org.hibernate.dialect.OracleDialect
     hibernate:
@@ -18,14 +28,13 @@ spring:
 
 springdoc:
   swagger-ui:
-    path: false
+    enabled: false
   api-docs:
     enabled: false
 
 logging:
   level:
     pe.edu.upeu.geovision_backend: INFO
-    pe.edu.upeu.PharmaBackend: INFO
     org.hibernate.SQL: WARN
     org.hibernate.orm.jdbc.bind: OFF
 
