@@ -31,6 +31,9 @@ public class MercadoPagoWebhookController {
     // >>>> DEPENDENCIES
     private final MercadoPagoService mercadoPagoService;
 
+    @org.springframework.beans.factory.annotation.Value("${mercadopago.simulacion-habilitada:true}")
+    private boolean simulacionHabilitada = true;
+
     // >>>> COMMANDS
     /**
      * Genera la orden con código QR dinámico interoperable para cobrar con Yape, Plin o Mercado Pago.
@@ -64,6 +67,11 @@ public class MercadoPagoWebhookController {
             @RequestParam("idVenta") Long idVenta,
             @RequestParam("paymentId") String paymentId,
             @RequestParam("monto") BigDecimal monto) {
+        if (!simulacionHabilitada) {
+            throw new pe.edu.upeu.geovision_backend.exception.ReglaNegocioException(
+                    "La simulación de pagos digitales se encuentra deshabilitada en el entorno de producción"
+            );
+        }
         log.info("Confirmando pago digital simulado para venta ID: {}", idVenta);
         PagoResponseDTO response = mercadoPagoService.confirmarPagoDigital(idVenta, paymentId, monto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
