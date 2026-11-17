@@ -1,0 +1,89 @@
+package pe.edu.upeu.geovision_backend.repository.ventas;
+
+import pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO;
+
+import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
+import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecificationExecutor<Venta> {
+
+    // >>>> QUERIES
+    @Query("SELECT new pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO(" +
+           "v.id, v.numeroComprobante, l.id, v.receta.id, p.id, " +
+           "CONCAT(CONCAT(per.nombres, ' '), per.apellidos), v.total) " +
+           "FROM Venta v JOIN v.paciente p JOIN p.persona per JOIN Lente l ON l.receta = v.receta " +
+           "WHERE v.estado <> pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum.ANULADA " +
+           "AND (SELECT COUNT(v2.id) FROM Venta v2 WHERE v2.receta = v.receta) = 1 " +
+           "AND EXISTS (SELECT pago.id FROM Pago pago WHERE pago.venta = v AND pago.monto > 0) " +
+           "AND l.medidas IS NOT EMPTY " +
+           "AND NOT EXISTS (SELECT o.id FROM OrdenTrabajo o WHERE o.lente = l) " +
+           "AND (:termino IS NULL OR LOWER(per.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
+           "OR LOWER(per.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) ESCAPE '!' " +
+           "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') ESCAPE '!' " +
+           "OR v.numeroComprobante LIKE CONCAT('%', :termino, '%') ESCAPE '!') " +
+           "ORDER BY v.fechaRegistro DESC, v.id DESC, l.id ASC"
+    )
+    Page<PendienteOrdenTrabajoDTO> buscarPendientesOrdenTrabajo(
+        @Param("termino") String termino, Pageable pageable
+    );
+
+    List<Venta> findByRecetaId(Long idReceta);
+
+    List<Venta> findByPacienteId(Long idPaciente);
+
+    List<Venta> findByEmpleadoId(Long idEmpleado);
+
+    List<Venta> findByEstado(EstadoVentaEnum estado);
+
+    Optional<Venta> findByNumeroComprobante(String numeroComprobante);
+
+    @Query("SELECT v FROM Venta v LEFT JOIN v.paciente p LEFT JOIN p.persona per " +
+           "WHERE (:termino IS NULL " +
+           "OR LOWER(per.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) " +
+           "OR LOWER(per.apellidos) LIKE LOWER(CONCAT('%', :termino, '%')) " +
+           "OR per.numeroDocumento LIKE CONCAT('%', :termino, '%') " +
+           "OR v.numeroComprobante LIKE CONCAT('%', :termino, '%')) " +
+           "AND (:estado IS NULL OR v.estado = :estado) " +
+           "AND (:fechaInicio IS NULL OR v.fechaRegistro >= :fechaInicio) " +
+           "AND (:fechaFin IS NULL OR v.fechaRegistro <= :fechaFin) " +
+           "ORDER BY v.fechaRegistro DESC"
+    )
+    Page<Venta> buscarHistorialVentas(
+        @Param("termino") String termino,
+        @Param("estado") EstadoVentaEnum estado,
+        @Param("fechaInicio") LocalDateTime fechaInicio,
+        @Param("fechaFin") LocalDateTime fechaFin,
+        Pageable pageable
+    );
+
+    @Query("SELECT v FROM Venta v WHERE v.estado = pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum.PENDIENTE")
+    List<Venta> findVentasConPagosPendientes();
+
+    @Query("SELECT MAX(v.numeroComprobante) FROM Venta v WHERE v.numeroComprobante LIKE CONCAT(:prefijo, '%')")
+    Optional<String> findUltimoNumeroComprobantePorPrefijo(@Param("prefijo") String prefijo);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByNumeroComprobante(String numeroComprobante);
+
+    boolean existsByRecetaId(Long idReceta);
+
+    // >>>> LOCKING
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT v FROM Venta v WHERE v.id = :id")
+    Optional<Venta> findByIdForUpdate(@Param("id") Long id);
+
+}

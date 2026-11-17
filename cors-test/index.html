@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Prueba de CORS - GeovisionBackEnd</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 30px; background-color: #f9f9f9;">
+    <h2>Prueba de Verificación CORS: GeovisionBackEnd</h2>
+    <p>Origen actual: <strong id="origenActual"></strong></p>
+    <p>Endpoint destino: <code>http://localhost:8080/api/v1/ventas/pagos-pendientes</code></p>
+    
+    <button id="btnFetch" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Ejecutar Petición Fetch</button>
+    
+    <div id="resultado" style="margin-top: 20px; padding: 15px; border-radius: 5px; background: #fff; border: 1px solid #ddd;">
+        Esperando ejecución...
+    </div>
+
+    <script>
+        document.getElementById('origenActual').textContent = window.location.origin;
+
+        document.getElementById('btnFetch').addEventListener('click', () => {
+            const divResultado = document.getElementById('resultado');
+            divResultado.innerHTML = 'Enviando petición fetch al backend...';
+
+            fetch('http://localhost:8080/api/v1/ventas/pagos-pendientes')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    divResultado.innerHTML = '<h3 style="color: green;">✅ Conexión Exitosa (Origen Autorizado)</h3>' +
+                                             '<p>La cabecera <code>Access-Control-Allow-Origin</code> fue devuelta correctamente por el servidor.</p>' +
+                                             '<pre style="background: #f1f1f1; padding: 10px; border-radius: 4px;">' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    divResultado.innerHTML = '<h3 style="color: red;">❌ Petición Bloqueada por CORS (Origen No Autorizado)</h3>' +
+                                             '<p>El navegador bloqueó la respuesta porque el origen <code>' + window.location.origin + '</code> no tiene permiso en <code>CorsConfig</code>.</p>' +
+                                             '<p><strong>Detalle:</strong> ' + error.message + '</p>';
+                    console.error('Error CORS detectado:', error);
+                });
+        });
+    </script>
+</body>
+</html>

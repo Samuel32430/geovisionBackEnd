@@ -1,0 +1,433 @@
+/*==================================================
+-- SISTEMA GEOVISION - BASE DE DATOS ORACLE 19c
+-- Fase 1: Creación de Entidades
+==================================================*/
+
+CREATE TABLE CONFIGURACION_EMPRESA (
+	id_configuracion_empresa NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre_legal VARCHAR2(200) NOT NULL,
+	nombre_comercial VARCHAR2(200),
+	ruc VARCHAR2(20) NOT NULL UNIQUE,
+	direccion VARCHAR2(200),
+	telefono VARCHAR2(50),
+	correo VARCHAR2(100),
+	logo VARCHAR2(200),
+	CONSTRAINT CONFIGURACION_EMPRESA_pk PRIMARY KEY (id_configuracion_empresa)
+);
+
+CREATE TABLE CATEGORIA (
+	id_categoria NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(100) NOT NULL UNIQUE,
+	descripcion VARCHAR2(200),
+	estado NUMBER(1) DEFAULT 1 NOT NULL,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	CONSTRAINT CATEGORIA_pk PRIMARY KEY (id_categoria)
+);
+
+CREATE TABLE PRODUCTO (
+	id_producto NUMBER GENERATED ALWAYS AS IDENTITY,
+	codigo VARCHAR2(100) NOT NULL UNIQUE,
+	nombre VARCHAR2(200) NOT NULL,
+	marca VARCHAR2(100),
+	descripcion VARCHAR2(200),
+	precio NUMBER(12,2) NOT NULL,
+	stock NUMBER(10) DEFAULT 0 NOT NULL,
+	estado NUMBER(1) DEFAULT 1 NOT NULL,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	CONSTRAINT PRODUCTO_pk PRIMARY KEY (id_producto)
+);
+
+-- modelo y material como NUMBER (controlados por Enum en Backend)
+CREATE TABLE MONTURA (
+	id_producto NUMBER,
+	color VARCHAR2(100),
+	modelo NUMBER,
+	material NUMBER,
+	CONSTRAINT MONTURA_pk PRIMARY KEY (id_producto),
+	CONSTRAINT MONTURA_producto_fk FOREIGN KEY (id_producto) REFERENCES PRODUCTO(id_producto)
+);
+
+CREATE TABLE PERSONA (
+	id_persona NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombres VARCHAR2(150) NOT NULL,
+	apellidos VARCHAR2(150) NOT NULL,
+	telefono VARCHAR2(50),
+	fecha_nacimiento DATE,
+	sexo NUMBER(1),
+	direccion VARCHAR2(200),
+	numero_documento VARCHAR2(50) NOT NULL UNIQUE,
+	tipo_documento NUMBER NOT NULL,
+	CONSTRAINT PERSONA_pk PRIMARY KEY (id_persona)
+);
+
+CREATE TABLE USUARIO (
+	id_usuario NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(100) NOT NULL UNIQUE,
+	password VARCHAR2(200) NOT NULL,
+	correo VARCHAR2(100) NOT NULL UNIQUE,
+	estado NUMBER(1) DEFAULT 1 NOT NULL,
+	CONSTRAINT USUARIO_pk PRIMARY KEY (id_usuario)
+);
+
+CREATE TABLE USUARIO_LOG (
+	id_usuario_log NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_log DATE DEFAULT SYSDATE NOT NULL,
+	tipo_log NUMBER,
+	CONSTRAINT USUARIO_LOG_pk PRIMARY KEY (id_usuario_log)
+);
+
+CREATE TABLE ROL (
+	id_rol NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(100) NOT NULL UNIQUE,
+	CONSTRAINT ROL_pk PRIMARY KEY (id_rol)
+);
+
+CREATE TABLE PERMISO (
+	id_permiso NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(100) NOT NULL UNIQUE,
+	modulo NUMBER,
+	CONSTRAINT PERMISO_pk PRIMARY KEY (id_permiso)
+);
+
+CREATE TABLE PACIENTE (
+	id_persona NUMBER,
+	estado NUMBER(1) DEFAULT 1 NOT NULL,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	CONSTRAINT PACIENTE_pk PRIMARY KEY (id_persona),
+	CONSTRAINT PACIENTE_persona_fk FOREIGN KEY (id_persona) REFERENCES PERSONA(id_persona)
+);
+
+CREATE TABLE PACIENTE_LOG (
+	id_paciente_log NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_log DATE DEFAULT SYSDATE NOT NULL,
+	CONSTRAINT PACIENTE_LOG_pk PRIMARY KEY (id_paciente_log)
+);
+
+CREATE TABLE EMPLEADO (
+	id_persona NUMBER,
+	estado NUMBER(1) DEFAULT 1 NOT NULL,
+	fecha_contrato DATE DEFAULT SYSDATE NOT NULL,
+	CONSTRAINT EMPLEADO_pk PRIMARY KEY (id_persona),
+	CONSTRAINT EMPLEADO_persona_fk FOREIGN KEY (id_persona) REFERENCES PERSONA(id_persona)
+);
+
+CREATE TABLE EMPLEADO_LOG (
+	id_empleado_log NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_log DATE DEFAULT SYSDATE NOT NULL,
+	CONSTRAINT EMPLEADO_LOG_pk PRIMARY KEY (id_empleado_log)
+);
+
+CREATE TABLE CARGO (
+	id_cargo NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(100) NOT NULL UNIQUE,
+	CONSTRAINT CARGO_pk PRIMARY KEY (id_cargo)
+);
+
+CREATE TABLE RECETA (
+	id_receta NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	es_externo NUMBER(1) DEFAULT 0 NOT NULL,
+	CONSTRAINT RECETA_pk PRIMARY KEY (id_receta)
+);
+
+CREATE TABLE MEDIDA_OJO (
+	id_medida_ojo NUMBER GENERATED ALWAYS AS IDENTITY,
+	agudeza_visual VARCHAR2(50),
+	esfera NUMBER(5,2),
+	cilindro NUMBER(5,2),
+	eje NUMBER(3),
+	adicion NUMBER(4,2),
+	CONSTRAINT MEDIDA_OJO_pk PRIMARY KEY (id_medida_ojo)
+);
+
+CREATE TABLE MEDIDA (
+	id_medida NUMBER GENERATED ALWAYS AS IDENTITY,
+	tipo_medida NUMBER(1) DEFAULT 1 NOT NULL,
+	distancia_pupilar NUMBER(5,2),
+	prisma NUMBER(5,2),
+	observaciones VARCHAR2(255),
+	CONSTRAINT MEDIDA_pk PRIMARY KEY (id_medida)
+);
+
+CREATE TABLE MATERIAL_CRISTAL (
+	id_material_cristal NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(100) NOT NULL UNIQUE,
+	CONSTRAINT MATERIAL_CRISTAL_pk PRIMARY KEY (id_material_cristal)
+);
+
+CREATE TABLE TRATAMIENTO_CRISTAL (
+	id_tratamiento_cristal NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(100) NOT NULL UNIQUE,
+	CONSTRAINT TRATAMIENTO_CRISTAL_pk PRIMARY KEY (id_tratamiento_cristal)
+);
+
+-- Lente mantiene sub_total cotizado, sin enlace a venta
+CREATE TABLE LENTE (
+	id_lente NUMBER GENERATED ALWAYS AS IDENTITY,
+	sub_total NUMBER(12,2) NOT NULL,
+	CONSTRAINT LENTE_pk PRIMARY KEY (id_lente)
+);
+
+CREATE TABLE VENTA (
+	id_venta NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	total NUMBER(12,2) NOT NULL,
+	estado NUMBER NOT NULL,
+	numero_comprobante VARCHAR2(100),
+	tipo_comprobante NUMBER NOT NULL,
+	CONSTRAINT VENTA_pk PRIMARY KEY (id_venta)
+);
+
+CREATE TABLE PAGO (
+	id_pago NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	numero_operacion VARCHAR2(100),
+	monto NUMBER(12,2) NOT NULL,
+	metodo_pago NUMBER NOT NULL,
+	CONSTRAINT PAGO_pk PRIMARY KEY (id_pago)
+);
+
+CREATE TABLE PRODUCTO_VENDIDO (
+	id_producto_vendido NUMBER GENERATED ALWAYS AS IDENTITY,
+	cantidad NUMBER(10) NOT NULL,
+	precio_unit NUMBER(12,2) NOT NULL,
+	sub_total NUMBER(12,2) NOT NULL,
+	CONSTRAINT PRODUCTO_VENDIDO_pk PRIMARY KEY (id_producto_vendido)
+);
+
+CREATE TABLE SERVICIO (
+	id_servicio NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(200) NOT NULL,
+	descripcion VARCHAR2(200),
+	precio NUMBER(12,2) NOT NULL,
+	estado NUMBER(1) DEFAULT 1 NOT NULL,
+	CONSTRAINT SERVICIO_pk PRIMARY KEY (id_servicio)
+);
+
+CREATE TABLE SERVICIO_VENDIDO (
+	id_servicio_vendido NUMBER GENERATED ALWAYS AS IDENTITY,
+	precio NUMBER(12,2) NOT NULL,
+	CONSTRAINT SERVICIO_VENDIDO_pk PRIMARY KEY (id_servicio_vendido)
+);
+
+CREATE TABLE ORDEN_TRABAJO (
+	id_orden_trabajo NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	fecha_entrega DATE,
+	fecha_notificacion DATE,
+	estado NUMBER NOT NULL,
+	descripcion VARCHAR2(500),
+	CONSTRAINT ORDEN_TRABAJO_pk PRIMARY KEY (id_orden_trabajo)
+);
+
+CREATE TABLE LABORATORIO (
+	id_laboratorio NUMBER GENERATED ALWAYS AS IDENTITY,
+	nombre VARCHAR2(200) NOT NULL,
+	ruc VARCHAR2(20),
+	telefono VARCHAR2(50),
+	direccion VARCHAR2(200),
+	correo VARCHAR2(100),
+	estado NUMBER(1) DEFAULT 1 NOT NULL,
+	CONSTRAINT LABORATORIO_pk PRIMARY KEY (id_laboratorio)
+);
+
+CREATE TABLE ENVIO_LABORATORIO (
+	id_envio_laboratorio NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_envio DATE DEFAULT SYSDATE NOT NULL,
+	fecha_recepcion_estimada DATE,
+	fecha_recepcion DATE,
+	fecha_revision DATE,
+	tolerancia NUMBER(5,2),
+	aprobado NUMBER(1),
+	observaciones VARCHAR2(500),
+	CONSTRAINT ENVIO_LABORATORIO_pk PRIMARY KEY (id_envio_laboratorio)
+);
+
+
+/*==================================================
+-- Fase 2: Creación de Relaciones
+==================================================*/
+
+ALTER TABLE PRODUCTO
+ADD (id_categoria NUMBER)
+ADD CONSTRAINT PRODUCTO_categoria_fk FOREIGN KEY (id_categoria) REFERENCES CATEGORIA(id_categoria);
+
+CREATE TABLE USUARIO_ROL (
+	id_usuario_rol NUMBER GENERATED ALWAYS AS IDENTITY,
+	id_usuario NUMBER NOT NULL,
+	id_rol NUMBER NOT NULL,
+	CONSTRAINT USUARIO_ROL_pk PRIMARY KEY (id_usuario_rol),
+	CONSTRAINT USUARIO_ROL_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario),
+	CONSTRAINT USUARIO_ROL_rol_fk FOREIGN KEY (id_rol) REFERENCES ROL(id_rol),
+	CONSTRAINT USUARIO_ROL_uq UNIQUE (id_usuario, id_rol)
+);
+
+CREATE TABLE ROL_PERMISO (
+	id_rol_permiso NUMBER GENERATED ALWAYS AS IDENTITY,
+	id_rol NUMBER NOT NULL,
+	id_permiso NUMBER NOT NULL,
+	CONSTRAINT ROL_PERMISO_pk PRIMARY KEY (id_rol_permiso),
+	CONSTRAINT ROL_PERMISO_rol_fk FOREIGN KEY (id_rol) REFERENCES ROL(id_rol),
+	CONSTRAINT ROL_PERMISO_permiso_fk FOREIGN KEY (id_permiso) REFERENCES PERMISO(id_permiso),
+	CONSTRAINT ROL_PERMISO_uq UNIQUE (id_rol, id_permiso)
+);
+
+ALTER TABLE USUARIO
+ADD (id_persona NUMBER)
+ADD CONSTRAINT USUARIO_persona_fk FOREIGN KEY (id_persona) REFERENCES PERSONA(id_persona);
+
+ALTER TABLE USUARIO_LOG
+ADD (id_usuario NUMBER)
+ADD CONSTRAINT USUARIO_LOG_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario);
+
+ALTER TABLE PACIENTE
+ADD (id_usuario NUMBER)
+ADD CONSTRAINT PACIENTE_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario);
+
+ALTER TABLE PACIENTE_LOG
+ADD (id_usuario NUMBER, id_persona NUMBER)
+ADD CONSTRAINT PACIENTE_LOG_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario)
+ADD CONSTRAINT PACIENTE_LOG_paciente_fk FOREIGN KEY (id_persona) REFERENCES PACIENTE(id_persona);
+
+ALTER TABLE EMPLEADO
+ADD (id_usuario NUMBER)
+ADD CONSTRAINT EMPLEADO_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario);
+
+ALTER TABLE EMPLEADO_LOG
+ADD (id_usuario NUMBER, id_persona NUMBER)
+ADD CONSTRAINT EMPLEADO_LOG_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario)
+ADD CONSTRAINT EMPLEADO_LOG_empleado_fk FOREIGN KEY (id_persona) REFERENCES EMPLEADO(id_persona);
+
+CREATE TABLE EMPLEADO_CARGO (
+	id_empleado_cargos NUMBER GENERATED ALWAYS AS IDENTITY,
+	id_persona NUMBER NOT NULL,
+	id_cargo NUMBER NOT NULL,
+	CONSTRAINT EMPLEADO_CARGOS_pk PRIMARY KEY (id_empleado_cargos),
+	CONSTRAINT EMPLEADO_CARGOS_empleado_fk FOREIGN KEY (id_persona) REFERENCES EMPLEADO(id_persona),
+	CONSTRAINT EMPLEADO_CARGOS_cargo_fk FOREIGN KEY (id_cargo) REFERENCES CARGO(id_cargo),
+	CONSTRAINT EMPLEADO_CARGOS_uq UNIQUE (id_persona, id_cargo)
+);
+
+ALTER TABLE RECETA
+ADD (id_paciente NUMBER NOT NULL, id_empleado NUMBER NOT NULL)
+ADD CONSTRAINT RECETA_paciente_fk FOREIGN KEY (id_paciente) REFERENCES PACIENTE(id_persona)
+ADD CONSTRAINT RECETA_empleado_fk FOREIGN KEY (id_empleado) REFERENCES EMPLEADO(id_persona);
+
+ALTER TABLE MEDIDA
+ADD (
+	id_receta NUMBER,
+	id_medida_ojo_derecha NUMBER,
+	id_medida_ojo_izquierda NUMBER,
+	id_envio_laboratorio NUMBER
+)
+ADD CONSTRAINT MEDIDA_receta_fk FOREIGN KEY (id_receta) REFERENCES RECETA(id_receta)
+ADD CONSTRAINT MEDIDA_medida_ojo_derecha_fk FOREIGN KEY (id_medida_ojo_derecha) REFERENCES MEDIDA_OJO(id_medida_ojo)
+ADD CONSTRAINT MEDIDA_medida_ojo_izquierda_fk FOREIGN KEY (id_medida_ojo_izquierda) REFERENCES MEDIDA_OJO(id_medida_ojo)
+ADD CONSTRAINT MEDIDA_envio_laboratorio_fk FOREIGN KEY (id_envio_laboratorio) REFERENCES ENVIO_LABORATORIO(id_envio_laboratorio);
+
+-- Lente: pertenece a la receta
+ALTER TABLE LENTE
+ADD (
+	id_receta NUMBER NOT NULL,
+	id_material_cristal NUMBER NOT NULL,
+	id_producto NUMBER
+)
+ADD CONSTRAINT LENTE_receta_fk FOREIGN KEY (id_receta) REFERENCES RECETA(id_receta)
+ADD CONSTRAINT LENTE_material_cristal_fk FOREIGN KEY (id_material_cristal) REFERENCES MATERIAL_CRISTAL(id_material_cristal)
+ADD CONSTRAINT LENTE_montura_fk FOREIGN KEY (id_producto) REFERENCES MONTURA(id_producto);
+
+-- Tabla intermedia LENTE_MEDIDA preservada (Muchos a Muchos entre Lente y Medida)
+CREATE TABLE LENTE_MEDIDA (
+	id_lente_medidas NUMBER GENERATED ALWAYS AS IDENTITY,
+	id_lente NUMBER NOT NULL,
+	id_medida NUMBER NOT NULL,
+	CONSTRAINT LENTE_MEDIDAS_pk PRIMARY KEY (id_lente_medidas),
+	CONSTRAINT LENTE_MEDIDAS_lente_fk FOREIGN KEY (id_lente) REFERENCES LENTE(id_lente),
+	CONSTRAINT LENTE_MEDIDAS_medida_fk FOREIGN KEY (id_medida) REFERENCES MEDIDA(id_medida),
+	CONSTRAINT LENTE_MEDIDAS_uq UNIQUE (id_lente, id_medida)
+);
+
+CREATE TABLE LENTE_TRATAMIENTO_CRISTAL (
+	id_lente_tratamientos_cristal NUMBER GENERATED ALWAYS AS IDENTITY,
+	id_lente NUMBER NOT NULL,
+	id_tratamiento_cristal NUMBER NOT NULL,
+	CONSTRAINT LENTE_TRATAMIENTOS_CRISTAL_pk PRIMARY KEY (id_lente_tratamientos_cristal),
+	CONSTRAINT LENTE_TRAT_lente_fk FOREIGN KEY (id_lente) REFERENCES LENTE(id_lente),
+	CONSTRAINT LENTE_TRAT_tratamiento_fk FOREIGN KEY (id_tratamiento_cristal) REFERENCES TRATAMIENTO_CRISTAL(id_tratamiento_cristal),
+	CONSTRAINT LENTE_TRAT_uq UNIQUE (id_lente, id_tratamiento_cristal)
+);
+
+-- Venta: vendedor, paciente y la receta seleccionada
+ALTER TABLE VENTA
+ADD (
+	id_empleado NUMBER NOT NULL,
+	id_paciente NUMBER,
+	id_receta NUMBER
+)
+ADD CONSTRAINT VENTA_empleado_fk FOREIGN KEY (id_empleado) REFERENCES EMPLEADO(id_persona)
+ADD CONSTRAINT VENTA_paciente_fk FOREIGN KEY (id_paciente) REFERENCES PACIENTE(id_persona)
+ADD CONSTRAINT VENTA_receta_fk FOREIGN KEY (id_receta) REFERENCES RECETA(id_receta);
+
+ALTER TABLE PAGO
+ADD (id_venta NUMBER NOT NULL)
+ADD CONSTRAINT PAGO_venta_fk FOREIGN KEY (id_venta) REFERENCES VENTA(id_venta);
+
+ALTER TABLE PRODUCTO_VENDIDO
+ADD (id_venta NUMBER NOT NULL, id_producto NUMBER NOT NULL)
+ADD CONSTRAINT PRODUCTO_VENDIDO_venta_fk FOREIGN KEY (id_venta) REFERENCES VENTA(id_venta)
+ADD CONSTRAINT PRODUCTO_VENDIDO_producto_fk FOREIGN KEY (id_producto) REFERENCES PRODUCTO(id_producto);
+
+ALTER TABLE SERVICIO_VENDIDO
+ADD (id_venta NUMBER NOT NULL, id_servicio NUMBER NOT NULL)
+ADD CONSTRAINT SERVICIO_VENDIDO_venta_fk FOREIGN KEY (id_venta) REFERENCES VENTA(id_venta)
+ADD CONSTRAINT SERVICIO_VENDIDO_servicio_fk FOREIGN KEY (id_servicio) REFERENCES SERVICIO(id_servicio);
+
+ALTER TABLE ORDEN_TRABAJO
+ADD (id_lente NUMBER NOT NULL)
+ADD CONSTRAINT ORDEN_TRABAJO_lente_fk FOREIGN KEY (id_lente) REFERENCES LENTE(id_lente);
+
+ALTER TABLE ENVIO_LABORATORIO
+ADD (id_orden_trabajo NUMBER NOT NULL, id_laboratorio NUMBER NOT NULL)
+ADD CONSTRAINT ENVIO_LAB_orden_trabajo_fk FOREIGN KEY (id_orden_trabajo) REFERENCES ORDEN_TRABAJO(id_orden_trabajo)
+ADD CONSTRAINT ENVIO_LAB_laboratorio_fk FOREIGN KEY (id_laboratorio) REFERENCES LABORATORIO(id_laboratorio);
+
+-- Historial / Kardex de movimientos de inventario
+CREATE TABLE MOVIMIENTO_STOCK_LOG (
+	id_movimiento NUMBER GENERATED ALWAYS AS IDENTITY,
+	fecha_registro DATE DEFAULT SYSDATE NOT NULL,
+	cantidad NUMBER(10) NOT NULL,
+	stock_previo NUMBER(10) NOT NULL,
+	stock_posterior NUMBER(10) NOT NULL,
+	motivo NUMBER(2) NOT NULL,
+	observaciones VARCHAR2(500),
+	id_producto NUMBER NOT NULL,
+	id_usuario NUMBER NOT NULL,
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_pk PRIMARY KEY (id_movimiento),
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_producto_fk FOREIGN KEY (id_producto) REFERENCES PRODUCTO(id_producto),
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_usuario_fk FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario),
+	CONSTRAINT MOVIMIENTO_STOCK_LOG_cantidad_ck CHECK (cantidad > 0)
+);
+
+
+/*==================================================
+-- Fase 3: Catálogos Iniciales
+==================================================*/
+
+INSERT INTO CARGO (nombre) VALUES ('RECEPCIONISTA');
+INSERT INTO CARGO (nombre) VALUES ('VENDEDOR');
+INSERT INTO CARGO (nombre) VALUES ('OPTOMETRA');
+INSERT INTO CARGO (nombre) VALUES ('TECNICO');
+INSERT INTO CARGO (nombre) VALUES ('ADMINISTRADOR');
+INSERT INTO CARGO (nombre) VALUES ('CEO');
+
+INSERT INTO MATERIAL_CRISTAL (nombre) VALUES ('POLICARBONATO');
+INSERT INTO MATERIAL_CRISTAL (nombre) VALUES ('RESINA');
+INSERT INTO MATERIAL_CRISTAL (nombre) VALUES ('CRISTAL MINERAL');
+INSERT INTO MATERIAL_CRISTAL (nombre) VALUES ('ALTO INDICE');
+
+INSERT INTO TRATAMIENTO_CRISTAL (nombre) VALUES ('FILTRO UV');
+INSERT INTO TRATAMIENTO_CRISTAL (nombre) VALUES ('ANTIRREFLEJO');
+INSERT INTO TRATAMIENTO_CRISTAL (nombre) VALUES ('BLUE DEFENSE');
+INSERT INTO TRATAMIENTO_CRISTAL (nombre) VALUES ('FOTOCROMATICO');
+
+COMMIT;

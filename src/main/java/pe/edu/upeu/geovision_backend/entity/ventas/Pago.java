@@ -1,0 +1,71 @@
+package pe.edu.upeu.geovision_backend.entity.ventas;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "PAGO")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Pago {
+
+    // >>>> FIELDS
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_pago")
+    private Long id;
+
+    @Column(name = "fecha_registro", nullable = false)
+    private LocalDateTime fechaRegistro;
+
+    @Column(name = "numero_operacion", length = 100)
+    private String numeroOperacion;
+
+    @Column(name = "monto", nullable = false, precision = 12, scale = 2)
+    private BigDecimal monto;
+
+    @Convert(converter = MetodoPagoEnum.PersistenceConverter.class)
+    @Column(name = "metodo_pago", nullable = false)
+    private MetodoPagoEnum metodoPago;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_venta", nullable = false)
+    private Venta venta;
+
+    // >>>> LIFECYCLE
+    @PrePersist
+    public void prePersist() {
+        if (this.fechaRegistro == null) {
+            this.fechaRegistro = LocalDateTime.now();
+        }
+    }
+
+    // >>>> OPERATIONS
+    public Integer getMetodoPagoCodigo() {
+        return this.metodoPago != null ? this.metodoPago.getCodigo() : null;
+    }
+
+    public void setMetodoPagoCodigo(Integer codigo) {
+        this.metodoPago = MetodoPagoEnum.fromCodigo(codigo);
+    }
+
+}

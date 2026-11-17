@@ -1,0 +1,26 @@
+package pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Servicio;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface ServicioRepository extends JpaRepository<Servicio, Long>, JpaSpecificationExecutor<Servicio> {
+
+    // >>>> QUERIES
+    Optional<Servicio> findByNombreIgnoreCase(String nombre);
+
+    List<Servicio> findByActivo(Boolean estado);
+
+    Page<Servicio> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
+
+    // >>>> EXISTENCE CHECKS
+    boolean existsByNombreIgnoreCase(String nombre);
+
+}

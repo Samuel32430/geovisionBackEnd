@@ -1,0 +1,372 @@
+package pe.edu.upeu.geovision_backend.service.ventas.impl;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import pe.edu.upeu.geovision_backend.dto.ventas.ProductoVendidoDTO;
+import pe.edu.upeu.geovision_backend.dto.ventas.ServicioVendidoDTO;
+import pe.edu.upeu.geovision_backend.dto.ventas.PagoRegistroRequestDTO;
+import pe.edu.upeu.geovision_backend.dto.ventas.VentaRegistroRequestDTO;
+import pe.edu.upeu.geovision_backend.dto.ventas.VentaResponseDTO;
+import pe.edu.upeu.geovision_backend.entity.security.Empleado;
+import pe.edu.upeu.geovision_backend.entity.atencion.Paciente;
+import pe.edu.upeu.geovision_backend.entity.ventas.Pago;
+import pe.edu.upeu.geovision_backend.entity.inventario.Producto;
+import pe.edu.upeu.geovision_backend.entity.ventas.ProductoVendido;
+import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
+import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.Servicio;
+import pe.edu.upeu.geovision_backend.entity.ventas.ServicioVendido;
+import pe.edu.upeu.geovision_backend.entity.security.Usuario;
+import pe.edu.upeu.geovision_backend.entity.ventas.Venta;
+import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
+import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
+import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
+import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
+import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
+import pe.edu.upeu.geovision_backend.mapper.ventas.PagoMapper;
+import pe.edu.upeu.geovision_backend.mapper.ventas.VentaMapper;
+import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
+import pe.edu.upeu.geovision_backend.repository.atencion.PacienteRepository;
+import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
+import pe.edu.upeu.geovision_backend.entity.inventario.MovimientoStockLog;
+import pe.edu.upeu.geovision_backend.enums.inventario.MotivoMovimientoStockEnum;
+import pe.edu.upeu.geovision_backend.repository.inventario.MovimientoStockLogRepository;
+import pe.edu.upeu.geovision_backend.repository.inventario.ProductoRepository;
+import pe.edu.upeu.geovision_backend.repository.ventas.ProductoVendidoRepository;
+import pe.edu.upeu.geovision_backend.repository.atencion.RecetaRepository;
+import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.ServicioRepository;
+import pe.edu.upeu.geovision_backend.repository.ventas.ServicioVendidoRepository;
+import pe.edu.upeu.geovision_backend.repository.security.UsuarioRepository;
+import pe.edu.upeu.geovision_backend.repository.ventas.VentaRepository;
+import pe.edu.upeu.geovision_backend.service.ventas.VentaService;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class VentaServiceImpl implements VentaService {
+
+    // >>>> CONSTANTS
+    private static final Logger log = LoggerFactory.getLogger(VentaServiceImpl.class);
+
+    // >>>> DEPENDENCIES
+    private final VentaRepository ventaRepository;
+    private final PagoRepository pagoRepository;
+    private final ProductoVendidoRepository productoVendidoRepository;
+    private final ServicioVendidoRepository servicioVendidoRepository;
+    private final ProductoRepository productoRepository;
+    private final ServicioRepository servicioRepository;
+    private final RecetaRepository recetaRepository;
+    private final PacienteRepository pacienteRepository;
+    private final EmpleadoRepository empleadoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final MovimientoStockLogRepository movimientoStockLogRepository;
+
+    // >>>> QUERIES
+    @Override
+    @Transactional(readOnly = true)
+    public VentaResponseDTO obtenerVentaPorId(Long idVenta) {
+        log.info("Consultando detalle de venta ID: {}", idVenta);
+        Venta venta = ventaRepository.findById(idVenta)
+                .orElseThrow(() -> new RecursosNoEncontradosException("Venta no encontrada con ID: " + idVenta));
+
+        BigDecimal totalPagado = pagoRepository.sumMontoPagadoByVentaId(idVenta);
+        if (totalPagado == null) {
+            totalPagado = BigDecimal.ZERO;
+        }
+        BigDecimal saldoPendiente = venta.getTotal().subtract(totalPagado);
+
+        List<ProductoVendido> productos = productoVendidoRepository.findByVentaId(idVenta);
+        List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaId(idVenta);
+        List<Pago> pagos = pagoRepository.findByVentaId(idVenta);
+
+        return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
+    }
+
+    // >>>> CREATION
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public VentaResponseDTO registrarVenta(VentaRegistroRequestDTO request) {
+        log.info("Iniciando registro de venta unificada para total: S/ {}", request.total());
+
+        // Actor
+        Empleado empleado = obtenerEmpleadoResponsable(request.idEmpleado());
+
+        // Patient
+        Paciente paciente = null;
+        if (request.idPaciente() != null) {
+            paciente = pacienteRepository.findById(request.idPaciente())
+                    .orElseThrow(() -> new RecursosNoEncontradosException("Paciente no encontrado con ID: " + request.idPaciente()));
+            if (!Boolean.TRUE.equals(paciente.getActivo())) {
+                throw new ReglaNegocioException("El paciente indicado no se encuentra en estado activo");
+            }
+        }
+
+        // Prescription
+        Receta receta = null;
+        if (request.idReceta() != null) {
+            if (paciente == null) {
+                throw new ReglaNegocioException("Toda venta con receta debe estar asociada obligatoriamente a un paciente (RN-VE02)");
+            }
+            receta = recetaRepository.findByIdForUpdate(request.idReceta())
+                    .orElseThrow(() -> new RecursosNoEncontradosException("Receta no encontrada con ID: " + request.idReceta()));
+
+            if (receta.getPaciente() == null ||
+                    !receta.getPaciente().getId().equals(paciente.getId())
+            ) {
+                throw new ReglaNegocioException("La receta seleccionada no corresponde al paciente indicado (RN-VE03)");
+            }
+        }
+
+        // Responsible user for kardex log
+        Usuario usuarioResponsable = empleado.getUsuario();
+        if (usuarioResponsable == null) {
+            usuarioResponsable = usuarioRepository.findById(1L).orElse(null);
+        }
+
+        // Validate items presence
+        boolean tieneProductos = request.productos() != null && !request.productos().isEmpty();
+        boolean tieneServicios = request.servicios() != null && !request.servicios().isEmpty();
+        if (!tieneProductos && !tieneServicios) {
+            throw new ReglaNegocioException("La venta debe contener al menos un producto o servicio (RN-VE01)");
+        }
+
+        // Products (Atomic discount with pessimistic lock, active check & server-side price calculation)
+        BigDecimal totalCalculadoProductos = BigDecimal.ZERO;
+        List<ProductoVendido> productosParaGuardar = new ArrayList<>();
+        List<MovimientoStockLog> movimientosParaGuardar = new ArrayList<>();
+        if (tieneProductos) {
+            for (ProductoVendidoDTO prodDTO : request.productos()) {
+                if (prodDTO.cantidad() <= 0) {
+                    throw new ReglaNegocioException("La cantidad del producto debe ser mayor a cero");
+                }
+
+                Producto producto = productoRepository.findByIdForUpdate(prodDTO.idProducto())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.idProducto()));
+
+                if (!Boolean.TRUE.equals(producto.getActivo())) {
+                    throw new ReglaNegocioException("El producto '" + producto.getNombre() + "' se encuentra inactivo");
+                }
+
+                if (producto.getStock() < prodDTO.cantidad()) {
+                    throw new ReglaNegocioException("Stock insuficiente para el producto '" + producto.getNombre() +
+                            "'. Stock disponible: " + producto.getStock() + ", Solicitado: " + prodDTO.cantidad() + " (RN-VE05)"
+                    );
+                }
+
+                int stockPrevio = producto.getStock();
+                int nuevoStock = stockPrevio - prodDTO.cantidad();
+                producto.setStock(nuevoStock);
+                productoRepository.save(producto);
+
+                MovimientoStockLog movimiento = new MovimientoStockLog();
+                movimiento.setProducto(producto);
+                movimiento.setUsuario(usuarioResponsable);
+                movimiento.setCantidad(prodDTO.cantidad());
+                movimiento.setStockPrevio(stockPrevio);
+                movimiento.setStockPosterior(nuevoStock);
+                movimiento.setMotivo(MotivoMovimientoStockEnum.SALIDA_POR_VENTA.getCodigo());
+                movimientosParaGuardar.add(movimiento);
+
+                BigDecimal precioUnitario = producto.getPrecio() != null ? producto.getPrecio() : prodDTO.precioUnit();
+                BigDecimal subTotal = precioUnitario.multiply(BigDecimal.valueOf(prodDTO.cantidad()));
+                totalCalculadoProductos = totalCalculadoProductos.add(subTotal);
+
+                ProductoVendido pv = new ProductoVendido(null, prodDTO.cantidad(), precioUnitario, subTotal, null, producto);
+                productosParaGuardar.add(pv);
+            }
+        }
+
+        // Services (Active check & server-side price calculation)
+        BigDecimal totalCalculadoServicios = BigDecimal.ZERO;
+        List<ServicioVendido> serviciosParaGuardar = new ArrayList<>();
+        if (tieneServicios) {
+            for (ServicioVendidoDTO servDTO : request.servicios()) {
+                Servicio servicio = servicioRepository.findById(servDTO.idServicio())
+                        .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.idServicio()));
+
+                if (!Boolean.TRUE.equals(servicio.getActivo())) {
+                    throw new ReglaNegocioException("El servicio '" + servicio.getNombre() + "' se encuentra inactivo");
+                }
+
+                BigDecimal precioServicio = servicio.getPrecio() != null ? servicio.getPrecio() : servDTO.precio();
+                totalCalculadoServicios = totalCalculadoServicios.add(precioServicio);
+
+                ServicioVendido sv = new ServicioVendido(null, precioServicio, null, servicio);
+                serviciosParaGuardar.add(sv);
+            }
+        }
+
+        // Authoritative Total Calculation on Server
+        BigDecimal totalOficialVenta = totalCalculadoProductos.add(totalCalculadoServicios);
+
+        if (request.total() == null || request.total().compareTo(totalOficialVenta) != 0) {
+            throw new ReglaNegocioException("Discrepancia en el total de la venta: el total enviado (S/ " + request.total() +
+                    ") no coincide con el total oficial calculado por el sistema (S/ " + totalOficialVenta + ")");
+        }
+
+        // Payments (Validar pagos y anticipos con base en el total oficial calculado)
+        if (request.pagos() == null || request.pagos().isEmpty()) {
+            throw new ReglaNegocioException("Debe registrar al menos un pago inicial o completo para la venta");
+        }
+
+        BigDecimal totalPagado = BigDecimal.ZERO;
+        for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
+            if (pagoDTO.monto() == null || pagoDTO.monto().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ReglaNegocioException("El monto de cada pago debe ser mayor a cero (RN-VE13)");
+            }
+
+            boolean requiereVoucher = pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
+                    pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
+                    pagoDTO.metodoPago() == MetodoPagoEnum.TRANSFERENCIA;
+
+            if (requiereVoucher && (pagoDTO.numeroOperacion() == null || pagoDTO.numeroOperacion().trim().isEmpty())) {
+                throw new ReglaNegocioException("Es obligatorio ingresar el número de voucher/operación para pagos con tarjeta o transferencia (RN-VE12)");
+            }
+
+            totalPagado = totalPagado.add(pagoDTO.monto());
+        }
+
+        if (totalPagado.compareTo(totalOficialVenta) > 0) {
+            throw new ReglaNegocioException("El total pagado (S/ " + totalPagado + ") no puede ser superior al total de la venta (S/ " + totalOficialVenta + ") (RN-VE13)");
+        }
+
+        if (receta == null) {
+            if (totalPagado.compareTo(totalOficialVenta) < 0) {
+                throw new ReglaNegocioException("En ventas de productos o servicios directos sin receta, el pago debe registrarse por el 100% del monto total (RN-VE06)");
+            }
+        } else {
+            BigDecimal adelantoMinimo = totalOficialVenta.multiply(new BigDecimal("0.25"));
+            if (totalPagado.compareTo(adelantoMinimo) < 0) {
+                throw new ReglaNegocioException("En ventas con receta médica, el adelanto inicial no puede ser menor al 25% del total de la orden (Mínimo: S/ " + adelantoMinimo + ") (RN-VE07)");
+            }
+
+            if (totalPagado.compareTo(totalOficialVenta) < 0 && request.fechaEntregaEstimada() == null) {
+                throw new ReglaNegocioException("Si la venta se registra con adelanto, debe consignarse de forma obligatoria la fecha estimada de entrega (RN-VE08)");
+            }
+        }
+
+        // Initial state
+        EstadoVentaEnum estadoInicial = (totalPagado.compareTo(totalOficialVenta) >= 0)
+                ? EstadoVentaEnum.PAGADA
+                : EstadoVentaEnum.PENDIENTE;
+
+        // Receipt
+        String numeroComprobante = request.numeroComprobante();
+        if (numeroComprobante == null || numeroComprobante.trim().isEmpty()) {
+            numeroComprobante = generarNumeroComprobante(request.tipoComprobante());
+        } else {
+            numeroComprobante = numeroComprobante.trim();
+            if (ventaRepository.existsByNumeroComprobante(numeroComprobante)) {
+                throw new ReglaNegocioException("Ya existe una venta registrada con el número de comprobante: " + numeroComprobante);
+            }
+        }
+
+        // Sale
+        Venta venta = new Venta(
+                null,
+                LocalDateTime.now(),
+                totalOficialVenta,
+                estadoInicial,
+                numeroComprobante,
+                request.tipoComprobante(),
+                empleado,
+                paciente,
+                receta
+        );
+
+        Venta ventaGuardada = ventaRepository.save(venta);
+
+        // Product items & kardex log
+        for (ProductoVendido pv : productosParaGuardar) {
+            pv.setVenta(ventaGuardada);
+            productoVendidoRepository.save(pv);
+        }
+
+        for (MovimientoStockLog mov : movimientosParaGuardar) {
+            mov.setObservaciones("Salida por venta. Comprobante ID: " + ventaGuardada.getId() + " (" + numeroComprobante + ")");
+            movimientoStockLogRepository.save(mov);
+        }
+
+        // Service items
+        for (ServicioVendido sv : serviciosParaGuardar) {
+            sv.setVenta(ventaGuardada);
+            servicioVendidoRepository.save(sv);
+        }
+
+        // Payment records
+        List<Pago> pagosGuardados = new ArrayList<>();
+        for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
+            Pago pago = PagoMapper.toEntity(pagoDTO, ventaGuardada);
+            pagosGuardados.add(pagoRepository.save(pago));
+        }
+
+        BigDecimal saldoPendiente = totalOficialVenta.subtract(totalPagado);
+
+        log.info("Venta registrada exitosamente con ID: {}, comprobante: {}, estado: {}, saldo pendiente: S/ {}",
+                ventaGuardada.getId(), numeroComprobante, estadoInicial, saldoPendiente
+        );
+
+        return VentaMapper.toResponseDTO(
+                ventaGuardada,
+                totalPagado,
+                saldoPendiente,
+                productosParaGuardar,
+                serviciosParaGuardar,
+                pagosGuardados
+        );
+    }
+
+    // >>>> HELPERS
+    private Empleado obtenerEmpleadoResponsable(Long idEmpleadoFallback) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            String username = auth.getName();
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByNombreOrCorreo(username, username);
+            if (usuarioOpt.isPresent()) {
+                Optional<Empleado> empleadoOpt = empleadoRepository.findByUsuarioId(usuarioOpt.get().getId());
+                if (empleadoOpt.isPresent()) {
+                    Empleado emp = empleadoOpt.get();
+                    if (Boolean.TRUE.equals(emp.getActivo())) {
+                        return emp;
+                    }
+                }
+            }
+        }
+
+        if (idEmpleadoFallback != null) {
+            return empleadoRepository.findByIdAndActivo(idEmpleadoFallback, true)
+                    .orElseThrow(() -> new RecursosNoEncontradosException("Empleado responsable no encontrado o inactivo con ID: " + idEmpleadoFallback));
+        }
+
+        throw new ReglaNegocioException("No se encontró un empleado activo responsable para registrar la venta");
+    }
+
+    private synchronized String generarNumeroComprobante(TipoComprobanteEnum tipoComprobante) {
+        String prefijo = switch (tipoComprobante) {
+            case FACTURA -> "F001-";
+            case BOLETA -> "B001-";
+            default -> "NV01-";
+        };
+        return ventaRepository.findUltimoNumeroComprobantePorPrefijo(prefijo)
+                .map(ultimo -> {
+                    try {
+                        String correlativoStr = ultimo.substring(prefijo.length());
+                        long siguiente = Long.parseLong(correlativoStr) + 1;
+                        return String.format("%s%08d", prefijo, siguiente);
+                    } catch (Exception e) {
+                        return String.format("%s00000001", prefijo);
+                    }
+                })
+                .orElseGet(() -> String.format("%s00000001", prefijo));
+    }
+
+}

@@ -1,0 +1,34 @@
+package pe.edu.upeu.geovision_backend.enums.inventario;
+
+import lombok.Getter;
+
+@Getter
+public enum MotivoMovimientoStockEnum {
+
+    ENTRADA_POR_COMPRA(1, "Entrada por compra"),
+    AJUSTE_POR_DIFERENCIA(2, "Ajuste por diferencia"),
+    DANIO_DETERIORO(3, "Daño / Deterioro"),
+    PERDIDA(4, "Pérdida"),
+    SALIDA_POR_VENTA(5, "Salida por venta");
+
+    private final Integer codigo;
+    private final String descripcion;
+
+    // >>>> CONSTRUCTOR
+    MotivoMovimientoStockEnum(Integer codigo, String descripcion) {
+        this.codigo = codigo;
+        this.descripcion = descripcion;
+    }
+
+    public static MotivoMovimientoStockEnum fromCodigo(Integer codigo) {
+        if (codigo == null) {
+            return null;
+        }
+        for (MotivoMovimientoStockEnum motivo : values()) {
+            if (motivo.codigo.equals(codigo)) {
+                return motivo;
+            }
+        }
+        throw new IllegalArgumentException("Código de motivo de movimiento no válido: " + codigo);
+    }
+}
