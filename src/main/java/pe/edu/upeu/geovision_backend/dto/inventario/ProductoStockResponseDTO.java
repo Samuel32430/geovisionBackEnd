@@ -13,4 +13,7 @@ public record ProductoStockResponseDTO(
     Integer estado,
     String estadoDescripcion
 ) {
+    public Long idProducto() {
+        return id;
+    }
 }

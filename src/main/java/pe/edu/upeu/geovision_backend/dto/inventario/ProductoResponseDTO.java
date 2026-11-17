@@ -19,6 +19,10 @@ public record ProductoResponseDTO(
     MonturaDTO montura,
     Boolean esMontura
 ) {
+    public Long idProducto() {
+        return id;
+    }
+
     public Boolean esMontura() {
         if (esMontura != null) {
             return esMontura;
