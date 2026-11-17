@@ -156,6 +156,7 @@ class VentaServiceTest {
         when(empleadoRepository.findByIdAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
         when(productoRepository.findByIdForUpdate(10L))
+                .thenReturn(Optional.of(productoTest));when(productoRepository.findByIdForUpdate(10L))
                 .thenReturn(Optional.of(productoTest));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
@@ -172,6 +173,9 @@ class VentaServiceTest {
 
         when(empleadoRepository.findByIdAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
+        when(productoRepository.findByIdForUpdate(10L))
+                .thenReturn(Optional.of(productoTest));when(productoRepository.findByIdForUpdate(10L))
+                .thenReturn(Optional.of(productoTest));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
                 .isInstanceOf(ReglaNegocioException.class)
@@ -182,8 +186,9 @@ class VentaServiceTest {
     @DisplayName("CUS06: Venta con receta y adelanto mayor al 25% con fecha de entrega es exitosa (RN-VE07, RN-VE08)")
     void registrarVenta_conRecetaYAdelantoValido_exitoso() {
         Receta receta = new Receta(5L, null, 0, pacienteTest, empleadoTest);
+        Servicio servicioMontaje = new Servicio(20L, "Servicio Oftálmico", null, new BigDecimal("200.00"), true);
 
-        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, LocalDate.now().plusDays(3), null, List.of(new ServicioVendidoDTO(null, 20L, null, new BigDecimal("30.00"))), List.of(new PagoRegistroRequestDTO(null, new BigDecimal("60.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("200.00"));
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, LocalDate.now().plusDays(3), null, List.of(new ServicioVendidoDTO(null, 20L, null, new BigDecimal("200.00"))), List.of(new PagoRegistroRequestDTO(null, new BigDecimal("60.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("200.00"));
 
         when(empleadoRepository.findByIdAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
@@ -192,7 +197,7 @@ class VentaServiceTest {
         when(recetaRepository.findByIdForUpdate(5L))
                 .thenReturn(Optional.of(receta));
         when(servicioRepository.findById(20L))
-                .thenReturn(Optional.of(servicioTest));
+                .thenReturn(Optional.of(servicioMontaje));
         when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
         VentaResponseDTO responseMock = new VentaResponseDTO(null, null, new BigDecimal("200.00"), new BigDecimal("60.00"), new BigDecimal("140.00"), EstadoVentaEnum.PENDIENTE, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -208,8 +213,9 @@ class VentaServiceTest {
     @DisplayName("CUS06: Rechazar venta con receta si el adelanto es inferior al 25% (RN-VE07)")
     void registrarVenta_adelantoMenorAl25Porciento_lanzaReglaNegocioException() {
         Receta receta = new Receta(5L, null, 0, pacienteTest, empleadoTest);
+        Servicio servicioMontaje = new Servicio(20L, "Servicio Oftálmico", null, new BigDecimal("200.00"), true);
 
-        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, LocalDate.now().plusDays(3), null, null, List.of(new PagoRegistroRequestDTO(null, new BigDecimal("40.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("200.00"));
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, LocalDate.now().plusDays(3), null, List.of(new ServicioVendidoDTO(null, 20L, null, new BigDecimal("200.00"))), List.of(new PagoRegistroRequestDTO(null, new BigDecimal("40.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("200.00"));
 
         when(empleadoRepository.findByIdAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
@@ -217,6 +223,8 @@ class VentaServiceTest {
                 .thenReturn(Optional.of(pacienteTest));
         when(recetaRepository.findByIdForUpdate(5L))
                 .thenReturn(Optional.of(receta));
+        when(servicioRepository.findById(20L))
+                .thenReturn(Optional.of(servicioMontaje));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
                 .isInstanceOf(ReglaNegocioException.class)
@@ -227,8 +235,9 @@ class VentaServiceTest {
     @DisplayName("CUS06: Rechazar venta con adelanto si no se indica fecha de entrega (RN-VE08)")
     void registrarVenta_adelantoSinFechaEntrega_lanzaReglaNegocioException() {
         Receta receta = new Receta(5L, null, 0, pacienteTest, empleadoTest);
+        Servicio servicioMontaje = new Servicio(20L, "Servicio Oftálmico", null, new BigDecimal("200.00"), true);
 
-        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, null, null, null, List.of(new PagoRegistroRequestDTO(null, new BigDecimal("60.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("200.00"));
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, null, null, List.of(new ServicioVendidoDTO(null, 20L, null, new BigDecimal("200.00"))), List.of(new PagoRegistroRequestDTO(null, new BigDecimal("60.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("200.00"));
 
         when(empleadoRepository.findByIdAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
@@ -236,10 +245,29 @@ class VentaServiceTest {
                 .thenReturn(Optional.of(pacienteTest));
         when(recetaRepository.findByIdForUpdate(5L))
                 .thenReturn(Optional.of(receta));
+        when(servicioRepository.findById(20L))
+                .thenReturn(Optional.of(servicioMontaje));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
                 .isInstanceOf(ReglaNegocioException.class)
                 .hasMessageContaining("RN-VE08");
+    }
+
+    @Test
+    @DisplayName("CUS06: Rechazar venta cuando el total enviado discrepa del total calculado por el servidor")
+    void registrarVenta_discrepanciaTotal_lanzaReglaNegocioException() {
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, null, TipoComprobanteEnum.BOLETA, null, null, List.of(new ProductoVendidoDTO(null, 10L, null, null, 1, new BigDecimal("150.00"), null)), null, List.of(new PagoRegistroRequestDTO(null, new BigDecimal("10.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("10.00"));
+
+        when(empleadoRepository.findByIdAndActivo(1L, true))
+                .thenReturn(Optional.of(empleadoTest));
+        when(pacienteRepository.findById(2L))
+                .thenReturn(Optional.of(pacienteTest));
+        when(productoRepository.findByIdForUpdate(10L))
+                .thenReturn(Optional.of(productoTest));
+
+        assertThatThrownBy(() -> ventaService.registrarVenta(request))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("Discrepancia en el total");
     }
 
     @Test
@@ -249,7 +277,8 @@ class VentaServiceTest {
 
         when(empleadoRepository.findByIdAndActivo(1L, true))
                 .thenReturn(Optional.of(empleadoTest));
-        
+        when(productoRepository.findByIdForUpdate(10L))
+                .thenReturn(Optional.of(productoTest));
 
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
                 .isInstanceOf(ReglaNegocioException.class)

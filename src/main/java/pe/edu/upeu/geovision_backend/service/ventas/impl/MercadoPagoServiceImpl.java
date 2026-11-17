@@ -51,11 +51,11 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // >>>> CONFIGURATION
-    @Value("${mercadopago.access-token:***REVOKED***}")
-    private String accessToken = "***REVOKED***";
+    @Value("${mercadopago.access-token:}")
+    private String accessToken = "";
 
-    @Value("${mercadopago.user-id:***REVOKED***}")
-    private String userId = "***REVOKED***";
+    @Value("${mercadopago.user-id:}")
+    private String userId = "";
 
     @Value("${mercadopago.pos-id:CAJAPRINCIPAL01}")
     private String posId = "CAJAPRINCIPAL01";
