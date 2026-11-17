@@ -25,3 +25,4 @@ mercadopago:
   pos-id: ${MP_POS_ID:}
   webhook-url: ${MP_WEBHOOK_URL:}
   sandbox-mode: ${MP_SANDBOX_MODE:false}
+  simulacion-habilitada: ${MP_SIMULACION_HABILITADA:true}

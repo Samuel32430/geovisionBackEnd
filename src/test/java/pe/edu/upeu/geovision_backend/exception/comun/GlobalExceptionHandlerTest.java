@@ -63,7 +63,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value(500))
-                .andExpect(jsonPath("$.message").value("Unexpected failure"))
+                .andExpect(jsonPath("$.message").value("Ha ocurrido un error interno en el servidor. Por favor, comuníquese con el administrador."))
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.path").value("/test/unexpected"));
     }

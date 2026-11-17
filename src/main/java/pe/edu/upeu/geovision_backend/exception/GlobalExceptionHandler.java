@@ -192,13 +192,14 @@ public class GlobalExceptionHandler {
         HttpServletRequest request,
         Exception ex
     ) {
-        log.warn("Error sin manejar en {}. {}: {}",
+        log.error("Error sin manejar en {}: {}",
                 request.getRequestURI(),
-                ex.getClass().getSimpleName(),
-                ex.getMessage()
+                ex.getMessage(),
+                ex
         );
 
-        return buildResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, null, ex.getMessage(), null);
+        String message = "Ha ocurrido un error interno en el servidor. Por favor, comuníquese con el administrador.";
+        return buildResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, null, message, null);
     }
 
     // >>>> RESPONSE BUILDING

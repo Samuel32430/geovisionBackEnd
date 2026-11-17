@@ -126,60 +126,35 @@ public class VentaServiceImpl implements VentaService {
             }
         }
 
-        // Payments (Fail-Fast: Validar pagos y anticipos antes de descontar stock)
-        if (request.pagos() == null || request.pagos().isEmpty()) {
-            throw new ReglaNegocioException("Debe registrar al menos un pago inicial o completo para la venta");
-        }
-
-        BigDecimal totalPagado = BigDecimal.ZERO;
-        for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
-            if (pagoDTO.monto() == null || pagoDTO.monto().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new ReglaNegocioException("El monto de cada pago debe ser mayor a cero (RN-VE13)");
-            }
-
-            boolean requiereVoucher = pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
-                    pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
-                    pagoDTO.metodoPago() == MetodoPagoEnum.TRANSFERENCIA;
-
-            if (requiereVoucher && (pagoDTO.numeroOperacion() == null || pagoDTO.numeroOperacion().trim().isEmpty())) {
-                throw new ReglaNegocioException("Es obligatorio ingresar el número de voucher/operación para pagos con tarjeta o transferencia (RN-VE12)");
-            }
-
-            totalPagado = totalPagado.add(pagoDTO.monto());
-        }
-
-        if (totalPagado.compareTo(request.total()) > 0) {
-            throw new ReglaNegocioException("El total pagado (S/ " + totalPagado + ") no puede ser superior al total de la venta (S/ " + request.total() + ") (RN-VE13)");
-        }
-
-        if (receta == null) {
-            if (totalPagado.compareTo(request.total()) < 0) {
-                throw new ReglaNegocioException("En ventas de productos o servicios directos sin receta, el pago debe registrarse por el 100% del monto total (RN-VE06)");
-            }
-        } else {
-            BigDecimal adelantoMinimo = request.total().multiply(new BigDecimal("0.25"));
-            if (totalPagado.compareTo(adelantoMinimo) < 0) {
-                throw new ReglaNegocioException("En ventas con receta médica, el adelanto inicial no puede ser menor al 25% del total de la orden (Mínimo: S/ " + adelantoMinimo + ") (RN-VE07)");
-            }
-
-            if (totalPagado.compareTo(request.total()) < 0 && request.fechaEntregaEstimada() == null) {
-                throw new ReglaNegocioException("Si la venta se registra con adelanto, debe consignarse de forma obligatoria la fecha estimada de entrega (RN-VE08)");
-            }
-        }
-
         // Responsible user for kardex log
         Usuario usuarioResponsable = empleado.getUsuario();
         if (usuarioResponsable == null) {
             usuarioResponsable = usuarioRepository.findById(1L).orElse(null);
         }
 
-        // Products (Atomic discount with pessimistic lock & kardex log)
+        // Validate items presence
+        boolean tieneProductos = request.productos() != null && !request.productos().isEmpty();
+        boolean tieneServicios = request.servicios() != null && !request.servicios().isEmpty();
+        if (!tieneProductos && !tieneServicios) {
+            throw new ReglaNegocioException("La venta debe contener al menos un producto o servicio (RN-VE01)");
+        }
+
+        // Products (Atomic discount with pessimistic lock, active check & server-side price calculation)
+        BigDecimal totalCalculadoProductos = BigDecimal.ZERO;
         List<ProductoVendido> productosParaGuardar = new ArrayList<>();
         List<MovimientoStockLog> movimientosParaGuardar = new ArrayList<>();
-        if (request.productos() != null && !request.productos().isEmpty()) {
+        if (tieneProductos) {
             for (ProductoVendidoDTO prodDTO : request.productos()) {
+                if (prodDTO.cantidad() <= 0) {
+                    throw new ReglaNegocioException("La cantidad del producto debe ser mayor a cero");
+                }
+
                 Producto producto = productoRepository.findByIdForUpdate(prodDTO.idProducto())
                         .orElseThrow(() -> new RecursosNoEncontradosException("Producto no encontrado con ID: " + prodDTO.idProducto()));
+
+                if (!Boolean.TRUE.equals(producto.getActivo())) {
+                    throw new ReglaNegocioException("El producto '" + producto.getNombre() + "' se encuentra inactivo");
+                }
 
                 if (producto.getStock() < prodDTO.cantidad()) {
                     throw new ReglaNegocioException("Stock insuficiente para el producto '" + producto.getNombre() +
@@ -201,26 +176,86 @@ public class VentaServiceImpl implements VentaService {
                 movimiento.setMotivo(MotivoMovimientoStockEnum.SALIDA_POR_VENTA.getCodigo());
                 movimientosParaGuardar.add(movimiento);
 
-                BigDecimal subTotal = prodDTO.precioUnit().multiply(BigDecimal.valueOf(prodDTO.cantidad()));
-                ProductoVendido pv = new ProductoVendido(null, prodDTO.cantidad(), prodDTO.precioUnit(), subTotal, null, producto);
+                BigDecimal precioUnitario = producto.getPrecio() != null ? producto.getPrecio() : prodDTO.precioUnit();
+                BigDecimal subTotal = precioUnitario.multiply(BigDecimal.valueOf(prodDTO.cantidad()));
+                totalCalculadoProductos = totalCalculadoProductos.add(subTotal);
+
+                ProductoVendido pv = new ProductoVendido(null, prodDTO.cantidad(), precioUnitario, subTotal, null, producto);
                 productosParaGuardar.add(pv);
             }
         }
 
-        // Services
+        // Services (Active check & server-side price calculation)
+        BigDecimal totalCalculadoServicios = BigDecimal.ZERO;
         List<ServicioVendido> serviciosParaGuardar = new ArrayList<>();
-        if (request.servicios() != null && !request.servicios().isEmpty()) {
+        if (tieneServicios) {
             for (ServicioVendidoDTO servDTO : request.servicios()) {
                 Servicio servicio = servicioRepository.findById(servDTO.idServicio())
                         .orElseThrow(() -> new RecursosNoEncontradosException("Servicio no encontrado con ID: " + servDTO.idServicio()));
 
-                ServicioVendido sv = new ServicioVendido(null, servDTO.precio(), null, servicio);
+                if (!Boolean.TRUE.equals(servicio.getActivo())) {
+                    throw new ReglaNegocioException("El servicio '" + servicio.getNombre() + "' se encuentra inactivo");
+                }
+
+                BigDecimal precioServicio = servicio.getPrecio() != null ? servicio.getPrecio() : servDTO.precio();
+                totalCalculadoServicios = totalCalculadoServicios.add(precioServicio);
+
+                ServicioVendido sv = new ServicioVendido(null, precioServicio, null, servicio);
                 serviciosParaGuardar.add(sv);
             }
         }
 
+        // Authoritative Total Calculation on Server
+        BigDecimal totalOficialVenta = totalCalculadoProductos.add(totalCalculadoServicios);
+
+        if (request.total() == null || request.total().compareTo(totalOficialVenta) != 0) {
+            throw new ReglaNegocioException("Discrepancia en el total de la venta: el total enviado (S/ " + request.total() +
+                    ") no coincide con el total oficial calculado por el sistema (S/ " + totalOficialVenta + ")");
+        }
+
+        // Payments (Validar pagos y anticipos con base en el total oficial calculado)
+        if (request.pagos() == null || request.pagos().isEmpty()) {
+            throw new ReglaNegocioException("Debe registrar al menos un pago inicial o completo para la venta");
+        }
+
+        BigDecimal totalPagado = BigDecimal.ZERO;
+        for (PagoRegistroRequestDTO pagoDTO : request.pagos()) {
+            if (pagoDTO.monto() == null || pagoDTO.monto().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ReglaNegocioException("El monto de cada pago debe ser mayor a cero (RN-VE13)");
+            }
+
+            boolean requiereVoucher = pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_DEBITO ||
+                    pagoDTO.metodoPago() == MetodoPagoEnum.TARJETA_CREDITO ||
+                    pagoDTO.metodoPago() == MetodoPagoEnum.TRANSFERENCIA;
+
+            if (requiereVoucher && (pagoDTO.numeroOperacion() == null || pagoDTO.numeroOperacion().trim().isEmpty())) {
+                throw new ReglaNegocioException("Es obligatorio ingresar el número de voucher/operación para pagos con tarjeta o transferencia (RN-VE12)");
+            }
+
+            totalPagado = totalPagado.add(pagoDTO.monto());
+        }
+
+        if (totalPagado.compareTo(totalOficialVenta) > 0) {
+            throw new ReglaNegocioException("El total pagado (S/ " + totalPagado + ") no puede ser superior al total de la venta (S/ " + totalOficialVenta + ") (RN-VE13)");
+        }
+
+        if (receta == null) {
+            if (totalPagado.compareTo(totalOficialVenta) < 0) {
+                throw new ReglaNegocioException("En ventas de productos o servicios directos sin receta, el pago debe registrarse por el 100% del monto total (RN-VE06)");
+            }
+        } else {
+            BigDecimal adelantoMinimo = totalOficialVenta.multiply(new BigDecimal("0.25"));
+            if (totalPagado.compareTo(adelantoMinimo) < 0) {
+                throw new ReglaNegocioException("En ventas con receta médica, el adelanto inicial no puede ser menor al 25% del total de la orden (Mínimo: S/ " + adelantoMinimo + ") (RN-VE07)");
+            }
+
+            if (totalPagado.compareTo(totalOficialVenta) < 0 && request.fechaEntregaEstimada() == null) {
+                throw new ReglaNegocioException("Si la venta se registra con adelanto, debe consignarse de forma obligatoria la fecha estimada de entrega (RN-VE08)");
+            }
+        }
+
         // Initial state
-        EstadoVentaEnum estadoInicial = (totalPagado.compareTo(request.total()) >= 0)
+        EstadoVentaEnum estadoInicial = (totalPagado.compareTo(totalOficialVenta) >= 0)
                 ? EstadoVentaEnum.PAGADA
                 : EstadoVentaEnum.PENDIENTE;
 
@@ -239,7 +274,7 @@ public class VentaServiceImpl implements VentaService {
         Venta venta = new Venta(
                 null,
                 LocalDateTime.now(),
-                request.total(),
+                totalOficialVenta,
                 estadoInicial,
                 numeroComprobante,
                 request.tipoComprobante(),
@@ -274,7 +309,7 @@ public class VentaServiceImpl implements VentaService {
             pagosGuardados.add(pagoRepository.save(pago));
         }
 
-        BigDecimal saldoPendiente = request.total().subtract(totalPagado);
+        BigDecimal saldoPendiente = totalOficialVenta.subtract(totalPagado);
 
         log.info("Venta registrada exitosamente con ID: {}, comprobante: {}, estado: {}, saldo pendiente: S/ {}",
                 ventaGuardada.getId(), numeroComprobante, estadoInicial, saldoPendiente
