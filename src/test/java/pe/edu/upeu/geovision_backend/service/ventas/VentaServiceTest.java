@@ -284,4 +284,38 @@ class VentaServiceTest {
                 .isInstanceOf(ReglaNegocioException.class)
                 .hasMessageContaining("RN-VE12");
     }
+
+    @Test
+    @DisplayName("CUS06: Registrar venta con receta y servicio de confección de lentes exitosamente (RN-VE01)")
+    void registrarVenta_conRecetaYServicioConfeccion_exitoso() {
+        Receta receta = new Receta(5L, null, 0, pacienteTest, empleadoTest);
+        Servicio servicioConfeccion = new Servicio(25L, "CONFECCION Y MONTAJE DE LENTES", "Taller", new BigDecimal("200.00"), true);
+
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(
+                1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, null,
+                null,
+                List.of(new ServicioVendidoDTO(null, 25L, "CONFECCION Y MONTAJE DE LENTES", new BigDecimal("200.00"))),
+                List.of(new PagoRegistroRequestDTO(null, new BigDecimal("200.00"), MetodoPagoEnum.EFECTIVO, null)),
+                new BigDecimal("200.00")
+        );
+
+        when(empleadoRepository.findByIdAndActivo(1L, true)).thenReturn(Optional.of(empleadoTest));
+        when(pacienteRepository.findById(2L)).thenReturn(Optional.of(pacienteTest));
+        when(recetaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(receta));
+        when(servicioRepository.findById(25L)).thenReturn(Optional.of(servicioConfeccion));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> {
+            Venta v = inv.getArgument(0);
+            v.setId(200L);
+            return v;
+        });
+        when(pagoRepository.save(any(Pago.class))).thenReturn(new Pago(1L, null, null, null, null, null));
+
+        VentaResponseDTO resultado = ventaService.registrarVenta(request);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
+        assertThat(resultado.saldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
+        verify(servicioVendidoRepository).save(any(ServicioVendido.class));
+        verify(ventaRepository).save(any(Venta.class));
+    }
 }

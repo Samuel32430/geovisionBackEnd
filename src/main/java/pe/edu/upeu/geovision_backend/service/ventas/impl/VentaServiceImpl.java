@@ -197,7 +197,9 @@ public class VentaServiceImpl implements VentaService {
                     throw new ReglaNegocioException("El servicio '" + servicio.getNombre() + "' se encuentra inactivo");
                 }
 
-                BigDecimal precioServicio = servicio.getPrecio() != null ? servicio.getPrecio() : servDTO.precio();
+                BigDecimal precioServicio = (servicio.getPrecio() != null && servicio.getPrecio().compareTo(BigDecimal.ZERO) > 0)
+                        ? servicio.getPrecio()
+                        : servDTO.precio();
                 totalCalculadoServicios = totalCalculadoServicios.add(precioServicio);
 
                 ServicioVendido sv = new ServicioVendido(null, precioServicio, null, servicio);
