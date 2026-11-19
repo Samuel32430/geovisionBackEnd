@@ -261,6 +261,48 @@ class VentaServiceTest {
     }
 
     @Test
+    @DisplayName("CUS06: Rechazar venta con adelanto si la fecha de entrega es hoy o pasada (RN-VE08)")
+    void registrarVenta_fechaEntregaNoFutura_lanzaReglaNegocioException() {
+        Receta receta = new Receta(5L, null, 0, pacienteTest, empleadoTest);
+        Servicio servicioMontaje = new Servicio(20L, "Servicio Oftálmico", null, new BigDecimal("200.00"), true);
+
+        when(empleadoRepository.findByIdAndActivo(1L, true))
+                .thenReturn(Optional.of(empleadoTest));
+        when(pacienteRepository.findById(2L))
+                .thenReturn(Optional.of(pacienteTest));
+        when(recetaRepository.findByIdForUpdate(5L))
+                .thenReturn(Optional.of(receta));
+        when(servicioRepository.findById(20L))
+                .thenReturn(Optional.of(servicioMontaje));
+
+        // Intento con fecha de HOY
+        VentaRegistroRequestDTO requestHoy = new VentaRegistroRequestDTO(
+                1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null,
+                LocalDate.now(), null,
+                List.of(new ServicioVendidoDTO(null, 20L, null, new BigDecimal("200.00"))),
+                List.of(new PagoRegistroRequestDTO(null, new BigDecimal("60.00"), MetodoPagoEnum.EFECTIVO, null)),
+                new BigDecimal("200.00")
+        );
+
+        assertThatThrownBy(() -> ventaService.registrarVenta(requestHoy))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("RN-VE08");
+
+        // Intento con fecha de AYER
+        VentaRegistroRequestDTO requestAyer = new VentaRegistroRequestDTO(
+                1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null,
+                LocalDate.now().minusDays(1), null,
+                List.of(new ServicioVendidoDTO(null, 20L, null, new BigDecimal("200.00"))),
+                List.of(new PagoRegistroRequestDTO(null, new BigDecimal("60.00"), MetodoPagoEnum.EFECTIVO, null)),
+                new BigDecimal("200.00")
+        );
+
+        assertThatThrownBy(() -> ventaService.registrarVenta(requestAyer))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("RN-VE08");
+    }
+
+    @Test
     @DisplayName("CUS06: Rechazar venta cuando el total enviado discrepa del total calculado por el servidor")
     void registrarVenta_discrepanciaTotal_lanzaReglaNegocioException() {
         VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(1L, 2L, null, TipoComprobanteEnum.BOLETA, null, null, List.of(new ProductoVendidoDTO(null, 10L, null, null, 1, new BigDecimal("150.00"), null)), null, List.of(new PagoRegistroRequestDTO(null, new BigDecimal("10.00"), MetodoPagoEnum.EFECTIVO, null)), new BigDecimal("10.00"));

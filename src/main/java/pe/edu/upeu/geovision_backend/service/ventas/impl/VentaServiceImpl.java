@@ -50,6 +50,7 @@ import pe.edu.upeu.geovision_backend.util.reports.ComprobantePdfUtil;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -293,6 +294,10 @@ public class VentaServiceImpl implements VentaService {
 
             if (totalPagado.compareTo(totalOficialVenta) < 0 && request.fechaEntregaEstimada() == null) {
                 throw new ReglaNegocioException("Si la venta se registra con adelanto, debe consignarse de forma obligatoria la fecha estimada de entrega (RN-VE08)");
+            }
+
+            if (request.fechaEntregaEstimada() != null && !request.fechaEntregaEstimada().isAfter(LocalDate.now())) {
+                throw new ReglaNegocioException("La fecha estimada de entrega debe ser posterior a la fecha actual (a partir de mañana) (RN-VE08)");
             }
         }
 
