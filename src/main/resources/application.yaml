@@ -6,8 +6,28 @@ spring:
   config:
     import:
       - optional:classpath:application-local.yaml
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 app:
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:}
+    from-name: "Geo Vision - Sistema Óptico"
+    frontend-url: ${FRONTEND_URL:http://localhost:4200}
   calidad:
     dioptrias: ${CALIDAD_TOLERANCIA_DIOPTRIAS:}
     eje-grados: ${CALIDAD_TOLERANCIA_EJE_GRADOS:}
