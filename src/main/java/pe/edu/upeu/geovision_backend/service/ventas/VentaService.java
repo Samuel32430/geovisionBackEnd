@@ -8,6 +8,8 @@ public interface VentaService {
     // >>>> QUERIES
     VentaResponseDTO obtenerVentaPorId(Long idVenta);
 
+    byte[] generarComprobantePdf(Long idVenta);
+
     // >>>> CREATION
     VentaResponseDTO registrarVenta(VentaRegistroRequestDTO request);
 

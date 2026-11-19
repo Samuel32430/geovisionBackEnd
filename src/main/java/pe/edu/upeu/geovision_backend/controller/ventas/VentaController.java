@@ -4,7 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +36,23 @@ public class VentaController {
         log.info("Petición REST para obtener venta con ID: {}", id);
         VentaResponseDTO response = ventaService.obtenerVentaPorId(id);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/comprobante/pdf")
+    @PreAuthorize("hasAuthority('VENTAS_LEER')")
+    public ResponseEntity<byte[]> descargarComprobantePdf(@PathVariable("id") Long id) {
+        log.info("Petición REST para descargar comprobante PDF de venta ID: {}", id);
+        byte[] pdfBytes = ventaService.generarComprobantePdf(id);
+        VentaResponseDTO venta = ventaService.obtenerVentaPorId(id);
+        String numeroDoc = (venta.numeroComprobante() != null && !venta.numeroComprobante().isBlank())
+                ? venta.numeroComprobante()
+                : String.valueOf(id);
+        String filename = "comprobante-" + numeroDoc + ".pdf";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .body(pdfBytes);
     }
 
     // >>>> CREATION
