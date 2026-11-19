@@ -12,6 +12,7 @@ import pe.edu.upeu.geovision_backend.entity.atencion.Persona;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 import pe.edu.upeu.geovision_backend.entity.gestion_mantenimiento.TratamientoCristal;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public final class RecetaMapper {
@@ -23,7 +24,22 @@ public final class RecetaMapper {
         Lente lente, List<Medida> medidas,
         List<TratamientoCristal> tratamientos
     ) {
-        return new LenteResponseDTO(lente.getId(), lente.getReceta().getId(), lente.getSubTotal(), lente.getMaterialCristal().getId(), lente.getMaterialCristal().getNombre(), lente.getMontura() == null ? null : lente.getMontura().getId(), lente.getMontura() == null ? null : lente.getMontura().getProducto().getCodigo(), lente.getMontura() == null ? null : lente.getMontura().getProducto().getNombre(), tratamientos.stream().map(CatalogoOpticoMapper::toTratamientoCristalDTO).toList(), medidas.stream().map(RecetaMapper::toMedidaResponse).toList());
+        BigDecimal precioMontura = (lente.getMontura() != null && lente.getMontura().getProducto() != null)
+                ? lente.getMontura().getProducto().getPrecio()
+                : null;
+        return new LenteResponseDTO(
+            lente.getId(),
+            lente.getReceta().getId(),
+            lente.getSubTotal(),
+            lente.getMaterialCristal().getId(),
+            lente.getMaterialCristal().getNombre(),
+            lente.getMontura() == null ? null : lente.getMontura().getId(),
+            lente.getMontura() == null ? null : lente.getMontura().getProducto().getCodigo(),
+            lente.getMontura() == null ? null : lente.getMontura().getProducto().getNombre(),
+            precioMontura,
+            tratamientos.stream().map(CatalogoOpticoMapper::toTratamientoCristalDTO).toList(),
+            medidas.stream().map(RecetaMapper::toMedidaResponse).toList()
+        );
     }
 
     public static MedidaOjo toMedidaOjo(MedidaOjoDTO request) {
