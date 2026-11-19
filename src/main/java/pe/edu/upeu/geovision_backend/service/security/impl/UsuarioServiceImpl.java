@@ -124,6 +124,12 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request) {
+        return actualizar(id, request, null);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request, String authUsername) {
         if (request.empleado() != null) {
             throw new ReglaNegocioException("El alta laboral solo se admite al registrar la cuenta");
         }
@@ -148,6 +154,9 @@ public class UsuarioServiceImpl implements UsuarioService {
             if (request.estado() != 0 && request.estado() != 1) {
                 throw new ReglaNegocioException("El estado debe ser 0 o 1");
             }
+            if (authUsername != null && usuario.getNombre().equalsIgnoreCase(authUsername) && request.estado() == 0) {
+                throw new ReglaNegocioException("Un administrador no puede desactivar su propia cuenta");
+            }
             usuario.setActivo(request.estado() == 1);
         }
 
@@ -161,7 +170,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario actualizado = usuarioRepository.save(usuario);
 
         if (request.rolesIds() != null) {
-            actualizarRolesUsuario(usuario, request.rolesIds(), null);
+            actualizarRolesUsuario(usuario, request.rolesIds(), authUsername);
         }
 
         log.info("Usuario actualizado exitosamente: id={} usuario={}", actualizado.getId(), actualizado.getNombre());

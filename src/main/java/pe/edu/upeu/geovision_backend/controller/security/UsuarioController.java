@@ -84,9 +84,11 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> actualizar(
         @PathVariable Long id,
-        @Valid @RequestBody UsuarioRequestDTO request
+        @Valid @RequestBody UsuarioRequestDTO request,
+        Authentication authentication
     ) {
-        return ResponseEntity.ok(usuarioService.actualizar(id, request));
+        String authUsername = authentication != null ? authentication.getName() : null;
+        return ResponseEntity.ok(usuarioService.actualizar(id, request, authUsername));
     }
 
     @PatchMapping("/{id}/estado")
