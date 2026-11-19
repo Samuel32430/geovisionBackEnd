@@ -11,7 +11,7 @@ public enum EstadoOrdenTrabajoEnum {
     ENVIADO_LABORATORIO(2, "Enviado a Laboratorio"),
     RECIBIDO_LABORATORIO(3, "Recibido de Laboratorio"),
     CONTROL_CALIDAD_APROBADO(4, "Control de Calidad Aprobado"),
-    CONTROL_CALIDAD_RECHAZADO(5, "Control de Calidad Rechazado"),
+    CONTROL_CALIDAD_RECHAZADO(5, "Retrasado"),
     LISTO_ENTREGA(6, "Listo para Entrega"),
     ENTREGADO(7, "Entregado"),
     ANULADO(8, "Anulado");

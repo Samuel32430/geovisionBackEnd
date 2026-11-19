@@ -56,6 +56,12 @@ public class OrdenTrabajoController {
         return servicio.obtener(id);
     }
 
+    @GetMapping("/{id}/limite-observaciones")
+    @PreAuthorize("hasAuthority('ORDENES_TRABAJO_LEER')")
+    public int limiteObservaciones(@PathVariable @Positive Long id, Authentication auth) {
+        return servicio.limiteObservaciones(id, auth.getName());
+    }
+
     @GetMapping("/laboratorios")
     @PreAuthorize("hasAuthority('ORDENES_TRABAJO_LEER')")
     public List<LaboratorioDTO> laboratorios() {

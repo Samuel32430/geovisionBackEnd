@@ -47,6 +47,8 @@ import pe.edu.upeu.geovision_backend.service.orden_trabajo.OrdenTrabajoService;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.ActorOrdenTrabajo;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.ComparadorLensometria;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.ConstanciaOrdenTrabajo;
+import pe.edu.upeu.geovision_backend.util.orden_trabajo.ConstanciaOrdenTrabajo.Etapa;
+import pe.edu.upeu.geovision_backend.config.gestion_mantenimiento.PoliticaCalidad;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.FlujoOrdenTrabajo;
 import pe.edu.upeu.geovision_backend.util.orden_trabajo.VentaOrdenTrabajo;
 
@@ -65,6 +67,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     private final MedidaRepository medidas;
     private final ActorOrdenTrabajo actores;
     private final FlujoOrdenTrabajo flujo;
+    private final PoliticaCalidad politicaCalidad;
 
     private final VentaOrdenTrabajo ventasOrden;
 
@@ -98,6 +101,27 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         return detalles.orden(ordenes.findById(id).orElseThrow(()->new RecursosNoEncontradosException("Orden no encontrada")));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public int limiteObservaciones(Long id, String usuario) {
+        var orden = ordenes.findById(id).orElseThrow(() -> new RecursosNoEncontradosException("Orden no encontrada"));
+        return switch (orden.getEstado()) {
+            case PENDIENTE, CONTROL_CALIDAD_RECHAZADO ->
+                    ConstanciaOrdenTrabajo.limiteObservaciones(null, Etapa.ENVIO, usuario, null);
+            case ENVIADO_LABORATORIO ->
+                    ConstanciaOrdenTrabajo.limiteObservaciones(ultimo(orden).getObservaciones(), Etapa.RECEPCION, usuario, null);
+            case RECIBIDO_LABORATORIO -> {
+                var politica = politicaCalidad.consultar();
+                yield politica.configurada()
+                        ? ConstanciaOrdenTrabajo.limiteObservaciones(ultimo(orden).getObservaciones(), Etapa.CALIDAD, usuario, politica)
+                        : 0;
+            }
+            case LISTO_ENTREGA ->
+                    ConstanciaOrdenTrabajo.limiteObservaciones(orden.getDescripcion(), Etapa.ENTREGA, usuario, null);
+            default -> throw new ReglaNegocioException("El estado de la orden no admite observaciones");
+        };
+    }
+
     @Override @Transactional(readOnly=true)
     public List<LaboratorioDTO> laboratorios() {
         return laboratorios.findByActivo(true).stream().map(l->new LaboratorioDTO(l.getId(), l.getNombre(), l.getRuc(), l.getTelefono(), l.getDireccion(), l.getCorreo(), (l.getActivo() == null ? null : Boolean.TRUE.equals(l.getActivo()) ? 1 : 0))).toList();
@@ -124,7 +148,8 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             )
                 throw new ReglaNegocioException("Las medidas deben pertenecer a la receta y tener tipos unicos");
         }
-        var orden=new OrdenTrabajo(null, null, null, null, EstadoOrdenTrabajoEnum.PENDIENTE, ConstanciaOrdenTrabajo.agregar(request.descripcion(),"[Creacion] Usuario: "+usuario), lente);
+        String constancia = ConstanciaOrdenTrabajo.registrar(null, Etapa.CREACION, usuario, request.descripcion());
+        var orden=new OrdenTrabajo(null, null, null, null, EstadoOrdenTrabajoEnum.PENDIENTE, constancia, lente);
         return detalles.orden(ordenes.saveAndFlush(orden));
     }
 
@@ -145,7 +170,8 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         }
         var laboratorio=laboratorios.findById(request.idLaboratorio()).filter(l->Boolean.TRUE.equals(l.getActivo()))
             .orElseThrow(()->new ReglaNegocioException("Seleccione un laboratorio existente y activo"));
-        var envio=new EnvioLaboratorio(null, null, request.fechaRecepcionEstimada(), null, null, null, null, ConstanciaOrdenTrabajo.agregar(request.observaciones(),"[Envio] Usuario: "+usuario), ot, laboratorio);
+        String constancia = ConstanciaOrdenTrabajo.registrar(null, Etapa.ENVIO, usuario, request.observaciones());
+        var envio=new EnvioLaboratorio(null, null, request.fechaRecepcionEstimada(), null, null, null, null, constancia, ot, laboratorio);
         envios.saveAndFlush(envio); ot.setEstado(EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO);
         ordenes.saveAndFlush(ot); return detalles.envio(envio);
     }
@@ -159,10 +185,8 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         if(envio.getFechaRecepcion()!=null || ot.getEstado()!=EstadoOrdenTrabajoEnum.ENVIADO_LABORATORIO)
             throw new ReglaNegocioException("El envio ya fue recibido o la orden no admite recepcion");
         envio.setFechaRecepcion(LocalDateTime.now().withNano(0));
-        envio.setObservaciones(ConstanciaOrdenTrabajo.agregar(envio.getObservaciones(),"[Recepcion] Usuario: "+usuario
-            +(request==null || request.observaciones()==null?"":". "+request.observaciones())
-            )
-        );
+        envio.setObservaciones(ConstanciaOrdenTrabajo.registrar(envio.getObservaciones(), Etapa.RECEPCION,
+                usuario, request == null ? null : request.observaciones()));
         ot.setEstado(EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO);
         envios.saveAndFlush(envio); ordenes.saveAndFlush(ot); return detalles.envio(envio);
     }
@@ -188,10 +212,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
         BigDecimal saldo=venta.getTotal().subtract(pagado);
         if(saldo.compareTo(BigDecimal.ZERO)!=0) throw new ReglaNegocioException("No se puede entregar: el saldo pendiente debe ser exactamente cero. Saldo: "+saldo);
         ot.setEstado(EstadoOrdenTrabajoEnum.ENTREGADO); ot.setFechaEntrega(LocalDateTime.now().withNano(0));
-        ot.setDescripcion(ConstanciaOrdenTrabajo.agregar(ot.getDescripcion(),"[Entrega] Usuario: "+usuario
-            +(request.observaciones()==null?"":". "+request.observaciones())
-            )
-        );
+        ot.setDescripcion(ConstanciaOrdenTrabajo.registrar(ot.getDescripcion(), Etapa.ENTREGA, usuario, request.observaciones()));
         return detalles.orden(ordenes.saveAndFlush(ot));
     }
 
