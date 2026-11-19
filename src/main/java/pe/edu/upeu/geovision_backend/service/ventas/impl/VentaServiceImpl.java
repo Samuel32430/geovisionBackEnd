@@ -46,7 +46,9 @@ import pe.edu.upeu.geovision_backend.repository.ventas.ServicioVendidoRepository
 import pe.edu.upeu.geovision_backend.repository.security.UsuarioRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.VentaRepository;
 import pe.edu.upeu.geovision_backend.service.ventas.VentaService;
+import pe.edu.upeu.geovision_backend.util.reports.ComprobantePdfUtil;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -94,6 +96,20 @@ public class VentaServiceImpl implements VentaService {
         ConfiguracionEmpresaDTO datosEmpresa = obtenerDatosEmpresa();
 
         return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos, datosEmpresa);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] generarComprobantePdf(Long idVenta) {
+        log.info("Iniciando generación de comprobante PDF para venta ID: {}", idVenta);
+        VentaResponseDTO venta = obtenerVentaPorId(idVenta);
+        try {
+            ComprobantePdfUtil pdfUtil = new ComprobantePdfUtil();
+            return pdfUtil.generarComprobante(venta);
+        } catch (IOException e) {
+            log.error("Error al generar comprobante PDF para venta ID: {}", idVenta, e);
+            throw new ReglaNegocioException("Error al generar el comprobante PDF oficial: " + e.getMessage());
+        }
     }
 
     // >>>> CREATION

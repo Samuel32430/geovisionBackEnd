@@ -104,4 +104,21 @@ class VentaControllerTest {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.numeroComprobante").value("B001-00000001"));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/ventas/{id}/comprobante/pdf: Retorna 200 OK con Content-Type application/pdf")
+    void descargarComprobantePdf_existente_retorna200OkYPdf() throws Exception {
+        byte[] pdfFake = "%PDF-1.4 test".getBytes();
+        VentaResponseDTO response = new VentaResponseDTO(1L, null, new BigDecimal("120.00"), new BigDecimal("120.00"), BigDecimal.ZERO, EstadoVentaEnum.PAGADA, null, null, null, "B001-00000001", null, null, null, null, null, null, null, null);
+
+        when(ventaService.generarComprobantePdf(1L)).thenReturn(pdfFake);
+        when(ventaService.obtenerVentaPorId(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/ventas/1/comprobante/pdf")
+                        .accept(MediaType.APPLICATION_PDF)
+        )
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Content-Disposition", "inline; filename=\"comprobante-B001-00000001.pdf\""));
+    }
 }
