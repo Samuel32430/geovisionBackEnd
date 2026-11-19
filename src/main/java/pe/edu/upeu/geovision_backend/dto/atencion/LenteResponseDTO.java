@@ -14,7 +14,22 @@ public record LenteResponseDTO(
     Long idProductoMontura,
     String codigoMontura,
     String nombreMontura,
+    BigDecimal precioMontura,
     List<TratamientoCristalDTO> tratamientos,
     List<MedidaResponseDTO> medidas
 ) {
+    public LenteResponseDTO(
+        Long id,
+        Long idReceta,
+        BigDecimal subTotal,
+        Long idMaterialCristal,
+        String nombreMaterialCristal,
+        Long idProductoMontura,
+        String codigoMontura,
+        String nombreMontura,
+        List<TratamientoCristalDTO> tratamientos,
+        List<MedidaResponseDTO> medidas
+    ) {
+        this(id, idReceta, subTotal, idMaterialCristal, nombreMaterialCristal, idProductoMontura, codigoMontura, nombreMontura, null, tratamientos, medidas);
+    }
 }

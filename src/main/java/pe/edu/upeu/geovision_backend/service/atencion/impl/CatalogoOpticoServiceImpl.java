@@ -8,11 +8,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.MaterialCristalDTO;
+import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.ServicioDTO;
 import pe.edu.upeu.geovision_backend.dto.inventario.MonturaDTO;
 import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.TratamientoCristalDTO;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
 import pe.edu.upeu.geovision_backend.mapper.atencion.CatalogoOpticoMapper;
+import pe.edu.upeu.geovision_backend.mapper.gestion_mantenimiento.MantenimientoMapper;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.MaterialCristalRepository;
+import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.ServicioRepository;
 import pe.edu.upeu.geovision_backend.repository.inventario.MonturaRepository;
 import pe.edu.upeu.geovision_backend.repository.gestion_mantenimiento.TratamientoCristalRepository;
 import pe.edu.upeu.geovision_backend.service.atencion.CatalogoOpticoService;
@@ -28,6 +31,7 @@ public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
     private final MaterialCristalRepository materialCristalRepository;
     private final TratamientoCristalRepository tratamientoCristalRepository;
     private final MonturaRepository monturaRepository;
+    private final ServicioRepository servicioRepository;
 
     // >>>> QUERIES
     @Override
@@ -42,6 +46,13 @@ public class CatalogoOpticoServiceImpl implements CatalogoOpticoService {
     public List<TratamientoCristalDTO> listarTratamientosCristal() {
         return tratamientoCristalRepository.findAll(Sort.by("nombre", "id")).stream()
                 .map(CatalogoOpticoMapper::toTratamientoCristalDTO).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServicioDTO> listarServiciosActivos() {
+        return servicioRepository.findByActivo(true).stream()
+                .map(MantenimientoMapper::toDTO).toList();
     }
 
     @Override

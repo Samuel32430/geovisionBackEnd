@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.MaterialCristalDTO;
+import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.ServicioDTO;
 import pe.edu.upeu.geovision_backend.dto.inventario.MonturaDTO;
 import pe.edu.upeu.geovision_backend.dto.gestion_mantenimiento.TratamientoCristalDTO;
 import pe.edu.upeu.geovision_backend.service.atencion.CatalogoOpticoService;
@@ -22,7 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/catalogos-opticos")
-@PreAuthorize("hasAnyAuthority('PACIENTES_LEER', 'EXAMENES_REGISTRAR', 'RECETAS_REGISTRAR')")
+@PreAuthorize("hasAnyAuthority('PACIENTES_LEER', 'EXAMENES_REGISTRAR', 'RECETAS_REGISTRAR', 'VENTAS_REGISTRAR', 'VENTAS_LEER')")
 @RequiredArgsConstructor
 public class CatalogoOpticoController {
 
@@ -38,6 +39,11 @@ public class CatalogoOpticoController {
     @GetMapping("/tratamientos-cristal")
     public ResponseEntity<List<TratamientoCristalDTO>> listarTratamientosCristal() {
         return ResponseEntity.ok(catalogoOpticoService.listarTratamientosCristal());
+    }
+
+    @GetMapping("/servicios")
+    public ResponseEntity<List<ServicioDTO>> listarServiciosActivos() {
+        return ResponseEntity.ok(catalogoOpticoService.listarServiciosActivos());
     }
 
     @GetMapping("/monturas")

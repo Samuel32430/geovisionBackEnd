@@ -26,6 +26,7 @@ import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
+import pe.edu.upeu.geovision_backend.repository.gestion_configuracion.ConfiguracionEmpresaRepository;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.PacienteRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
@@ -87,6 +88,9 @@ class VentaServiceTest {
     @Mock
     private MovimientoStockLogRepository movimientoStockLogRepository;
 
+    @Mock
+    private ConfiguracionEmpresaRepository configuracionEmpresaRepository;
+
     @InjectMocks
     private VentaServiceImpl ventaService;
 
@@ -140,6 +144,9 @@ class VentaServiceTest {
         assertThat(resultado).isNotNull();
         assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
         assertThat(resultado.saldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(resultado.datosEmpresa()).isNotNull();
+        assertThat(resultado.datosEmpresa().ruc()).isEqualTo("20608945123");
+        assertThat(resultado.datosEmpresa().direccion()).contains("San Borja");
         assertThat(productoTest.getStock()).isEqualTo(9);
         verify(productoRepository).save(productoTest);
         verify(movimientoStockLogRepository).save(any(MovimientoStockLog.class));
@@ -283,5 +290,107 @@ class VentaServiceTest {
         assertThatThrownBy(() -> ventaService.registrarVenta(request))
                 .isInstanceOf(ReglaNegocioException.class)
                 .hasMessageContaining("RN-VE12");
+    }
+
+    @Test
+    @DisplayName("CUS06: Registrar venta con receta y servicio de confección de lentes exitosamente (RN-VE01)")
+    void registrarVenta_conRecetaYServicioConfeccion_exitoso() {
+        Receta receta = new Receta(5L, null, 0, pacienteTest, empleadoTest);
+        Servicio servicioConfeccion = new Servicio(25L, "CONFECCION Y MONTAJE DE LENTES", "Taller", new BigDecimal("200.00"), true);
+
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(
+                1L, 2L, 5L, TipoComprobanteEnum.BOLETA, null, null,
+                null,
+                List.of(new ServicioVendidoDTO(null, 25L, "CONFECCION Y MONTAJE DE LENTES", new BigDecimal("200.00"))),
+                List.of(new PagoRegistroRequestDTO(null, new BigDecimal("200.00"), MetodoPagoEnum.EFECTIVO, null)),
+                new BigDecimal("200.00")
+        );
+
+        when(empleadoRepository.findByIdAndActivo(1L, true)).thenReturn(Optional.of(empleadoTest));
+        when(pacienteRepository.findById(2L)).thenReturn(Optional.of(pacienteTest));
+        when(recetaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(receta));
+        when(servicioRepository.findById(25L)).thenReturn(Optional.of(servicioConfeccion));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> {
+            Venta v = inv.getArgument(0);
+            v.setId(200L);
+            return v;
+        });
+        when(pagoRepository.save(any(Pago.class))).thenReturn(new Pago(1L, null, null, null, null, null));
+
+        VentaResponseDTO resultado = ventaService.registrarVenta(request);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
+        assertThat(resultado.saldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
+        verify(servicioVendidoRepository).save(any(ServicioVendido.class));
+        verify(ventaRepository).save(any(Venta.class));
+    }
+
+    @Test
+    void registrarVenta_conRecetaYPrecioFormuladoDeLunas_respetaTotalPersonalizado() {
+        Receta receta = new Receta(10L, null, 0, pacienteTest, empleadoTest);
+
+        Servicio servicioConfeccion = new Servicio(1L, "CONFECCION Y MONTAJE DE LENTES", "Taller", new BigDecimal("35.00"), true);
+        productoTest.setPrecio(new BigDecimal("320.00"));
+
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(
+                1L, 2L, 10L, TipoComprobanteEnum.BOLETA, null, LocalDate.now().plusDays(2),
+                List.of(new ProductoVendidoDTO(null, 10L, "MON-01", "Montura Vogue", 1, new BigDecimal("320.00"), new BigDecimal("320.00"))),
+                List.of(new ServicioVendidoDTO(null, 1L, "CONFECCION Y MONTAJE DE LENTES", new BigDecimal("258.00"))),
+                List.of(new PagoRegistroRequestDTO(null, new BigDecimal("578.00"), MetodoPagoEnum.EFECTIVO, null)),
+                new BigDecimal("578.00")
+        );
+
+        when(empleadoRepository.findByIdAndActivo(1L, true)).thenReturn(Optional.of(empleadoTest));
+        when(pacienteRepository.findById(2L)).thenReturn(Optional.of(pacienteTest));
+        when(recetaRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(receta));
+        when(productoRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(productoTest));
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioConfeccion));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> {
+            Venta v = inv.getArgument(0);
+            v.setId(201L);
+            return v;
+        });
+        when(pagoRepository.save(any(Pago.class))).thenReturn(new Pago(1L, null, null, null, null, null));
+
+        VentaResponseDTO resultado = ventaService.registrarVenta(request);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.total()).isEqualByComparingTo(new BigDecimal("578.00"));
+        assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
+    }
+
+    @Test
+    void registrarVenta_conRecetaYExamenCortesía_examenEsGratuito() {
+        Receta receta = new Receta(11L, null, 0, pacienteTest, empleadoTest);
+
+        Servicio servicioExamen = new Servicio(2L, "EXAMEN DE REFRACCION COMPUTARIZADA", "Optometria", new BigDecimal("35.00"), true);
+        productoTest.setPrecio(new BigDecimal("320.00"));
+
+        VentaRegistroRequestDTO request = new VentaRegistroRequestDTO(
+                1L, 2L, 11L, TipoComprobanteEnum.BOLETA, null, null,
+                List.of(new ProductoVendidoDTO(null, 10L, "MON-01", "Montura Vogue", 1, new BigDecimal("320.00"), new BigDecimal("320.00"))),
+                List.of(new ServicioVendidoDTO(null, 2L, "EXAMEN DE REFRACCION COMPUTARIZADA", BigDecimal.ZERO)),
+                List.of(new PagoRegistroRequestDTO(null, new BigDecimal("320.00"), MetodoPagoEnum.EFECTIVO, null)),
+                new BigDecimal("320.00")
+        );
+
+        when(empleadoRepository.findByIdAndActivo(1L, true)).thenReturn(Optional.of(empleadoTest));
+        when(pacienteRepository.findById(2L)).thenReturn(Optional.of(pacienteTest));
+        when(recetaRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(receta));
+        when(productoRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(productoTest));
+        when(servicioRepository.findById(2L)).thenReturn(Optional.of(servicioExamen));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> {
+            Venta v = inv.getArgument(0);
+            v.setId(202L);
+            return v;
+        });
+        when(pagoRepository.save(any(Pago.class))).thenReturn(new Pago(1L, null, null, null, null, null));
+
+        VentaResponseDTO resultado = ventaService.registrarVenta(request);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.total()).isEqualByComparingTo(new BigDecimal("320.00"));
+        assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
     }
 }

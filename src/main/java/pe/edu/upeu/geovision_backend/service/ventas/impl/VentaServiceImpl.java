@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.upeu.geovision_backend.dto.gestion_configuracion.ConfiguracionEmpresaDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.ProductoVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.ServicioVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.PagoRegistroRequestDTO;
@@ -27,8 +28,10 @@ import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.exception.RecursosNoEncontradosException;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
+import pe.edu.upeu.geovision_backend.mapper.gestion_configuracion.ConfiguracionEmpresaMapper;
 import pe.edu.upeu.geovision_backend.mapper.ventas.PagoMapper;
 import pe.edu.upeu.geovision_backend.mapper.ventas.VentaMapper;
+import pe.edu.upeu.geovision_backend.repository.gestion_configuracion.ConfiguracionEmpresaRepository;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.PacienteRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
@@ -69,6 +72,7 @@ public class VentaServiceImpl implements VentaService {
     private final EmpleadoRepository empleadoRepository;
     private final UsuarioRepository usuarioRepository;
     private final MovimientoStockLogRepository movimientoStockLogRepository;
+    private final ConfiguracionEmpresaRepository configuracionEmpresaRepository;
 
     // >>>> QUERIES
     @Override
@@ -87,8 +91,9 @@ public class VentaServiceImpl implements VentaService {
         List<ProductoVendido> productos = productoVendidoRepository.findByVentaId(idVenta);
         List<ServicioVendido> servicios = servicioVendidoRepository.findByVentaId(idVenta);
         List<Pago> pagos = pagoRepository.findByVentaId(idVenta);
+        ConfiguracionEmpresaDTO datosEmpresa = obtenerDatosEmpresa();
 
-        return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos);
+        return VentaMapper.toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos, datosEmpresa);
     }
 
     // >>>> CREATION
@@ -197,7 +202,28 @@ public class VentaServiceImpl implements VentaService {
                     throw new ReglaNegocioException("El servicio '" + servicio.getNombre() + "' se encuentra inactivo");
                 }
 
-                BigDecimal precioServicio = servicio.getPrecio() != null ? servicio.getPrecio() : servDTO.precio();
+                BigDecimal precioServicio;
+                boolean esServicioExamen = servicio.getNombre() != null &&
+                        (servicio.getNombre().toUpperCase().contains("EXAMEN") ||
+                         servicio.getNombre().toUpperCase().contains("REFRACCION") ||
+                         servicio.getNombre().toUpperCase().contains("MEDIDA"));
+
+                if (request.idReceta() != null) {
+                    if (esServicioExamen && servDTO.precio() != null && servDTO.precio().compareTo(BigDecimal.ZERO) == 0) {
+                        // Examen de cortesía (gratuito) al confeccionar lentes con receta médica
+                        precioServicio = BigDecimal.ZERO;
+                    } else if (servDTO.precio() != null && servDTO.precio().compareTo(BigDecimal.ZERO) > 0) {
+                        // En ventas con receta médica, el costo de confección y lunas graduadas se rige por la prescripción médica
+                        precioServicio = servDTO.precio();
+                    } else {
+                        precioServicio = servicio.getPrecio() != null ? servicio.getPrecio() : BigDecimal.ZERO;
+                    }
+                } else {
+                    // En ventas directas o sin receta (ej. cliente que solo asiste a examen computarizado), rige el precio oficial de catálogo
+                    precioServicio = (servicio.getPrecio() != null && servicio.getPrecio().compareTo(BigDecimal.ZERO) > 0)
+                            ? servicio.getPrecio()
+                            : (servDTO.precio() != null ? servDTO.precio() : BigDecimal.ZERO);
+                }
                 totalCalculadoServicios = totalCalculadoServicios.add(precioServicio);
 
                 ServicioVendido sv = new ServicioVendido(null, precioServicio, null, servicio);
@@ -315,17 +341,46 @@ public class VentaServiceImpl implements VentaService {
                 ventaGuardada.getId(), numeroComprobante, estadoInicial, saldoPendiente
         );
 
+        ConfiguracionEmpresaDTO datosEmpresa = obtenerDatosEmpresa();
+
         return VentaMapper.toResponseDTO(
                 ventaGuardada,
                 totalPagado,
                 saldoPendiente,
                 productosParaGuardar,
                 serviciosParaGuardar,
-                pagosGuardados
+                pagosGuardados,
+                datosEmpresa
         );
     }
 
     // >>>> HELPERS
+    private ConfiguracionEmpresaDTO obtenerDatosEmpresa() {
+        if (configuracionEmpresaRepository == null) {
+            return new ConfiguracionEmpresaDTO(
+                    null,
+                    "GEOVISION OPTICA INTEGRAL S.A.C.",
+                    "GeoVision Óptica & Laboratorio",
+                    "20608945123",
+                    "Av. Javier Prado Este 2450, San Borja, Lima",
+                    "+51 1 445-8920",
+                    "contacto@geovision.pe",
+                    "/assets/images/logo_geovision.png"
+            );
+        }
+        return configuracionEmpresaRepository.findFirstByOrderByIdAsc()
+                .map(ConfiguracionEmpresaMapper::toDTO)
+                .orElseGet(() -> new ConfiguracionEmpresaDTO(
+                        null,
+                        "GEOVISION OPTICA INTEGRAL S.A.C.",
+                        "GeoVision Óptica & Laboratorio",
+                        "20608945123",
+                        "Av. Javier Prado Este 2450, San Borja, Lima",
+                        "+51 1 445-8920",
+                        "contacto@geovision.pe",
+                        "/assets/images/logo_geovision.png"
+                ));
+    }
     private Empleado obtenerEmpleadoResponsable(Long idEmpleadoFallback) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {

@@ -2,6 +2,7 @@ package pe.edu.upeu.geovision_backend.mapper.ventas;
 
 import pe.edu.upeu.geovision_backend.entity.ventas.Pago;
 
+import pe.edu.upeu.geovision_backend.dto.gestion_configuracion.ConfiguracionEmpresaDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.ProductoVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.ServicioVendidoDTO;
 import pe.edu.upeu.geovision_backend.dto.ventas.VentaHistorialResponseDTO;
@@ -48,6 +49,18 @@ public final class VentaMapper {
         List<ServicioVendido> servicios,
         List<Pago> pagos
     ) {
+        return toResponseDTO(venta, totalPagado, saldoPendiente, productos, servicios, pagos, null);
+    }
+
+    public static VentaResponseDTO toResponseDTO(
+        Venta venta,
+        BigDecimal totalPagado,
+        BigDecimal saldoPendiente,
+        List<ProductoVendido> productos,
+        List<ServicioVendido> servicios,
+        List<Pago> pagos,
+        ConfiguracionEmpresaDTO datosEmpresa
+    ) {
 
         if (venta == null) {
             return null;
@@ -77,7 +90,27 @@ public final class VentaMapper {
                 ? Collections.emptyList()
                 : servicios.stream().map(VentaMapper::toServicioVendidoDTO).collect(Collectors.toList());
 
-        return new VentaResponseDTO(venta.getId(), venta.getFechaRegistro(), venta.getTotal(), totalPagado != null ? totalPagado : BigDecimal.ZERO, saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO, venta.getEstado(), venta.getEstado() != null ? venta.getEstado().getDescripcion() : null, venta.getTipoComprobante(), venta.getTipoComprobante() != null ? venta.getTipoComprobante().getDescripcion() : null, venta.getNumeroComprobante(), venta.getEmpleado() != null ? venta.getEmpleado().getId() : null, nombreCompletoEmpleado, idPaciente, nombreCompletoPaciente, venta.getReceta() != null ? venta.getReceta().getId() : null, productoDTOs, servicioDTOs, PagoMapper.toDTOList(pagos));
+        return new VentaResponseDTO(
+            venta.getId(),
+            venta.getFechaRegistro(),
+            venta.getTotal(),
+            totalPagado != null ? totalPagado : BigDecimal.ZERO,
+            saldoPendiente != null ? saldoPendiente : BigDecimal.ZERO,
+            venta.getEstado(),
+            venta.getEstado() != null ? venta.getEstado().getDescripcion() : null,
+            venta.getTipoComprobante(),
+            venta.getTipoComprobante() != null ? venta.getTipoComprobante().getDescripcion() : null,
+            venta.getNumeroComprobante(),
+            venta.getEmpleado() != null ? venta.getEmpleado().getId() : null,
+            nombreCompletoEmpleado,
+            idPaciente,
+            nombreCompletoPaciente,
+            venta.getReceta() != null ? venta.getReceta().getId() : null,
+            productoDTOs,
+            servicioDTOs,
+            PagoMapper.toDTOList(pagos),
+            datosEmpresa
+        );
     }
 
     public static VentaHistorialResponseDTO toHistorialResponseDTO(

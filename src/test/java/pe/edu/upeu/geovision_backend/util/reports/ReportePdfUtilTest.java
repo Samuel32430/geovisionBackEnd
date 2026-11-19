@@ -18,11 +18,11 @@ class ReportePdfUtilTest {
         ReportePdfUtil util = new ReportePdfUtil();
 
         ConfiguracionEmpresa empresa = new ConfiguracionEmpresa();
-        empresa.setNombreLegal("Óptica Geo Visión S.A.C.");
-        empresa.setNombreComercial("Geo Visión Ópticas");
-        empresa.setRuc("20601234567");
-        empresa.setDireccion("Av. Los Pinos 123, Lima");
-        empresa.setTelefono("987654321");
+        empresa.setNombreLegal("GEOVISION OPTICA INTEGRAL S.A.C.");
+        empresa.setNombreComercial("GeoVision Óptica & Laboratorio");
+        empresa.setRuc("20608945123");
+        empresa.setDireccion("Av. Javier Prado Este 2450, San Borja, Lima");
+        empresa.setTelefono("+51 1 445-8920");
 
         util.dibujarEncabezado(empresa, "REPORTE DE PRUEBA UNITARIA", "Periodo: Noviembre 2026");
 
