@@ -32,7 +32,7 @@ public class ReporteController {
 
     // >>>> QUERIES
     @GetMapping("/periodo")
-    @PreAuthorize("hasAnyAuthority('REPORTES_VER', 'VENTAS_LEER') or hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('REPORTES_VER') or hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_ADMIN')")
     @Operation(summary = "Reporte de ventas por periodo en formato JSON para dashboards y tablas")
     public ResponseEntity<ReporteVentasPeriodoDTO> obtenerReporteVentasPeriodo(
         @ModelAttribute FiltroReporteVentasDTO filtro
@@ -43,7 +43,7 @@ public class ReporteController {
     }
 
     @GetMapping("/periodo/pdf")
-    @PreAuthorize("hasAnyAuthority('REPORTES_VER', 'VENTAS_LEER') or hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('REPORTES_VER') or hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_ADMIN')")
     @Operation(summary = "Descarga de reporte de ventas por periodo en formato PDF")
     public ResponseEntity<byte[]> exportarReporteVentasPeriodoPdf(
         @ModelAttribute FiltroReporteVentasDTO filtro
@@ -58,7 +58,7 @@ public class ReporteController {
     }
 
     @GetMapping("/ranking-comercial")
-    @PreAuthorize("hasAnyAuthority('REPORTES_VER', 'VENTAS_LEER') or hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('REPORTES_VER') or hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_ADMIN')")
     @Operation(summary = "Reporte de ranking comercial de productos y servicios más vendidos en JSON")
     public ResponseEntity<ReporteRankingComercialDTO> obtenerReporteRankingComercial(
         @ModelAttribute FiltroReporteVentasDTO filtro
@@ -69,7 +69,7 @@ public class ReporteController {
     }
 
     @GetMapping("/ranking-comercial/pdf")
-    @PreAuthorize("hasAnyAuthority('REPORTES_VER', 'VENTAS_LEER') or hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('REPORTES_VER') or hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_ADMIN')")
     @Operation(summary = "Descarga de ranking comercial en formato PDF")
     public ResponseEntity<byte[]> exportarReporteRankingComercialPdf(
         @ModelAttribute FiltroReporteVentasDTO filtro
