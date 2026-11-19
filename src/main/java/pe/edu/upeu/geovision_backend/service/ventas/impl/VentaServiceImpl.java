@@ -197,9 +197,28 @@ public class VentaServiceImpl implements VentaService {
                     throw new ReglaNegocioException("El servicio '" + servicio.getNombre() + "' se encuentra inactivo");
                 }
 
-                BigDecimal precioServicio = (servicio.getPrecio() != null && servicio.getPrecio().compareTo(BigDecimal.ZERO) > 0)
-                        ? servicio.getPrecio()
-                        : servDTO.precio();
+                BigDecimal precioServicio;
+                boolean esServicioExamen = servicio.getNombre() != null &&
+                        (servicio.getNombre().toUpperCase().contains("EXAMEN") ||
+                         servicio.getNombre().toUpperCase().contains("REFRACCION") ||
+                         servicio.getNombre().toUpperCase().contains("MEDIDA"));
+
+                if (request.idReceta() != null) {
+                    if (esServicioExamen && servDTO.precio() != null && servDTO.precio().compareTo(BigDecimal.ZERO) == 0) {
+                        // Examen de cortesía (gratuito) al confeccionar lentes con receta médica
+                        precioServicio = BigDecimal.ZERO;
+                    } else if (servDTO.precio() != null && servDTO.precio().compareTo(BigDecimal.ZERO) > 0) {
+                        // En ventas con receta médica, el costo de confección y lunas graduadas se rige por la prescripción médica
+                        precioServicio = servDTO.precio();
+                    } else {
+                        precioServicio = servicio.getPrecio() != null ? servicio.getPrecio() : BigDecimal.ZERO;
+                    }
+                } else {
+                    // En ventas directas o sin receta (ej. cliente que solo asiste a examen computarizado), rige el precio oficial de catálogo
+                    precioServicio = (servicio.getPrecio() != null && servicio.getPrecio().compareTo(BigDecimal.ZERO) > 0)
+                            ? servicio.getPrecio()
+                            : (servDTO.precio() != null ? servDTO.precio() : BigDecimal.ZERO);
+                }
                 totalCalculadoServicios = totalCalculadoServicios.add(precioServicio);
 
                 ServicioVendido sv = new ServicioVendido(null, precioServicio, null, servicio);
