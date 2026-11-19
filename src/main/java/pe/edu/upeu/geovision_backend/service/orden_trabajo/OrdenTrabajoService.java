@@ -23,6 +23,7 @@ public interface OrdenTrabajoService {
     Page<OrdenTrabajoResponseDTO> listar(EstadoOrdenTrabajoEnum estado, String termino, Pageable pageable);
 
     OrdenTrabajoResponseDTO obtener(Long id);
+    int limiteObservaciones(Long id, String usuario);
 
     List<LaboratorioDTO> laboratorios();
 

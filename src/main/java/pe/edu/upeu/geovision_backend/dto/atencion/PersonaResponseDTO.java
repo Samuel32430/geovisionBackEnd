@@ -1,5 +1,6 @@
 package pe.edu.upeu.geovision_backend.dto.atencion;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import pe.edu.upeu.geovision_backend.enums.atencion.SexoEnum;
 import pe.edu.upeu.geovision_backend.enums.atencion.TipoDocumentoEnum;
 
@@ -19,6 +20,11 @@ public record PersonaResponseDTO(
     String tipoDocumentoDescripcion,
     String numeroDocumento
 ) {
+    @JsonProperty("idPersona")
+    public Long idPersona() {
+        return id;
+    }
+
     public String nombreCompleto() {
         if (nombreCompleto != null && !nombreCompleto.isBlank()) {
             return nombreCompleto;

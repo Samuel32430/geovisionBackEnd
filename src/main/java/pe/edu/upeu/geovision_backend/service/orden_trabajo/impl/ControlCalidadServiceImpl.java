@@ -75,6 +75,8 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         ventasOrden.bloquear(ot.getLente().getReceta().getId());
         var referencia = new ArrayList<>(ot.getLente().getMedidas());
         boolean aprobado = ComparadorLensometria.comparar(referencia, request.medidasLensometria(), p);
+        String constancia = ConstanciaOrdenTrabajo.registrarCalidad(envio.getObservaciones(), usuario,
+                request.observaciones(), p, aprobado);
         for (var m : request.medidasLensometria()) {
             var derecha = ojos.save(RecetaMapper.toMedidaOjo(m.ojoDerecho()));
             var izquierda = ojos.save(RecetaMapper.toMedidaOjo(m.ojoIzquierdo()));
@@ -86,10 +88,7 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         envio.setTolerancia(p.dioptrias());
         envio.setFechaRevision(LocalDateTime.now().withNano(0));
         envio.setAprobado(aprobado ? 1 : 0);
-        String constancia="[Calidad] Usuario: "+usuario+". "+(aprobado?"Aprobado":"Rechazado")
-            +". Margenes: eje="+p.ejeGrados()+", DP="+p.distanciaPupilarMm()+", prisma="+p.prisma()
-            +(request.observaciones()==null?"":". "+request.observaciones());
-        envio.setObservaciones(ConstanciaOrdenTrabajo.agregar(envio.getObservaciones(),constancia));
+        envio.setObservaciones(constancia);
         ot.setEstado(aprobado ? EstadoOrdenTrabajoEnum.LISTO_ENTREGA : EstadoOrdenTrabajoEnum.CONTROL_CALIDAD_RECHAZADO);
         medidas.flush();
         envios.saveAndFlush(envio);
