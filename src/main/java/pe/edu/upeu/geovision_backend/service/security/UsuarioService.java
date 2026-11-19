@@ -27,6 +27,8 @@ public interface UsuarioService {
     // >>>> UPDATES
     UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request);
 
+    UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request, String authUsername);
+
     UsuarioResponseDTO cambiarEstado(Long id, Integer nuevoEstado, String authUsername);
 
     UsuarioResponseDTO asignarRoles(Long id, Set<Long> roleIds, String authUsername);

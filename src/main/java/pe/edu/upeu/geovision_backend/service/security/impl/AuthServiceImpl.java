@@ -197,14 +197,16 @@ public class AuthServiceImpl implements AuthService {
         String correo = request.correo().trim().toLowerCase();
         log.info("Solicitud de recuperación de contraseña para correo: {}", correo);
 
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RecursosNoEncontradosException(
-                        "No se encontró ninguna cuenta registrada con el correo: " + correo
-                    )
-                );
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByCorreo(correo);
+        if (usuarioOpt.isEmpty()) {
+            log.warn("Solicitud de recuperación para correo no registrado (respuesta neutra de seguridad): {}", correo);
+            return;
+        }
 
+        Usuario usuario = usuarioOpt.get();
         if (!Boolean.TRUE.equals(usuario.getActivo())) {
-            throw new ReglaNegocioException("La cuenta de usuario asociada a este correo se encuentra inactiva");
+            log.warn("Solicitud de recuperación para cuenta inactiva: {}", correo);
+            return;
         }
 
         String token = jwtService.generarTokenRecuperacion(usuario.getCorreo(), 15);
