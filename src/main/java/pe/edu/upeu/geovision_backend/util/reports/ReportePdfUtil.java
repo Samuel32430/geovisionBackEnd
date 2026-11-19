@@ -79,9 +79,9 @@ public class ReportePdfUtil {
 
         String nombreEmpresa = (empresa != null && empresa.getNombreComercial() != null && !empresa.getNombreComercial().isBlank())
                 ? empresa.getNombreComercial()
-                : (empresa != null && empresa.getNombreLegal() != null ? empresa.getNombreLegal() : "ÓPTICA GEO VISIÓN");
+                : (empresa != null && empresa.getNombreLegal() != null ? empresa.getNombreLegal() : "GeoVision Óptica & Laboratorio");
 
-        String rucTexto = (empresa != null && empresa.getRuc() != null) ? "RUC: " + empresa.getRuc() : "RUC: 20601234567";
+        String rucTexto = (empresa != null && empresa.getRuc() != null) ? "RUC: " + empresa.getRuc() : "RUC: 20608945123";
 
         escribirTexto(nombreEmpresa, MARGEN, yActual, fontBold, 13, 26 / 255f, 54 / 255f, 93 / 255f);
         escribirTexto(rucTexto, MARGEN, yActual - 13, fontRegular, 8.5f, 100 / 255f, 116 / 255f, 139 / 255f);

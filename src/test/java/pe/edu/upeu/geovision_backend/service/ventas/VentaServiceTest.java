@@ -26,6 +26,7 @@ import pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.MetodoPagoEnum;
 import pe.edu.upeu.geovision_backend.enums.ventas.TipoComprobanteEnum;
 import pe.edu.upeu.geovision_backend.exception.ReglaNegocioException;
+import pe.edu.upeu.geovision_backend.repository.gestion_configuracion.ConfiguracionEmpresaRepository;
 import pe.edu.upeu.geovision_backend.repository.security.EmpleadoRepository;
 import pe.edu.upeu.geovision_backend.repository.atencion.PacienteRepository;
 import pe.edu.upeu.geovision_backend.repository.ventas.PagoRepository;
@@ -87,6 +88,9 @@ class VentaServiceTest {
     @Mock
     private MovimientoStockLogRepository movimientoStockLogRepository;
 
+    @Mock
+    private ConfiguracionEmpresaRepository configuracionEmpresaRepository;
+
     @InjectMocks
     private VentaServiceImpl ventaService;
 
@@ -140,6 +144,9 @@ class VentaServiceTest {
         assertThat(resultado).isNotNull();
         assertThat(resultado.estado()).isEqualTo(EstadoVentaEnum.PAGADA);
         assertThat(resultado.saldoPendiente()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(resultado.datosEmpresa()).isNotNull();
+        assertThat(resultado.datosEmpresa().ruc()).isEqualTo("20608945123");
+        assertThat(resultado.datosEmpresa().direccion()).contains("San Borja");
         assertThat(productoTest.getStock()).isEqualTo(9);
         verify(productoRepository).save(productoTest);
         verify(movimientoStockLogRepository).save(any(MovimientoStockLog.class));
