@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Fragmento de configuración para SonarQube y JaCoCo
+    Lenguaje de Programación II · Ciclo IV · Semestre 2026-2
+    Entregable E13 · Informe de calidad del código con SonarQube
+-->
+<project>
+    <properties>
+        <!-- Propiedades de integración con SonarQube -->
+        <sonar.projectKey>grupo-backend</sonar.projectKey>
+        <sonar.projectName>grupo-backend</sonar.projectName>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.java.source>21</sonar.java.source>
+        
+        <!-- Ruta del reporte de cobertura generado por JaCoCo -->
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        
+        <!-- Exclusiones de cobertura según la plantilla institucional -->
+        <sonar.coverage.exclusions>
+            **/dto/**,
+            **/entity/**,
+            **/enums/**,
+            **/config/**
+        </sonar.coverage.exclusions>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- Plugin de cobertura de código JaCoCo versión 0.8.14 -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.14</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
