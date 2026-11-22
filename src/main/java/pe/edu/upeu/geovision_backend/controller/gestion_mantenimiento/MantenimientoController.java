@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.PessimisticLockingFailureException;
 import pe.edu.upeu.geovision_backend.exception.dto.ErrorResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,6 +26,8 @@ import pe.edu.upeu.geovision_backend.service.gestion_mantenimiento.Mantenimiento
 import java.net.URI;
 import java.time.LocalDateTime;
 
+import static pe.edu.upeu.geovision_backend.config.RedisCacheConfig.CATEGORIAS;
+
 @RestController
 @RequestMapping("/api/v1/mantenimiento")
 @PreAuthorize("hasAuthority('MANTENIMIENTO_GESTIONAR')")
@@ -35,6 +39,8 @@ public class MantenimientoController {
 
     // >>>> QUERIES
     @GetMapping("/categorias")
+    @Cacheable(cacheNames = CATEGORIAS, key = "#p1 == null ? 'todos' : #p1.toString()", sync = true,
+            condition = "(#p0 == null || #p0.isEmpty()) && #p2 == 0 && #p3 == 10 && (#p1 == null || #p1 == 0 || #p1 == 1)")
     public PaginaResponseDTO<CategoriaDTO> listarCategoria(
         @RequestParam(required = false) String termino,
         @RequestParam(required = false) Integer estado,
@@ -124,6 +130,7 @@ public class MantenimientoController {
 
     // >>>> CREATION
     @PostMapping("/categorias")
+    @CacheEvict(cacheNames = CATEGORIAS, allEntries = true)
     public ResponseEntity<CategoriaDTO> registrarCategoria(@Valid @RequestBody CategoriaDTO request) {
         var response = service.registrarCategoria(request);
         return ResponseEntity.created(URI.create("/api/v1/mantenimiento/categorias/" + response.id())).body(response);
@@ -155,6 +162,7 @@ public class MantenimientoController {
 
     // >>>> UPDATES
     @PutMapping("/categorias/{id}")
+    @CacheEvict(cacheNames = CATEGORIAS, allEntries = true)
     public CategoriaDTO actualizarCategoria(@PathVariable Long id, @Valid @RequestBody CategoriaDTO request) {
         return service.actualizarCategoria(validarId(id), request);
     }

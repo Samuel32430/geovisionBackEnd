@@ -22,6 +22,11 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
+management:
+  health:
+    redis:
+      enabled: false
+
 app:
   mail:
     enabled: ${MAIL_ENABLED:true}

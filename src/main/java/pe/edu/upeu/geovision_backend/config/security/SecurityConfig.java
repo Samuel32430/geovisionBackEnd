@@ -62,6 +62,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(RUTAS_PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/actuator/metrics", "/actuator/metrics/**")
+                        .hasAnyAuthority("SEGURIDAD_ADMINISTRAR", "ROLE_ADMINISTRADOR", "ROLE_ADMIN")
                         .requestMatchers("/api/v1/usuarios/**", "/api/v1/roles/**", "/api/v1/permisos/**")
                         .hasAnyAuthority("SEGURIDAD_ADMINISTRAR", "ROLE_ADMINISTRADOR", "ROLE_ADMIN")
                         .anyRequest().authenticated()
