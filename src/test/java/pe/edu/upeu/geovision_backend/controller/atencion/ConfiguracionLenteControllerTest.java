@@ -323,6 +323,15 @@ class ConfiguracionLenteControllerTest {
 
     @Test
     @WithMockUser(authorities = "VENTAS_LEER")
+    void permisoDeVentasPermiteLeerCatalogosPeroNoConfigurarLente() throws Exception {
+        expectPost(recipe.getId(), request(), 403);
+        for (String catalog : List.of("materiales-cristal", "tratamientos-cristal", "monturas", "servicios")) {
+            mvc.perform(get("/api/v1/catalogos-opticos/" + catalog)).andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    @WithMockUser(authorities = "REPORTES_VER")
     void exigePermisosDelModulo() throws Exception {
         expectPost(recipe.getId(), request(), 403);
         for (String catalog : List.of("materiales-cristal", "tratamientos-cristal", "monturas")) {
