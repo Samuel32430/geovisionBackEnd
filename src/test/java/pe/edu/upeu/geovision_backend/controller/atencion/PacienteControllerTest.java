@@ -67,7 +67,12 @@ class PacienteControllerTest {
 
     // >>>> HELPERS
     PacienteRequestDTO request(String document) {
-        return new PacienteRequestDTO(null, new PersonaRequestDTO(" Ana ", " Pérez ", " 999123456 ", null, null, null, TipoDocumentoEnum.DNI, document), 1, null);
+        String telefono = "9%08d".formatted(Math.floorMod(document.trim().hashCode(), 100_000_000));
+        return request(document, " " + telefono + " ");
+    }
+
+    PacienteRequestDTO request(String document, String telefono) {
+        return new PacienteRequestDTO(null, new PersonaRequestDTO(" Ana ", " Pérez ", telefono, null, null, null, TipoDocumentoEnum.DNI, document), 1, null);
     }
 
     // >>>> TESTS
@@ -129,10 +134,30 @@ class PacienteControllerTest {
         ).andExpect(status().isConflict());
         String existing = "{\"id\":" + person.getId() + "}";
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON).content(existing))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.persona.nombres").value("Existente"));
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.persona.nombres").value("Existente"))
+                .andExpect(jsonPath("$.persona.telefono").isEmpty());
         mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON).content(existing))
                 .andExpect(status().isConflict());
         assertThat(logs.findByPacienteIdOrderByFechaLogDesc(person.getId())).hasSize(1);
+    }
+
+    @Test
+    void validaElTelefonoNuevoSinRechazarElTelefonoDelMismoPaciente() throws Exception {
+        var first = service.registrarPaciente(request(UUID.randomUUID().toString()), actor.getNombre());
+        String document = UUID.randomUUID().toString();
+        mvc.perform(post("/api/v1/pacientes").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(request(document, "  "))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("El teléfono es obligatorio"));
+        var second = service.registrarPaciente(request(document), actor.getNombre());
+        mvc.perform(put("/api/v1/pacientes/{id}", second.id()).contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(request(document, first.persona().telefono()))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("El teléfono ya se encuentra registrado"));
+        mvc.perform(put("/api/v1/pacientes/{id}", second.id()).contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(request(document))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.persona.telefono").value(second.persona().telefono()));
     }
 
     @Test

@@ -98,7 +98,6 @@ public class PacienteServiceImpl implements PacienteService {
         Persona persona;
         if (request.id() != null) {
             persona = bloquearPersona(request.id());
-            pedirTelefono(request.persona().telefono());
             if (pacienteRepository.existsById(persona.getId())) {
                 throw new ReglaNegocioException("La persona ya está registrada como paciente");
             }
@@ -108,7 +107,7 @@ public class PacienteServiceImpl implements PacienteService {
                 throw new ReglaNegocioException("El documento ya está registrado; seleccione la persona existente");
             }
             persona = PacienteMapper.toPersona(request.persona());
-            pedirTelefono(persona.getTelefono());
+            validarTelefonoNuevo(persona.getTelefono());
             guardarPersona(persona);
         }
         Paciente paciente = new Paciente(null, persona, estado(request.estado() == null ? 1 : request.estado()), null, actor);
@@ -136,6 +135,11 @@ public class PacienteServiceImpl implements PacienteService {
         String documento = request.persona().numeroDocumento().trim();
         if (personaRepository.existsByNumeroDocumentoAndIdNot(documento, idPaciente)) {
             throw new ReglaNegocioException("El documento ya pertenece a otra persona");
+        }
+        String telefono = request.persona().telefono();
+        String telefonoNormalizado = telefono == null || telefono.isBlank() ? null : telefono.trim();
+        if (!Objects.equals(persona.getTelefono(), telefonoNormalizado)) {
+            validarTelefonoNuevo(telefonoNormalizado);
         }
         PacienteMapper.actualizarPersona(persona, request.persona());
         guardarPersona(persona);
@@ -203,9 +207,13 @@ public class PacienteServiceImpl implements PacienteService {
         pacienteLogRepository.saveAndFlush(new PacienteLog(null, null, actor, paciente));
     }
 
-    private void pedirTelefono(String numero){
-        if (personaRepository.existsByTelefono(numero)) throw new ReglaNegocioException("El telefono ya se encuentra registrado");
-        if (numero == null || numero.isBlank()) throw new ReglaNegocioException("El telefono es obligatorio");
+    private void validarTelefonoNuevo(String telefono) {
+        if (telefono == null || telefono.isBlank()) {
+            throw new ReglaNegocioException("El teléfono es obligatorio");
+        }
+        if (personaRepository.existsByTelefono(telefono)) {
+            throw new ReglaNegocioException("El teléfono ya se encuentra registrado");
+        }
     }
 
 }

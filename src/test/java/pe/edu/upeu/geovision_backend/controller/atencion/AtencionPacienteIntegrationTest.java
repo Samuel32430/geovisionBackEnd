@@ -168,7 +168,8 @@ class AtencionPacienteIntegrationTest {
         String bearer = login();
         String document = UUID.randomUUID().toString();
         String patientJson = json.writeValueAsString(Map.of("persona", Map.of(
-                "nombres", "Paciente", "apellidos", "Integración", "tipoDocumento", "DNI", "numeroDocumento", document
+                "nombres", "Paciente", "apellidos", "Integración", "tipoDocumento", "DNI", "numeroDocumento", document,
+                "telefono", "999123451"
                 )
             )
         );
@@ -312,7 +313,7 @@ class AtencionPacienteIntegrationTest {
             Long id = independent.execute(status -> people.saveAndFlush(new Persona(null, "Paciente concurrente", "Prueba", null, null, null, null, document, TipoDocumentoEnum.DNI)).getId());
             request = new PacienteRequestDTO(id, request.persona(), request.estado(), request.idUsuario());
         } else {
-            request = new PacienteRequestDTO(request.id(), new PersonaRequestDTO("Paciente concurrente", "Prueba", null, null, null, null, TipoDocumentoEnum.DNI, document), request.estado(), request.idUsuario());
+            request = new PacienteRequestDTO(request.id(), new PersonaRequestDTO("Paciente concurrente", "Prueba", "999123452", null, null, null, TipoDocumentoEnum.DNI, document), request.estado(), request.idUsuario());
         }
         CyclicBarrier start = new CyclicBarrier(2);
         var registration = request;
