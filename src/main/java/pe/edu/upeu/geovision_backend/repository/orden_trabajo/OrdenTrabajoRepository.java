@@ -19,6 +19,18 @@ import java.util.Optional;
 
 @Repository
 public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Long>, JpaSpecificationExecutor<OrdenTrabajo> {
+    interface CantidadPorEstado {
+        EstadoOrdenTrabajoEnum getEstado();
+        long getCantidad();
+    }
+
+    @Query("""
+            SELECT o.estado AS estado, COUNT(o) AS cantidad
+            FROM OrdenTrabajo o
+            WHERE o.estado NOT IN :estadosFinales
+            GROUP BY o.estado
+            """)
+    List<CantidadPorEstado> contarActivasPorEstado(@Param("estadosFinales") List<EstadoOrdenTrabajoEnum> estadosFinales);
 
     // >>>> QUERIES
     Optional<OrdenTrabajo> findByLenteId(Long idLente);

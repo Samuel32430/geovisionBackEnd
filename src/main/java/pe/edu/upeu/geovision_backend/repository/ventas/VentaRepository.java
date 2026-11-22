@@ -21,6 +21,19 @@ import java.util.Optional;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecificationExecutor<Venta> {
 
+    interface TotalesDelDia {
+        long getCantidad();
+        java.math.BigDecimal getTotal();
+    }
+
+    @Query("""
+            SELECT COUNT(v) AS cantidad, SUM(v.total) AS total
+            FROM Venta v
+            WHERE v.fechaRegistro >= :desde AND v.fechaRegistro < :hasta
+              AND v.estado <> pe.edu.upeu.geovision_backend.enums.ventas.EstadoVentaEnum.ANULADA
+            """)
+    TotalesDelDia resumirVentasDelDia(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
     // >>>> QUERIES
     @Query("SELECT new pe.edu.upeu.geovision_backend.dto.orden_trabajo.PendienteOrdenTrabajoDTO(" +
            "v.id, v.numeroComprobante, l.id, v.receta.id, p.id, " +

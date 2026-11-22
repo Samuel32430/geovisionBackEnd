@@ -9,7 +9,7 @@ import pe.edu.upeu.geovision_backend.dto.atencion.PacienteResponseDTO;
 
 public interface PacienteService {
 
-    // >>>> QUERIES
+    // >>>> QUERIES\
     Page<PacienteResponseDTO> listarPacientes(String termino, Boolean estado, Pageable pageable);
 
     PacienteResponseDTO obtenerPorId(Long idPaciente);

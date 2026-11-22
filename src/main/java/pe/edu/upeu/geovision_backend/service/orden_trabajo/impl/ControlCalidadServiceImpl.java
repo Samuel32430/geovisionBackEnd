@@ -68,19 +68,23 @@ public class ControlCalidadServiceImpl implements ControlCalidadService {
         var p = politica.exigir();
         var envio = flujo.bloquearEnvioActual(request.idEnvioLaboratorio());
         var ot = envio.getOrdenTrabajo();
+
         if (ot.getEstado() != EstadoOrdenTrabajoEnum.RECIBIDO_LABORATORIO || envio.getFechaRecepcion() == null)
             throw new ReglaNegocioException("Debe recibir el ultimo envio antes de registrar calidad");
+
         if (envio.getFechaRevision() != null || envio.getAprobado() != null || !medidas.findByEnvioLaboratorioIdOrderByIdAsc(envio.getId()).isEmpty())
             throw new ReglaNegocioException("Este envio ya tiene un control; para recontrolar registre un nuevo envio y recepcion");
+
         ventasOrden.bloquear(ot.getLente().getReceta().getId());
+
         var referencia = new ArrayList<>(ot.getLente().getMedidas());
         boolean aprobado = ComparadorLensometria.comparar(referencia, request.medidasLensometria(), p);
+
         String constancia = ConstanciaOrdenTrabajo.registrarCalidad(envio.getObservaciones(), usuario,
                 request.observaciones(), p, aprobado);
         for (var m : request.medidasLensometria()) {
             var derecha = ojos.save(RecetaMapper.toMedidaOjo(m.ojoDerecho()));
             var izquierda = ojos.save(RecetaMapper.toMedidaOjo(m.ojoIzquierdo()));
-            // Workshop measurements must never alter clinical prescription measurements.
             var medida = RecetaMapper.toMedida(m, null, derecha, izquierda);
             medida.setEnvioLaboratorio(envio);
             medidas.save(medida);

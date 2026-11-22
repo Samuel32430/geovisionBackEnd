@@ -12,11 +12,32 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.upeu.geovision_backend.entity.atencion.Receta;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface RecetaRepository extends JpaRepository<Receta, Long>, JpaSpecificationExecutor<Receta> {
+    @Query("""
+            SELECT COUNT(DISTINCT r.paciente.id) FROM Receta r
+            WHERE r.esExterno = 0 AND r.fechaRegistro >= :desde AND r.fechaRegistro < :hasta
+            """)
+    long contarPacientesAtendidos(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    @Query("""
+            SELECT COUNT(DISTINCT r.paciente.id) FROM Receta r
+            WHERE r.esExterno = 0 AND r.fechaRegistro >= :desde AND r.fechaRegistro < :hasta
+              AND NOT EXISTS (
+                  SELECT 1 FROM Receta anterior
+                  WHERE anterior.paciente.id = r.paciente.id AND anterior.esExterno = 0
+                    AND anterior.fechaRegistro < :desde
+              )
+            """)
+    long contarPacientesPorPrimeraVez(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    @EntityGraph(attributePaths = {"paciente.persona"})
+    Page<Receta> findByEsExternoAndFechaRegistroGreaterThanEqualAndFechaRegistroLessThan(
+            Integer esExterno, LocalDateTime desde, LocalDateTime hasta, Pageable pageable);
 
     // >>>> QUERIES
     List<Receta> findByPacienteIdOrderByFechaRegistroDesc(Long idPaciente);

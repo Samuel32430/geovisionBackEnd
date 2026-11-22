@@ -58,6 +58,8 @@ public interface PersonaRepository extends JpaRepository<Persona, Long> {
 
     boolean existsByNumeroDocumentoAndIdNot(String numeroDocumento, Long idPersona);
 
+    boolean existsByTelefono(String telefono);
+
     // >>>> LOCKING
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Persona p WHERE p.id = :id")
